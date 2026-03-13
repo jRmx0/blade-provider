@@ -1,15 +1,15 @@
-import { getProviderConfig, type ProviderConfig } from "../config/env";
-import { algorithmCatalog } from "../domain/catalog";
-import { InMemoryJobStore } from "../domain/jobStore";
+import { getProviderConfig, type ProviderConfig } from "../../src/config/env";
+import { algorithmCatalog } from "../../src/domain/catalog";
+import { InMemoryJobStore } from "../../src/domain/jobStore";
 import type {
     ComputeAcceptedResponse,
     ComputeJobState,
     ErrorResponse,
     HealthResponse,
-} from "../domain/providerTypes";
-import { validateComputeRequest } from "../domain/validateComputeRequest";
-import type { ComputeEngine } from "../runtime/ComputeEngine";
-import { MockComputeEngine } from "../runtime/MockComputeEngine";
+} from "../../src/domain/providerTypes";
+import { validateComputeRequest } from "../../src/domain/validateComputeRequest";
+import type { ComputeEngine } from "../../src/runtime/ComputeEngine";
+import { MockComputeEngine } from "../../src/runtime/MockComputeEngine";
 
 interface ServerContext {
     config: ProviderConfig;
