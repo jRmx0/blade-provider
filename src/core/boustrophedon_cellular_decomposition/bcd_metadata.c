@@ -8,3 +8,48 @@
  *
  * Dependencies: internal.h
  */
+
+#include "internal.h"
+#include "../metadata/metadata_json.h"
+
+char *bcd_build_metadata_json(void)
+{
+	const char *format_values[] = {
+		metadata_format_to_string(BCD_METADATA_FORMAT_POLYGON)
+	};
+	const char *type_values[] = {
+		metadata_type_to_string(BCD_METADATA_TYPE_OFFLINE)
+	};
+	const char *coordsystem_values[] = {
+		metadata_coordsystem_to_string(BCD_METADATA_COORDSYSTEM_DECIMAL)
+	};
+
+	cJSON *algorithm = cJSON_CreateObject();
+	if (algorithm == NULL)
+	{
+		return NULL;
+	}
+
+	cJSON_AddStringToObject(algorithm, "name", "bcd");
+	cJSON_AddStringToObject(algorithm, "label", "Boustrophedon Cellular Decomposition");
+
+	cJSON *parameters = cJSON_CreateArray();
+	if (parameters == NULL)
+	{
+		cJSON_Delete(algorithm);
+		return NULL;
+	}
+
+	cJSON_AddItemToObject(algorithm, "parameters", parameters);
+
+	metadata_add_parameter(parameters, "path_width", "Path Width", BCD_METADATA_PARAM_TYPE_DECIMAL, "15", NULL, 0);
+	metadata_add_parameter(parameters, "path_overlap", "Path Overlap", BCD_METADATA_PARAM_TYPE_DECIMAL, "5", NULL, 0);
+	metadata_add_parameter(parameters, "format", "Format", BCD_METADATA_PARAM_TYPE_FORMAT, metadata_format_to_string(BCD_METADATA_FORMAT_POLYGON), format_values, 1);
+	metadata_add_parameter(parameters, "type", "Type", BCD_METADATA_PARAM_TYPE_TYPE, metadata_type_to_string(BCD_METADATA_TYPE_OFFLINE), type_values, 1);
+	metadata_add_parameter(parameters, "coordsystem", "Coordinate System", BCD_METADATA_PARAM_TYPE_COORDSYSTEM, metadata_coordsystem_to_string(BCD_METADATA_COORDSYSTEM_DECIMAL), coordsystem_values, 1);
+
+
+	char *json = cJSON_PrintUnformatted(algorithm);
+	cJSON_Delete(algorithm);
+	return json;
+}
