@@ -12,3 +12,19 @@
  *
  * Dependencies: internal.h, step files
  */
+
+#include "../internal.h"
+#include "../../../../dependencies/cJSON/cjson_compat.h"
+
+char *bcd_run_compute(const char *input_environment_json)
+{
+	cJSON *response = cJSON_CreateObject();
+	cJSON_AddStringToObject(response, "status", "error");
+	cJSON_AddStringToObject(response, "code", "not_implemented");
+	cJSON_AddStringToObject(response, "message", "Native BCD compute has not been wired into blade-provider yet.");
+	cJSON_AddBoolToObject(response, "inputReceived", input_environment_json != NULL);
+
+	char *json = cJSON_PrintUnformatted(response);
+	cJSON_Delete(response);
+	return json;
+}
