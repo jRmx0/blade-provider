@@ -1,4 +1,4 @@
-import { getProviderConfig, type ProviderConfig } from "../../src/config/env";
+import { getProviderConfig, type ProviderConfig } from "../config/env";
 import { algorithmCatalog } from "../../src/domain/catalog";
 import { InMemoryJobStore } from "../../src/domain/jobStore";
 import type {
