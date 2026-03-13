@@ -66,6 +66,11 @@ typedef struct
 // { "status": "error", "message": "..." } on failure. Caller must free().
 char *coverage_path_planning_process(const char *input_environment_json);
 
+// API calls
+
+char *bcd_build_metadata_json(void);
+char *bcd_run_compute(const char *input_environment_json);
+
 // POINT_T Helpers
 
 bool are_equal_points(const point_t a, const point_t b);

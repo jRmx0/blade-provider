@@ -9,3 +9,16 @@
  *
  * Dependencies: bcd_metadata.c, compute/bcd_compute.c
  */
+
+#include "bcd.h"
+#include "internal.h"
+
+char *bcd_get_metadata_json(void)
+{
+	return bcd_build_metadata_json();
+}
+
+char *bcd_compute(const char *input_environment_json)
+{
+	return bcd_run_compute(input_environment_json);
+}
