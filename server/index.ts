@@ -1,4 +1,4 @@
-import { createProviderServer } from "./src/http/server";
+import { createProviderServer } from "../src/http/server";
 
 const server = createProviderServer();
 

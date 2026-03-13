@@ -34,53 +34,14 @@ function emptyResponse(request: Request, config: ProviderConfig, status = 204) {
     });
 }
 
-function buildCorsHeaders(request: Request, config: ProviderConfig): Headers {
+function buildCorsHeaders(_request: Request, _config: ProviderConfig): Headers {
     const headers = new Headers();
-    const origin = request.headers.get("origin");
-    const allowedOrigin = resolveAllowedOrigin(origin, config);
-
-    if (allowedOrigin) {
-        headers.set("Access-Control-Allow-Origin", allowedOrigin);
-        headers.set("Vary", "Origin");
-    }
-
+    headers.set("Access-Control-Allow-Origin", "*");
     headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
     headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
     headers.set("Access-Control-Max-Age", "86400");
 
     return headers;
-}
-
-function resolveAllowedOrigin(origin: string | null, config: ProviderConfig) {
-    if (config.allowedOrigins === "*") {
-        return origin ?? "*";
-    }
-
-    if (!origin) {
-        return null;
-    }
-
-    return config.allowedOrigins.includes(origin) ? origin : null;
-}
-
-function ensureOriginAllowed(request: Request, config: ProviderConfig): Response | null {
-    const origin = request.headers.get("origin");
-    if (!origin) {
-        return null;
-    }
-
-    if (resolveAllowedOrigin(origin, config)) {
-        return null;
-    }
-
-    const body: ErrorResponse = {
-        error: {
-            code: "origin_not_allowed",
-            message: `Origin ${origin} is not allowed. Update BLADE_PROVIDER_ALLOWED_ORIGINS to permit it.`,
-        },
-    };
-
-    return jsonResponse(request, config, body, 403);
 }
 
 function notFound(request: Request, config: ProviderConfig) {
@@ -254,11 +215,6 @@ async function handleRoot(request: Request, context: ServerContext) {
 async function routeRequest(request: Request, context: ServerContext) {
     if (request.method === "OPTIONS") {
         return emptyResponse(request, context.config, 204);
-    }
-
-    const originCheck = ensureOriginAllowed(request, context.config);
-    if (originCheck) {
-        return originCheck;
     }
 
     const url = new URL(request.url);
