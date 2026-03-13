@@ -1,11 +1,12 @@
 {
   "name": "blade-provider",
-  "module": "index.ts",
+  "module": "src/api/index.ts",
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "bun --hot index.ts",
-    "start": "bun run index.ts",
+    "build:native": "bun run scripts/build-native.ts",
+    "dev": "bun run build:native && bun --hot src/api/index.ts",
+    "start": "bun run build:native && bun run src/api/index.ts",
     "typecheck": "bunx tsc --noEmit"
   },
   "devDependencies": {
