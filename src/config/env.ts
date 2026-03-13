@@ -4,6 +4,7 @@ export interface ProviderConfig {
 }
 
 const DEFAULT_PORT = 8080;
+const DEFAULT_PROVIDER_NAME = "blade-provider";
 
 function parsePort(rawPort: string | undefined): number {
     if (!rawPort) {
@@ -18,9 +19,17 @@ function parsePort(rawPort: string | undefined): number {
     return parsedPort;
 }
 
+function parseProviderName(rawProviderName: string | undefined): string {
+    const providerName = rawProviderName?.trim();
+
+    return providerName && providerName.length > 0
+        ? providerName
+        : DEFAULT_PROVIDER_NAME;
+}
+
 export function getProviderConfig(): ProviderConfig {
     return {
         port: parsePort(process.env.PORT),
-        providerName: "blade-provider",
+        providerName: parseProviderName(process.env.BLADE_PROVIDER_NAME),
     };
 }
