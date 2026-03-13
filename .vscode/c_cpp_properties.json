@@ -1,0 +1,19 @@
+{
+  "configurations": [
+    {
+      "name": "Win32",
+      "compilerPath": "C:/mingw64/bin/gcc.exe",
+      "intelliSenseMode": "windows-gcc-x64",
+      "cStandard": "c17",
+      "includePath": [
+        "${workspaceFolder}/src/**",
+        "${workspaceFolder}/dependencies/**",
+        "C:/mingw64/x86_64-w64-mingw32/include",
+        "C:/mingw64/lib/gcc/x86_64-w64-mingw32/14.2.0/include",
+        "C:/mingw64/lib/gcc/x86_64-w64-mingw32/14.2.0/include-fixed"
+      ],
+      "defines": []
+    }
+  ],
+  "version": 4
+}
