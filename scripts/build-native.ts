@@ -1,3 +1,23 @@
+/**
+ * Native provider build script.
+ *
+ * This script compiles the C entry points that are exposed through the
+ * Bun FFI bridge in `src/api/native/providerMetadataBridge.ts`.
+ *
+ * Adding a new algorithm module:
+ * 1. Create the algorithm's public entry point `.c` file under `src/core/<algorithm>/`
+ *    plus any helper translation units it depends on (for example metadata/compute files).
+ * 2. Wire the algorithm into `src/core/dispatcher.c` so metadata requests append the
+ *    algorithm JSON and compute requests route to the algorithm by name.
+ * 3. Add every new `.c` file that must be compiled for that algorithm to the `sources`
+ *    array below. If a file is omitted here, it will not be included in the shared library.
+ * 4. Rebuild with `bun run build:native` and verify the metadata bridge still loads the
+ *    generated library successfully.
+ *
+ * Keep the `sources` array explicit rather than auto-discovering files so the native build
+ * remains predictable and only ships translation units intentionally exposed by the provider.
+ */
+
 import { spawnSync } from "node:child_process";
 import { mkdirSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -15,6 +35,10 @@ const compiler = process.env.CC || "gcc";
 const buildId = `${Date.now()}`;
 const outputFileName = `${outputBaseName}.${buildId}.${outputExtension}`;
 const outputPath = join(outDir, outputFileName);
+
+// Every algorithm must list all of its required C translation units here.
+// The dispatcher is the shared entry point, while the remaining sources are
+// linked into the versioned native library consumed by the Bun FFI bridge.
 const sources = [
     join(projectRoot, "src", "core", "dispatcher.c"),
     join(projectRoot, "src", "core", "boustrophedon_cellular_decomposition", "bcd.c"),
