@@ -1,3 +1,10 @@
+export type MetadataParamSection =
+    | "General"
+    | "Coverage path"
+    | "Environment"
+    | "Object"
+    | "Execution";
+
 export type AlgoParamType =
     | "integer"
     | "decimal"
@@ -9,6 +16,7 @@ export type AlgoParamType =
     | "coordsystem";
 
 export interface MetadataParamResponse {
+    section?: MetadataParamSection;
     name: string;
     label: string;
     paramType: AlgoParamType;

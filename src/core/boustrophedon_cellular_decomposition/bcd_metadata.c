@@ -42,11 +42,11 @@ char *bcd_build_metadata_json(void)
 
 	cJSON_AddItemToObject(algorithm, "parameters", parameters);
 
-	metadata_add_parameter(parameters, "path_width", "Path Width", BCD_METADATA_PARAM_TYPE_DECIMAL, "15", NULL, 0);
-	metadata_add_parameter(parameters, "path_overlap", "Path Overlap", BCD_METADATA_PARAM_TYPE_DECIMAL, "5", NULL, 0);
-	metadata_add_parameter(parameters, "format", "Format", BCD_METADATA_PARAM_TYPE_FORMAT, metadata_format_to_string(BCD_METADATA_FORMAT_POLYGON), format_values, 1);
-	metadata_add_parameter(parameters, "type", "Type", BCD_METADATA_PARAM_TYPE_TYPE, metadata_type_to_string(BCD_METADATA_TYPE_OFFLINE), type_values, 1);
-	metadata_add_parameter(parameters, "coordsystem", "Coordinate System", BCD_METADATA_PARAM_TYPE_COORDSYSTEM, metadata_coordsystem_to_string(BCD_METADATA_COORDSYSTEM_DECIMAL), coordsystem_values, 1);
+	metadata_add_parameter(parameters, BCD_METADATA_PARAM_SECTION_COVERAGE_PATH, "path_width", "Path Width", BCD_METADATA_PARAM_TYPE_DECIMAL, "15", NULL, 0);
+	metadata_add_parameter(parameters, BCD_METADATA_PARAM_SECTION_COVERAGE_PATH, "path_overlap", "Path Overlap", BCD_METADATA_PARAM_TYPE_DECIMAL, "5", NULL, 0);
+	metadata_add_parameter(parameters, BCD_METADATA_PARAM_SECTION_ENVIRONMENT, "format", "Format", BCD_METADATA_PARAM_TYPE_FORMAT, metadata_format_to_string(BCD_METADATA_FORMAT_POLYGON), format_values, 1);
+	metadata_add_parameter(parameters, BCD_METADATA_PARAM_SECTION_ENVIRONMENT, "type", "Type", BCD_METADATA_PARAM_TYPE_TYPE, metadata_type_to_string(BCD_METADATA_TYPE_OFFLINE), type_values, 1);
+	metadata_add_parameter(parameters, BCD_METADATA_PARAM_SECTION_ENVIRONMENT, "coordsystem", "Coordinate System", BCD_METADATA_PARAM_TYPE_COORDSYSTEM, metadata_coordsystem_to_string(BCD_METADATA_COORDSYSTEM_DECIMAL), coordsystem_values, 1);
 
 
 	char *json = cJSON_PrintUnformatted(algorithm);

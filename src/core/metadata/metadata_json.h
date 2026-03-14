@@ -6,6 +6,7 @@
 
 static inline void metadata_add_parameter(
     cJSON *parameters,
+    bcd_metadata_param_section_t section,
     const char *name,
     const char *label,
     bcd_metadata_param_type_t param_type,
@@ -14,6 +15,13 @@ static inline void metadata_add_parameter(
     int enum_value_count)
 {
     cJSON *parameter = cJSON_CreateObject();
+    const char *section_value = metadata_param_section_to_string(section);
+
+    if (section_value != NULL)
+    {
+        cJSON_AddStringToObject(parameter, "section", section_value);
+    }
+
     cJSON_AddStringToObject(parameter, "name", name);
     cJSON_AddStringToObject(parameter, "label", label);
     cJSON_AddStringToObject(parameter, "paramType", metadata_param_type_to_string(param_type));

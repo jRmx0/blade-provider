@@ -58,6 +58,11 @@ function parseParameter(parameter: unknown, index: number): MetadataParamRespons
         throw new Error(`Expected algorithms[0].parameters[${index}] to be an object.`);
     }
 
+    const section = parameter.section;
+    if (section !== undefined && (typeof section !== "string" || section.trim() === "")) {
+        throw new Error(`Expected algorithms[0].parameters[${index}].section to be a non-empty string when provided.`);
+    }
+
     const enumValues = parameter.enumValues;
     if (enumValues !== undefined && (!Array.isArray(enumValues) || enumValues.some((value) => typeof value !== "string"))) {
         throw new Error(`Expected algorithms[0].parameters[${index}].enumValues to be a string array.`);
@@ -69,6 +74,7 @@ function parseParameter(parameter: unknown, index: number): MetadataParamRespons
     }
 
     return {
+        section: typeof section === "string" ? section as MetadataParamResponse["section"] : undefined,
         name: expectNonEmptyString(parameter.name, `algorithms[0].parameters[${index}].name`),
         label: expectNonEmptyString(parameter.label, `algorithms[0].parameters[${index}].label`),
         paramType: expectNonEmptyString(parameter.paramType, `algorithms[0].parameters[${index}].paramType`) as MetadataParamResponse["paramType"],
