@@ -20,6 +20,9 @@ const sources = [
     join(projectRoot, "src", "core", "boustrophedon_cellular_decomposition", "bcd.c"),
     join(projectRoot, "src", "core", "boustrophedon_cellular_decomposition", "bcd_metadata.c"),
     join(projectRoot, "src", "core", "boustrophedon_cellular_decomposition", "compute", "bcd_compute.c"),
+    join(projectRoot, "src", "core", "mock_algo", "mock_algo.c"),
+    join(projectRoot, "src", "core", "mock_algo", "mock_algo_metadata.c"),
+    join(projectRoot, "src", "core", "mock_algo", "mock_algo_compute.c"),
     join(projectRoot, "dependencies", "cJSON", "cJSON.c"),
 ];
 const compilerArgs = process.platform === "win32"
