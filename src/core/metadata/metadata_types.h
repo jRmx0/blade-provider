@@ -62,23 +62,23 @@ static inline const char *metadata_param_type_to_string(bcd_metadata_param_type_
     switch (param_type)
     {
     case BCD_METADATA_PARAM_TYPE_INTEGER:
-        return "integer";
+        return "Integer";
     case BCD_METADATA_PARAM_TYPE_DECIMAL:
-        return "decimal";
+        return "Decimal";
     case BCD_METADATA_PARAM_TYPE_BOOLEAN:
-        return "boolean";
+        return "Boolean";
     case BCD_METADATA_PARAM_TYPE_STRING:
-        return "string";
+        return "String";
     case BCD_METADATA_PARAM_TYPE_ENUM:
-        return "enum";
+        return "Enum";
     case BCD_METADATA_PARAM_TYPE_FORMAT:
-        return "format";
+        return "Format";
     case BCD_METADATA_PARAM_TYPE_TYPE:
-        return "type";
+        return "Type";
     case BCD_METADATA_PARAM_TYPE_COORDSYSTEM:
-        return "coordsystem";
+        return "Coordsystem";
     default:
-        return "string";
+        return "String";
     }
 }
 
@@ -87,11 +87,11 @@ static inline const char *metadata_format_to_string(bcd_metadata_format_t format
     switch (format)
     {
     case BCD_METADATA_FORMAT_POLYGON:
-        return "polygon";
+        return "Polygon";
     case BCD_METADATA_FORMAT_GRID:
-        return "grid";
+        return "Grid";
     default:
-        return "polygon";
+        return "Polygon";
     }
 }
 
@@ -100,11 +100,11 @@ static inline const char *metadata_type_to_string(bcd_metadata_type_t type)
     switch (type)
     {
     case BCD_METADATA_TYPE_OFFLINE:
-        return "offline";
+        return "Offline";
     case BCD_METADATA_TYPE_ONLINE:
-        return "online";
+        return "Online";
     default:
-        return "offline";
+        return "Offline";
     }
 }
 
@@ -113,11 +113,11 @@ static inline const char *metadata_coordsystem_to_string(bcd_metadata_coordsyste
     switch (coordsystem)
     {
     case BCD_METADATA_COORDSYSTEM_DECIMAL:
-        return "decimal";
+        return "Decimal";
     case BCD_METADATA_COORDSYSTEM_LATLONG:
-        return "latlong";
+        return "Latlong";
     default:
-        return "decimal";
+        return "Decimal";
     }
 }
 

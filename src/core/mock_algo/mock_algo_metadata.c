@@ -10,13 +10,13 @@
 char *mock_algo_build_metadata_json(void)
 {
 	const char *route_profile_values[] = {
-		"fast",
-		"balanced",
-		"precise",
-		"survey"
+		"Fast",
+		"Balanced",
+		"Precise",
+		"Survey"
 	};
 	const char *edge_policy_values[] = {
-		"clip"
+		"Clip"
 	};
 	const char *format_locked_values[] = {
 		metadata_format_to_string(BCD_METADATA_FORMAT_POLYGON)
@@ -62,11 +62,11 @@ char *mock_algo_build_metadata_json(void)
 	metadata_add_parameter(parameters, BCD_METADATA_PARAM_SECTION_EXECUTION, "retry_limit", "Retry Limit", BCD_METADATA_PARAM_TYPE_INTEGER, NULL, NULL, 0);
 	metadata_add_parameter(parameters, BCD_METADATA_PARAM_SECTION_COVERAGE_PATH, "row_spacing", "Row Spacing", BCD_METADATA_PARAM_TYPE_DECIMAL, "1.25", NULL, 0);
 	metadata_add_parameter(parameters, BCD_METADATA_PARAM_SECTION_COVERAGE_PATH, "turn_padding", "Turn Padding", BCD_METADATA_PARAM_TYPE_DECIMAL, NULL, NULL, 0);
-	metadata_add_parameter(parameters, BCD_METADATA_PARAM_SECTION_COVERAGE_PATH, "allow_reverse", "Allow Reverse", BCD_METADATA_PARAM_TYPE_BOOLEAN, "true", NULL, 0);
+	metadata_add_parameter(parameters, BCD_METADATA_PARAM_SECTION_COVERAGE_PATH, "allow_reverse", "Allow Reverse", BCD_METADATA_PARAM_TYPE_BOOLEAN, "True", NULL, 0);
 	metadata_add_parameter(parameters, BCD_METADATA_PARAM_SECTION_EXECUTION, "emit_debug_trace", "Emit Debug Trace", BCD_METADATA_PARAM_TYPE_BOOLEAN, NULL, NULL, 0);
 	metadata_add_parameter(parameters, BCD_METADATA_PARAM_SECTION_OBJECT, "mission_code", "Mission Code", BCD_METADATA_PARAM_TYPE_STRING, "FIELD-ALPHA", NULL, 0);
 	metadata_add_parameter(parameters, BCD_METADATA_PARAM_SECTION_OBJECT, "operator_notes", "Operator Notes", BCD_METADATA_PARAM_TYPE_STRING, NULL, NULL, 0);
-	metadata_add_parameter(parameters, BCD_METADATA_PARAM_SECTION_COVERAGE_PATH, "route_profile", "Route Profile", BCD_METADATA_PARAM_TYPE_ENUM, "balanced", route_profile_values, 4);
+	metadata_add_parameter(parameters, BCD_METADATA_PARAM_SECTION_COVERAGE_PATH, "route_profile", "Route Profile", BCD_METADATA_PARAM_TYPE_ENUM, "Balanced", route_profile_values, 4);
 	metadata_add_parameter(parameters, BCD_METADATA_PARAM_SECTION_COVERAGE_PATH, "edge_policy", "Edge Policy", BCD_METADATA_PARAM_TYPE_ENUM, NULL, edge_policy_values, 1);
 	metadata_add_parameter(parameters, BCD_METADATA_PARAM_SECTION_ENVIRONMENT, "input_format_locked", "Input Format (Locked)", BCD_METADATA_PARAM_TYPE_FORMAT, metadata_format_to_string(BCD_METADATA_FORMAT_POLYGON), format_locked_values, 1);
 	metadata_add_parameter(parameters, BCD_METADATA_PARAM_SECTION_ENVIRONMENT, "output_format_choices", "Output Format Choices", BCD_METADATA_PARAM_TYPE_FORMAT, NULL, format_multi_values, 2);
