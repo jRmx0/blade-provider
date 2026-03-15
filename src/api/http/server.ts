@@ -4,13 +4,13 @@ import {
     getNativeProviderMetadata,
     NativeComputeError,
 } from "../native/providerMetadataBridge";
-import { InMemoryJobStore } from "../../temp/domain/jobStore";
+import { InMemoryJobStore } from "../../job/jobStore";
 import type {
     ComputeAcceptedResponse,
     ComputeJobState,
     ErrorResponse,
     HealthResponse,
-} from "../../temp/domain/providerTypes";
+} from "../../types/providerTypes";
 
 interface ServerContext {
     config: ProviderConfig;

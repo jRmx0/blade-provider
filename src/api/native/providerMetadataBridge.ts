@@ -8,8 +8,7 @@ import type {
     MetadataParamResponse,
     MetadataResponse,
     Point,
-} from "../../temp/domain/providerTypes";
-import { isSupportedAppParameterHandler } from "../../temp/domain/appParameterHandlers";
+} from "../../types/providerTypes";
 
 interface NativeProviderSymbols {
     dispatch_metadata_json(): Pointer;
@@ -99,12 +98,7 @@ function parseAppHandler(value: unknown, path: string): MetadataParamResponse["a
         return undefined;
     }
 
-    const handler = expectNonEmptyString(value, path).trim();
-    if (!isSupportedAppParameterHandler(handler)) {
-        throw new Error(`Expected ${path} to be a supported app handler.`);
-    }
-
-    return handler;
+    return expectNonEmptyString(value, path).trim();
 }
 
 function parseParameter(parameter: unknown, index: number): MetadataParamResponse {
@@ -129,10 +123,6 @@ function parseParameter(parameter: unknown, index: number): MetadataParamRespons
 
     const paramType = parseParamType(parameter.paramType, `algorithms[0].parameters[${index}].paramType`);
     const appHandler = parseAppHandler(parameter.appHandler, `algorithms[0].parameters[${index}].appHandler`);
-
-    if (appHandler !== undefined && paramType !== "Enum") {
-        throw new Error(`Expected algorithms[0].parameters[${index}] app handlers to be used only with Enum params.`);
-    }
 
     return {
         section: typeof section === "string" ? section as MetadataParamResponse["section"] : undefined,

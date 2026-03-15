@@ -1,4 +1,4 @@
-import type { ComputeJobError, ComputeJobState, ComputeResult } from "./providerTypes";
+import type { ComputeJobError, ComputeJobState, ComputeResult } from "../types/providerTypes";
 
 function cloneJobState(jobState: ComputeJobState): ComputeJobState {
     return structuredClone(jobState);

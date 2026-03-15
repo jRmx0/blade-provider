@@ -1,5 +1,3 @@
-import type { SupportedAppParameterHandler } from "./appParameterHandlers";
-
 /**
  * Provider-defined metadata section label.
  * `General` is reserved as the consumer-side fallback when the provider leaves the section undefined.
@@ -21,7 +19,7 @@ export interface MetadataParamResponse {
     paramType: AlgoParamType;
     enumValues?: string[];
     defaultValue?: string;
-    appHandler?: SupportedAppParameterHandler;
+    appHandler?: string;
 }
 
 export interface MetadataAlgorithmResponse {
