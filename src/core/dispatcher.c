@@ -37,6 +37,10 @@ static cJSON *parse_algorithm_metadata_json(char *algorithm_json)
 static char *create_dispatch_error_json(const char *code, const char *message)
 {
 	cJSON *response = cJSON_CreateObject();
+	if (response == NULL)
+	{
+		return NULL;
+	}
 	cJSON_AddStringToObject(response, "status", "error");
 	cJSON_AddStringToObject(response, "code", code);
 	cJSON_AddStringToObject(response, "message", message);
@@ -44,6 +48,35 @@ static char *create_dispatch_error_json(const char *code, const char *message)
 	char *json = cJSON_PrintUnformatted(response);
 	cJSON_Delete(response);
 	return json;
+}
+
+static const char *parse_requested_algorithm_name(const char *request_json, char **error_json_out)
+{
+	if (request_json == NULL)
+	{
+		*error_json_out = create_dispatch_error_json("invalid_request", "Compute request JSON is required.");
+		return NULL;
+	}
+
+	cJSON *root = cJSON_Parse(request_json);
+	if (!cJSON_IsObject(root))
+	{
+		cJSON_Delete(root);
+		*error_json_out = create_dispatch_error_json("invalid_request", "Compute request body must be a JSON object.");
+		return NULL;
+	}
+
+	const cJSON *algorithm_name = cJSON_GetObjectItemCaseSensitive(root, "algorithmName");
+	if (!cJSON_IsString(algorithm_name) || algorithm_name->valuestring == NULL || algorithm_name->valuestring[0] == '\0')
+	{
+		cJSON_Delete(root);
+		*error_json_out = create_dispatch_error_json("missing_algorithm", "algorithmName is required.");
+		return NULL;
+	}
+
+	const char *result = algorithm_name->valuestring;
+	cJSON_Delete(root);
+	return result;
 }
 
 char *dispatch_metadata_json(void)
@@ -84,21 +117,23 @@ char *dispatch_metadata_json(void)
 	return json;
 }
 
-char *dispatch_compute_json(const char *algorithm_name, const char *input_environment_json)
+char *dispatch_compute_json(const char *request_json)
 {
+	char *error_json = NULL;
+	const char *algorithm_name = parse_requested_algorithm_name(request_json, &error_json);
 	if (algorithm_name == NULL)
 	{
-		return create_dispatch_error_json("unknown_algorithm", "Unknown algorithm requested.");
+		return error_json;
 	}
 
-	if (strcmp(algorithm_name, "mock_cpp_bcd") == 0 || strcmp(algorithm_name, "bcd") == 0)
+	if (strcmp(algorithm_name, "Boustrophedon Cellular Decomposition") == 0)
 	{
-		return bcd_compute(input_environment_json);
+		return bcd_compute(request_json);
 	}
 
-	if (strcmp(algorithm_name, "mock_metadata_matrix") == 0)
+	if (strcmp(algorithm_name, "Mock Metadata Matrix") == 0)
 	{
-		return mock_algo_compute(input_environment_json);
+		return mock_algo_compute(request_json);
 	}
 
 	return create_dispatch_error_json("unknown_algorithm", "Unknown algorithm requested.");

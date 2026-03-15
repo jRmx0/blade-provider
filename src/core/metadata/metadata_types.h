@@ -15,11 +15,15 @@ typedef enum {
     BCD_METADATA_PARAM_TYPE_DECIMAL,
     BCD_METADATA_PARAM_TYPE_BOOLEAN,
     BCD_METADATA_PARAM_TYPE_STRING,
-    BCD_METADATA_PARAM_TYPE_ENUM,
-    BCD_METADATA_PARAM_TYPE_FORMAT,
-    BCD_METADATA_PARAM_TYPE_TYPE,
-    BCD_METADATA_PARAM_TYPE_COORDSYSTEM
+    BCD_METADATA_PARAM_TYPE_ENUM
 } bcd_metadata_param_type_t;
+
+typedef enum {
+	BCD_METADATA_APP_HANDLER_NONE = 0,
+	BCD_METADATA_APP_HANDLER_ENVIRONMENT_FORMAT,
+	BCD_METADATA_APP_HANDLER_ENVIRONMENT_TYPE,
+	BCD_METADATA_APP_HANDLER_ENVIRONMENT_COORDSYSTEM
+} bcd_metadata_app_handler_t;
 
 typedef enum {
     BCD_METADATA_FORMAT_POLYGON = 0,
@@ -71,14 +75,25 @@ static inline const char *metadata_param_type_to_string(bcd_metadata_param_type_
         return "String";
     case BCD_METADATA_PARAM_TYPE_ENUM:
         return "Enum";
-    case BCD_METADATA_PARAM_TYPE_FORMAT:
-        return "Format";
-    case BCD_METADATA_PARAM_TYPE_TYPE:
-        return "Type";
-    case BCD_METADATA_PARAM_TYPE_COORDSYSTEM:
-        return "Coordsystem";
     default:
         return "String";
+    }
+}
+
+static inline const char *metadata_app_handler_to_string(bcd_metadata_app_handler_t app_handler)
+{
+	switch (app_handler)
+	{
+	case BCD_METADATA_APP_HANDLER_NONE:
+		return (const char *)0;
+	case BCD_METADATA_APP_HANDLER_ENVIRONMENT_FORMAT:
+        return "env.format";
+	case BCD_METADATA_APP_HANDLER_ENVIRONMENT_TYPE:
+        return "env.type";
+	case BCD_METADATA_APP_HANDLER_ENVIRONMENT_COORDSYSTEM:
+        return "env.coordsystem";
+	default:
+		return (const char *)0;
     }
 }
 
@@ -100,11 +115,11 @@ static inline const char *metadata_type_to_string(bcd_metadata_type_t type)
     switch (type)
     {
     case BCD_METADATA_TYPE_OFFLINE:
-        return "Offline";
+        return "Off-Line";
     case BCD_METADATA_TYPE_ONLINE:
-        return "Online";
+        return "On-Line";
     default:
-        return "Offline";
+        return "Off-Line";
     }
 }
 
@@ -115,7 +130,7 @@ static inline const char *metadata_coordsystem_to_string(bcd_metadata_coordsyste
     case BCD_METADATA_COORDSYSTEM_DECIMAL:
         return "Decimal";
     case BCD_METADATA_COORDSYSTEM_LATLONG:
-        return "Latlong";
+        return "Lat/Long";
     default:
         return "Decimal";
     }

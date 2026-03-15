@@ -12,7 +12,7 @@ extern "C" {
 #endif
 
 PROVIDER_API char *dispatch_metadata_json(void);
-PROVIDER_API char *dispatch_compute_json(const char *algorithm_name, const char *input_environment_json);
+PROVIDER_API char *dispatch_compute_json(const char *request_json);
 PROVIDER_API void dispatch_string_free(char *value);
 
 #ifdef __cplusplus
