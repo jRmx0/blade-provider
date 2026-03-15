@@ -1,32 +1,31 @@
+import type { SupportedAppParameterHandler } from "./appParameterHandlers";
+
+/**
+ * Provider-defined metadata section label.
+ * `General` is reserved as the consumer-side fallback when the provider leaves the section undefined.
+ */
 export type MetadataParamSection =
     | "General"
-    | "Coverage path"
-    | "Environment"
-    | "Object"
-    | "Execution";
+    | (string & {});
 
 export type AlgoParamType =
-    | "integer"
-    | "decimal"
-    | "boolean"
-    | "string"
-    | "enum"
-    | "format"
-    | "type"
-    | "coordsystem";
+    | "Integer"
+    | "Decimal"
+    | "Boolean"
+    | "String"
+    | "Enum";
 
 export interface MetadataParamResponse {
     section?: MetadataParamSection;
     name: string;
-    label: string;
     paramType: AlgoParamType;
     enumValues?: string[];
     defaultValue?: string;
+    appHandler?: SupportedAppParameterHandler;
 }
 
 export interface MetadataAlgorithmResponse {
     name: string;
-    label: string;
     parameters: MetadataParamResponse[];
 }
 

@@ -1,5 +1,9 @@
 import { getProviderConfig, type ProviderConfig } from "../config/env";
-import { algorithmCatalog } from "../../temp/domain/catalog";
+import {
+    executeNativeProviderCompute,
+    getNativeProviderMetadata,
+    NativeComputeError,
+} from "../native/providerMetadataBridge";
 import { InMemoryJobStore } from "../../temp/domain/jobStore";
 import type {
     ComputeAcceptedResponse,
@@ -7,14 +11,34 @@ import type {
     ErrorResponse,
     HealthResponse,
 } from "../../temp/domain/providerTypes";
-import { validateComputeRequest } from "../../temp/domain/validateComputeRequest";
-import type { ComputeEngine } from "../../temp/runtime/ComputeEngine";
-import { MockComputeEngine } from "../../temp/runtime/MockComputeEngine";
 
 interface ServerContext {
     config: ProviderConfig;
-    engine: ComputeEngine;
     jobs: InMemoryJobStore;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function getQueuedAlgorithmName(rawBody: unknown): string {
+    if (!isRecord(rawBody)) {
+        return "Unknown algorithm";
+    }
+
+    return typeof rawBody.algorithmName === "string" && rawBody.algorithmName.trim() !== ""
+        ? rawBody.algorithmName.trim()
+        : "Unknown algorithm";
+}
+
+function getQueuedRequestId(rawBody: unknown): string | undefined {
+    if (!isRecord(rawBody)) {
+        return undefined;
+    }
+
+    return typeof rawBody.requestId === "string" && rawBody.requestId.trim() !== ""
+        ? rawBody.requestId
+        : undefined;
 }
 
 function jsonResponse(request: Request, config: ProviderConfig, body: unknown, status = 200) {
@@ -101,7 +125,7 @@ async function handleMetadata(request: Request, context: ServerContext) {
         return methodNotAllowed(request, context.config, ["GET", "OPTIONS"]);
     }
 
-    return jsonResponse(request, context.config, algorithmCatalog.metadata(), 200);
+    return jsonResponse(request, context.config, getNativeProviderMetadata(), 200);
 }
 
 async function runComputeJob(
@@ -112,20 +136,11 @@ async function runComputeJob(
     context.jobs.markRunning(jobId);
 
     try {
-        const validation = validateComputeRequest(rawBody);
-        if (!validation.ok) {
-            context.jobs.markFailed(jobId, {
-                code: validation.code,
-                message: validation.message,
-            });
-            return;
-        }
-
-        const result = await context.engine.execute(validation.value);
+        const result = executeNativeProviderCompute(rawBody);
         context.jobs.markCompleted(jobId, result);
     } catch (error) {
         context.jobs.markFailed(jobId, {
-            code: "compute_failed",
+            code: error instanceof NativeComputeError ? error.code : "compute_failed",
             message: error instanceof Error ? error.message : String(error),
         });
     }
@@ -141,22 +156,9 @@ async function handleComputeSubmission(request: Request, context: ServerContext)
         return parsedBody.response;
     }
 
-    const validation = validateComputeRequest(parsedBody.value);
-    if (!validation.ok) {
-        const body: ErrorResponse = {
-            error: {
-                code: validation.code,
-                message: validation.message,
-                details: validation.details,
-            },
-        };
-
-        return jsonResponse(request, context.config, body, validation.status);
-    }
-
     const queuedJob = context.jobs.createQueued({
-        algorithmName: validation.value.algorithm.name,
-        requestId: validation.value.requestId,
+        algorithmName: getQueuedAlgorithmName(parsedBody.value),
+        requestId: getQueuedRequestId(parsedBody.value),
     });
 
     void runComputeJob(queuedJob.jobId, parsedBody.value, context);
@@ -205,9 +207,8 @@ async function handleRoot(request: Request, context: ServerContext) {
             compute: "/compute",
             computeStatus: "/compute/:jobId",
         },
-        algorithms: algorithmCatalog.list().map((algorithm) => ({
+        algorithms: getNativeProviderMetadata().algorithms.map((algorithm) => ({
             name: algorithm.name,
-            label: algorithm.label,
         })),
     });
 }
@@ -246,7 +247,6 @@ async function routeRequest(request: Request, context: ServerContext) {
 export function createProviderServer() {
     const context: ServerContext = {
         config: getProviderConfig(),
-        engine: new MockComputeEngine(),
         jobs: new InMemoryJobStore(),
     };
 

@@ -42,11 +42,13 @@ const outputPath = join(outDir, outputFileName);
 const sources = [
     join(projectRoot, "src", "core", "dispatcher.c"),
     join(projectRoot, "src", "core", "boustrophedon_cellular_decomposition", "bcd.c"),
-    join(projectRoot, "src", "core", "boustrophedon_cellular_decomposition", "bcd_metadata.c"),
+    join(projectRoot, "src", "core", "boustrophedon_cellular_decomposition", "metadata", "bcd_metadata.c"),
+    join(projectRoot, "src", "core", "boustrophedon_cellular_decomposition", "check", "bcd_check.c"),
     join(projectRoot, "src", "core", "boustrophedon_cellular_decomposition", "compute", "bcd_compute.c"),
     join(projectRoot, "src", "core", "mock_algo", "mock_algo.c"),
-    join(projectRoot, "src", "core", "mock_algo", "mock_algo_metadata.c"),
-    join(projectRoot, "src", "core", "mock_algo", "mock_algo_compute.c"),
+    join(projectRoot, "src", "core", "mock_algo", "check", "mock_algo_check.c"),
+    join(projectRoot, "src", "core", "mock_algo", "metadata", "mock_algo_metadata.c"),
+    join(projectRoot, "src", "core", "mock_algo", "compute", "mock_algo_compute.c"),
     join(projectRoot, "dependencies", "cJSON", "cJSON.c"),
 ];
 const compilerArgs = process.platform === "win32"

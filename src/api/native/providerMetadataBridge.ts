@@ -2,10 +2,18 @@ import { CString, dlopen, suffix, type Pointer } from "bun:ffi";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
-import type { MetadataAlgorithmResponse, MetadataParamResponse, MetadataResponse } from "../../temp/domain/providerTypes";
+import type {
+    ComputeResult,
+    MetadataAlgorithmResponse,
+    MetadataParamResponse,
+    MetadataResponse,
+    Point,
+} from "../../temp/domain/providerTypes";
+import { isSupportedAppParameterHandler } from "../../temp/domain/appParameterHandlers";
 
 interface NativeProviderSymbols {
     dispatch_metadata_json(): Pointer;
+    dispatch_compute_json(requestJson: Uint8Array): Pointer;
     dispatch_string_free(pointer: Pointer): void;
 }
 
@@ -19,6 +27,16 @@ let metadataCache: MetadataResponse | null = null;
 interface NativeLibraryManifest {
     fileName: string;
     builtAt?: string;
+}
+
+export class NativeComputeError extends Error {
+    constructor(
+        readonly code: string,
+        message: string,
+    ) {
+        super(message);
+        this.name = "NativeComputeError";
+    }
 }
 
 function cloneParameter(parameter: MetadataParamResponse): MetadataParamResponse {
@@ -53,6 +71,42 @@ function expectNonEmptyString(value: unknown, path: string): string {
     return value;
 }
 
+function expectFiniteNumber(value: unknown, path: string): number {
+    if (typeof value !== "number" || !Number.isFinite(value)) {
+        throw new Error(`Expected ${path} to be a finite number.`);
+    }
+
+    return value;
+}
+
+function parseParamType(value: unknown, path: string): MetadataParamResponse["paramType"] {
+    const rawValue = expectNonEmptyString(value, path).trim();
+
+    switch (rawValue) {
+        case "Integer":
+        case "Decimal":
+        case "Boolean":
+        case "String":
+        case "Enum":
+            return rawValue;
+        default:
+            throw new Error(`Expected ${path} to be a supported param type.`);
+    }
+}
+
+function parseAppHandler(value: unknown, path: string): MetadataParamResponse["appHandler"] {
+    if (value === undefined) {
+        return undefined;
+    }
+
+    const handler = expectNonEmptyString(value, path).trim();
+    if (!isSupportedAppParameterHandler(handler)) {
+        throw new Error(`Expected ${path} to be a supported app handler.`);
+    }
+
+    return handler;
+}
+
 function parseParameter(parameter: unknown, index: number): MetadataParamResponse {
     if (!isRecord(parameter)) {
         throw new Error(`Expected algorithms[0].parameters[${index}] to be an object.`);
@@ -73,13 +127,20 @@ function parseParameter(parameter: unknown, index: number): MetadataParamRespons
         throw new Error(`Expected algorithms[0].parameters[${index}].defaultValue to be a string.`);
     }
 
+    const paramType = parseParamType(parameter.paramType, `algorithms[0].parameters[${index}].paramType`);
+    const appHandler = parseAppHandler(parameter.appHandler, `algorithms[0].parameters[${index}].appHandler`);
+
+    if (appHandler !== undefined && paramType !== "Enum") {
+        throw new Error(`Expected algorithms[0].parameters[${index}] app handlers to be used only with Enum params.`);
+    }
+
     return {
         section: typeof section === "string" ? section as MetadataParamResponse["section"] : undefined,
         name: expectNonEmptyString(parameter.name, `algorithms[0].parameters[${index}].name`),
-        label: expectNonEmptyString(parameter.label, `algorithms[0].parameters[${index}].label`),
-        paramType: expectNonEmptyString(parameter.paramType, `algorithms[0].parameters[${index}].paramType`) as MetadataParamResponse["paramType"],
+        paramType,
         enumValues: enumValues ? [...enumValues] : undefined,
         defaultValue,
+        appHandler,
     };
 }
 
@@ -94,7 +155,6 @@ function parseAlgorithm(algorithm: unknown, index: number): MetadataAlgorithmRes
 
     return {
         name: expectNonEmptyString(algorithm.name, `algorithms[${index}].name`),
-        label: expectNonEmptyString(algorithm.label, `algorithms[${index}].label`),
         parameters: algorithm.parameters.map((parameter, parameterIndex) => parseParameter(parameter, parameterIndex)),
     };
 }
@@ -110,6 +170,62 @@ function parseMetadataResponse(value: unknown): MetadataResponse {
 
     return {
         algorithms: value.algorithms.map((algorithm, index) => parseAlgorithm(algorithm, index)),
+    };
+}
+
+function parsePoint(value: unknown, path: string): Point {
+    if (!isRecord(value)) {
+        throw new Error(`Expected ${path} to be an object.`);
+    }
+
+    return {
+        x: expectFiniteNumber(value.x, `${path}.x`),
+        y: expectFiniteNumber(value.y, `${path}.y`),
+    };
+}
+
+function parseIntermediateCalculations(value: unknown, path: string): Record<string, unknown> {
+    if (!isRecord(value)) {
+        throw new Error(`Expected ${path} to be an object.`);
+    }
+
+    return structuredClone(value) as Record<string, unknown>;
+}
+
+function parseComputeResult(value: unknown): ComputeResult {
+    if (!isRecord(value)) {
+        throw new Error("Expected native compute payload to be an object.");
+    }
+
+    const status = expectNonEmptyString(value.status, "native compute payload.status").trim().toLowerCase();
+    if (status === "error") {
+        const code = typeof value.code === "string" && value.code.trim() !== ""
+            ? value.code.trim()
+            : "native_compute_error";
+        const message = typeof value.message === "string" && value.message.trim() !== ""
+            ? value.message
+            : "Native compute returned an error.";
+
+        throw new NativeComputeError(code, message);
+    }
+
+    if (status !== "ok") {
+        throw new Error('Expected native compute payload.status to be "ok" or "error".');
+    }
+
+    if (!Array.isArray(value.route)) {
+        throw new Error("Expected native compute payload.route to be an array.");
+    }
+
+    return {
+        zoneCoverage: expectFiniteNumber(value.zoneCoverage, "native compute payload.zoneCoverage"),
+        routeOverlap: expectFiniteNumber(value.routeOverlap, "native compute payload.routeOverlap"),
+        turnCount: expectFiniteNumber(value.turnCount, "native compute payload.turnCount"),
+        route: value.route.map((point, index) => parsePoint(point, `native compute payload.route[${index}]`)),
+        intermediateCalculations: parseIntermediateCalculations(
+            value.intermediateCalculations,
+            "native compute payload.intermediateCalculations",
+        ),
     };
 }
 
@@ -178,35 +294,43 @@ function getNativeLibrary(): NativeProviderLibrary {
             args: [],
             returns: "ptr",
         },
+        dispatch_compute_json: {
+            args: ["cstring", "cstring"],
+            returns: "ptr",
+        },
         dispatch_string_free: {
             args: ["ptr"],
             returns: "void",
         },
-    }) as NativeProviderLibrary;
+    }) as unknown as NativeProviderLibrary;
 
     return nativeLibrary;
 }
 
-function loadMetadataFromNative(): MetadataResponse {
-    const library = getNativeLibrary();
-    const pointer = library.symbols.dispatch_metadata_json();
-
+function readNativeJson(pointer: Pointer, nullMessage: string): unknown {
     if (!pointer) {
-        throw new Error("Native provider metadata bridge returned a null pointer.");
+        throw new Error(nullMessage);
     }
 
+    const library = getNativeLibrary();
     const json = new CString(pointer).toString();
     library.symbols.dispatch_string_free(pointer);
 
-    let parsed: unknown;
-
     try {
-        parsed = JSON.parse(json);
+        return JSON.parse(json);
     } catch (error) {
-        throw new Error(`Failed to parse native metadata JSON: ${error instanceof Error ? error.message : String(error)}`);
+        throw new Error(`Failed to parse native JSON payload: ${error instanceof Error ? error.message : String(error)}`);
     }
+}
 
-    return parseMetadataResponse(parsed);
+function loadMetadataFromNative(): MetadataResponse {
+    const library = getNativeLibrary();
+    return parseMetadataResponse(
+        readNativeJson(
+            library.symbols.dispatch_metadata_json(),
+            "Native provider metadata bridge returned a null pointer.",
+        ),
+    );
 }
 
 function getCachedMetadata(): MetadataResponse {
@@ -228,4 +352,17 @@ export function getNativeProviderMetadata(): MetadataResponse {
 export function getNativeProviderAlgorithm(name: string): MetadataAlgorithmResponse | undefined {
     const algorithm = getCachedMetadata().algorithms.find((candidate) => candidate.name === name);
     return algorithm ? cloneAlgorithm(algorithm) : undefined;
+}
+
+export function executeNativeProviderCompute(requestPayload: unknown): ComputeResult {
+    const library = getNativeLibrary();
+    const requestJson = JSON.stringify(requestPayload);
+    const requestJsonCString = Buffer.from(`${requestJson}\0`, "utf8");
+
+    return parseComputeResult(
+        readNativeJson(
+            library.symbols.dispatch_compute_json(requestJsonCString),
+            "Native provider compute bridge returned a null pointer.",
+        ),
+    );
 }
