@@ -3,7 +3,8 @@
  *
  * Public entry points for the metadata-coverage mock algorithm.
  * Keeps the interface shape aligned with the BCD module while
- * delegating metadata and compute details to helper translation units.
+	* delegating metadata and compute details to metadata/ and compute/
+	* helper translation units.
  */
 
 #include "mock_algo.h"
