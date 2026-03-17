@@ -1,6 +1,4 @@
-import { CString, dlopen, suffix, type Pointer } from "bun:ffi";
-import { existsSync, readFileSync, readdirSync } from "node:fs";
-import { join } from "node:path";
+import { cc, CString, type Pointer } from "bun:ffi";
 
 import type {
     ComputeResult,
@@ -10,23 +8,27 @@ import type {
     Point,
 } from "../../types/providerTypes";
 
-interface NativeProviderSymbols {
-    dispatch_metadata_json(): Pointer;
-    dispatch_compute_json(requestJson: Uint8Array): Pointer;
-    dispatch_string_free(pointer: Pointer): void;
-}
+const nativeSymbols = cc({
+    source: "./src/core/dispatcher.c",
+    include: ["./dependencies/tcc-headers"],
+    flags: ["-w"],
+    symbols: {
+        dispatch_metadata_json: {
+            args: [],
+            returns: "ptr",
+        },
+        dispatch_compute_json: {
+            args: ["cstring"],
+            returns: "ptr",
+        },
+        dispatch_string_free: {
+            args: ["ptr"],
+            returns: "void",
+        },
+    } as const,
+}).symbols;
 
-interface NativeProviderLibrary {
-    symbols: NativeProviderSymbols;
-}
-
-let nativeLibrary: NativeProviderLibrary | null = null;
 let metadataCache: MetadataResponse | null = null;
-
-interface NativeLibraryManifest {
-    fileName: string;
-    builtAt?: string;
-}
 
 export class NativeComputeError extends Error {
     constructor(
@@ -219,92 +221,13 @@ function parseComputeResult(value: unknown): ComputeResult {
     };
 }
 
-function isNativeLibraryManifest(value: unknown): value is NativeLibraryManifest {
-    return isRecord(value) && typeof value.fileName === "string" && value.fileName.trim() !== "";
-}
-
-function getNativeOutputDirectory(): string {
-    return join(process.cwd(), "out", "native");
-}
-
-function getManifestLibraryPath(): string | null {
-    const manifestPath = join(getNativeOutputDirectory(), "provider_core.manifest.json");
-    if (!existsSync(manifestPath)) {
-        return null;
-    }
-
-    const manifest = JSON.parse(readFileSync(manifestPath, "utf8")) as unknown;
-    if (!isNativeLibraryManifest(manifest)) {
-        throw new Error(`Native provider manifest at ${manifestPath} is invalid.`);
-    }
-
-    return join(getNativeOutputDirectory(), manifest.fileName);
-}
-
-function getLatestVersionedLibraryPath(): string | null {
-    const outDir = getNativeOutputDirectory();
-    if (!existsSync(outDir)) {
-        return null;
-    }
-
-    const candidates = readdirSync(outDir)
-        .filter((entry) => /^provider_core\.\d+\./.test(entry) && entry.endsWith(`.${suffix}`))
-        .sort((left, right) => right.localeCompare(left, undefined, { numeric: true }));
-
-    const latestCandidate = candidates.at(0);
-    return latestCandidate ? join(outDir, latestCandidate) : null;
-}
-
-function getLibraryPath(): string {
-    const manifestPath = getManifestLibraryPath();
-    if (manifestPath !== null) {
-        return manifestPath;
-    }
-
-    const latestVersionedPath = getLatestVersionedLibraryPath();
-    if (latestVersionedPath !== null) {
-        return latestVersionedPath;
-    }
-
-    return join(getNativeOutputDirectory(), `provider_core.${suffix}`);
-}
-
-function getNativeLibrary(): NativeProviderLibrary {
-    if (nativeLibrary !== null) {
-        return nativeLibrary;
-    }
-
-    const libraryPath = getLibraryPath();
-    if (!existsSync(libraryPath)) {
-        throw new Error(`Native provider library was not found at ${libraryPath}. Run \"bun run build:native\" first.`);
-    }
-
-    nativeLibrary = dlopen(libraryPath, {
-        dispatch_metadata_json: {
-            args: [],
-            returns: "ptr",
-        },
-        dispatch_compute_json: {
-            args: ["cstring", "cstring"],
-            returns: "ptr",
-        },
-        dispatch_string_free: {
-            args: ["ptr"],
-            returns: "void",
-        },
-    }) as unknown as NativeProviderLibrary;
-
-    return nativeLibrary;
-}
-
-function readNativeJson(pointer: Pointer, nullMessage: string): unknown {
+function readNativeJson(pointer: Pointer | null, nullMessage: string): unknown {
     if (!pointer) {
         throw new Error(nullMessage);
     }
 
-    const library = getNativeLibrary();
     const json = new CString(pointer).toString();
-    library.symbols.dispatch_string_free(pointer);
+    nativeSymbols.dispatch_string_free(pointer);
 
     try {
         return JSON.parse(json);
@@ -314,10 +237,9 @@ function readNativeJson(pointer: Pointer, nullMessage: string): unknown {
 }
 
 function loadMetadataFromNative(): MetadataResponse {
-    const library = getNativeLibrary();
     return parseMetadataResponse(
         readNativeJson(
-            library.symbols.dispatch_metadata_json(),
+            nativeSymbols.dispatch_metadata_json(),
             "Native provider metadata bridge returned a null pointer.",
         ),
     );
@@ -345,13 +267,12 @@ export function getNativeProviderAlgorithm(name: string): MetadataAlgorithmRespo
 }
 
 export function executeNativeProviderCompute(requestPayload: unknown): ComputeResult {
-    const library = getNativeLibrary();
     const requestJson = JSON.stringify(requestPayload);
     const requestJsonCString = Buffer.from(`${requestJson}\0`, "utf8");
 
     return parseComputeResult(
         readNativeJson(
-            library.symbols.dispatch_compute_json(requestJsonCString),
+            nativeSymbols.dispatch_compute_json(requestJsonCString),
             "Native provider compute bridge returned a null pointer.",
         ),
     );

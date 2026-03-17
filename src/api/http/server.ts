@@ -1,4 +1,5 @@
-import { getProviderConfig, type ProviderConfig } from "../config/env";
+import type { ProviderConfig } from "../../types/apiTypes";
+import { getProviderConfig } from "../config/envParser";
 import {
     executeNativeProviderCompute,
     getNativeProviderMetadata,
