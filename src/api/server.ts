@@ -1,12 +1,10 @@
 import type { ServerContext } from "../types/apiTypes";
-import { getProviderConfig } from "./envParser";
 import {
     executeCoreCompute,
     getCoreMetadata,
     CoreComputeError,
 } from "./coreBridge";
 import { isRecord, parseRequestJsonBody } from "./jsonUtil";
-import { InMemoryJobStore } from "../job/jobStore";
 import type {
     ComputeAcceptedResponse,
     ComputeJobState,
@@ -191,7 +189,7 @@ async function handleRoot(request: Request, context: ServerContext) {
     });
 }
 
-async function routeRequest(request: Request, context: ServerContext) {
+export async function routeRequest(request: Request, context: ServerContext) {
     if (request.method === "OPTIONS") {
         return emptyResponse(204);
     }
@@ -220,33 +218,4 @@ async function routeRequest(request: Request, context: ServerContext) {
     }
 
     return notFound();
-}
-
-export function createProviderServer() {
-    const context: ServerContext = {
-        config: getProviderConfig(),
-        jobs: new InMemoryJobStore(),
-    };
-
-    return Bun.serve({
-        port: context.config.port,
-        idleTimeout: 30,
-        async fetch(request) {
-            return routeRequest(request, context);
-        },
-        error(error) {
-            console.error("Unhandled provider error", error);
-            return new Response(JSON.stringify({
-                error: {
-                    code: "internal_error",
-                    message: "Unhandled provider error.",
-                },
-            }, null, 2), {
-                status: 500,
-                headers: {
-                    "Content-Type": "application/json",
-                },
-            });
-        },
-    });
 }

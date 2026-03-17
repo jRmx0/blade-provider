@@ -23,8 +23,6 @@ const coreSymbols = cc({
     } as const,
 }).symbols;
 
-let metadataCache: MetadataResponse | null = null;
-
 interface CoreErrorPayload {
     status: "error";
     code?: string;
@@ -41,56 +39,31 @@ export class CoreComputeError extends Error {
     }
 }
 
-function isCoreErrorPayload(value: unknown): value is CoreErrorPayload {
-    return isRecord(value) && value.status === "error";
-}
-
-function readCoreJson(pointer: Pointer | null, nullMessage: string): string {
+function readCorePayload<T>(pointer: Pointer | null, nullMessage: string): T {
     if (!pointer) {
         throw new Error(nullMessage);
     }
 
     const json = new CString(pointer).toString();
     coreSymbols.dispatch_string_free(pointer);
-    return json;
-}
-
-function parseCoreJson<T>(pointer: Pointer | null, nullMessage: string): T {
-    const json = readCoreJson(pointer, nullMessage);
     return parseJsonString<T>(json, "core");
 }
 
-function loadMetadataFromCore(): MetadataResponse {
-    return parseCoreJson<MetadataResponse>(
+export function getCoreMetadata(): MetadataResponse {
+    return readCorePayload<MetadataResponse>(
         coreSymbols.dispatch_metadata_json(),
         "Provider core metadata returned a null pointer.",
     );
 }
 
-function getCachedMetadata(): MetadataResponse {
-    if (metadataCache === null) {
-        metadataCache = loadMetadataFromCore();
-    }
-
-    return metadataCache;
-}
-
-export function warmCoreMetadata(): void {
-    void getCachedMetadata();
-}
-
-export function getCoreMetadata(): MetadataResponse {
-    return getCachedMetadata();
-}
-
 export function executeCoreCompute(requestPayload: unknown): ComputeResult {
     const requestJsonCString = Buffer.from(`${JSON.stringify(requestPayload)}\0`, "utf8");
-    const payload = parseCoreJson<ComputeResult | CoreErrorPayload>(
+    const payload = readCorePayload<ComputeResult | CoreErrorPayload>(
         coreSymbols.dispatch_compute_json(requestJsonCString),
         "Provider core compute returned a null pointer.",
     );
 
-    if (isCoreErrorPayload(payload)) {
+    if (isRecord(payload) && payload.status === "error") {
         const code = typeof payload.code === "string" && payload.code.trim() !== ""
             ? payload.code.trim()
             : "core_compute_error";
