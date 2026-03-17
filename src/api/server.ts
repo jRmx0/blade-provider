@@ -1,10 +1,10 @@
 import type { ServerContext } from "../types/apiTypes";
 import { getProviderConfig } from "./envParser";
 import {
-    executeNativeProviderCompute,
-    getNativeProviderMetadata,
-    NativeComputeError,
-} from "./nativeCore";
+    executeCoreCompute,
+    getCoreMetadata,
+    CoreComputeError,
+} from "./coreBridge";
 import { InMemoryJobStore } from "../job/jobStore";
 import type {
     ComputeAcceptedResponse,
@@ -121,7 +121,7 @@ async function handleMetadata(request: Request, context: ServerContext) {
         return methodNotAllowed(request, ["GET", "OPTIONS"]);
     }
 
-    return jsonResponse(getNativeProviderMetadata(), 200);
+    return jsonResponse(getCoreMetadata(), 200);
 }
 
 async function runComputeJob(
@@ -132,11 +132,11 @@ async function runComputeJob(
     context.jobs.markRunning(jobId);
 
     try {
-        const result = executeNativeProviderCompute(rawBody);
+        const result = executeCoreCompute(rawBody);
         context.jobs.markCompleted(jobId, result);
     } catch (error) {
         context.jobs.markFailed(jobId, {
-            code: error instanceof NativeComputeError ? error.code : "compute_failed",
+            code: error instanceof CoreComputeError ? error.code : "compute_failed",
             message: error instanceof Error ? error.message : String(error),
         });
     }
@@ -203,7 +203,7 @@ async function handleRoot(request: Request, context: ServerContext) {
             compute: "/compute",
             computeStatus: "/compute/:jobId",
         },
-        algorithms: getNativeProviderMetadata().algorithms.map((algorithm) => ({
+        algorithms: getCoreMetadata().algorithms.map((algorithm) => ({
             name: algorithm.name,
         })),
     });

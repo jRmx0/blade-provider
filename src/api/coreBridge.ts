@@ -2,7 +2,7 @@ import { cc, CString, type Pointer } from "bun:ffi";
 
 import type { ComputeResult, MetadataResponse } from "../types/providerTypes";
 
-const nativeSymbols = cc({
+const coreSymbols = cc({
     source: "./src/core/dispatcher.c",
     include: ["./dependencies/tcc-headers"],
     flags: ["-w"],
@@ -24,19 +24,19 @@ const nativeSymbols = cc({
 
 let metadataCache: MetadataResponse | null = null;
 
-interface NativeErrorPayload {
+interface CoreErrorPayload {
     status: "error";
     code?: string;
     message?: string;
 }
 
-export class NativeComputeError extends Error {
+export class CoreComputeError extends Error {
     constructor(
         readonly code: string,
         message: string,
     ) {
         super(message);
-        this.name = "NativeComputeError";
+        this.name = "CoreComputeError";
     }
 }
 
@@ -44,69 +44,69 @@ function isRecord(value: unknown): value is Record<string, unknown> {
     return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function isNativeErrorPayload(value: unknown): value is NativeErrorPayload {
+function isCoreErrorPayload(value: unknown): value is CoreErrorPayload {
     return isRecord(value) && value.status === "error";
 }
 
-function readNativeJson(pointer: Pointer | null, nullMessage: string): string {
+function readCoreJson(pointer: Pointer | null, nullMessage: string): string {
     if (!pointer) {
         throw new Error(nullMessage);
     }
 
     const json = new CString(pointer).toString();
-    nativeSymbols.dispatch_string_free(pointer);
+    coreSymbols.dispatch_string_free(pointer);
     return json;
 }
 
-function parseNativeJson<T>(pointer: Pointer | null, nullMessage: string): T {
-    const json = readNativeJson(pointer, nullMessage);
+function parseCoreJson<T>(pointer: Pointer | null, nullMessage: string): T {
+    const json = readCoreJson(pointer, nullMessage);
 
     try {
         return JSON.parse(json) as T;
     } catch (error) {
-        throw new Error(`Failed to parse native JSON payload: ${error instanceof Error ? error.message : String(error)}`);
+        throw new Error(`Failed to parse core JSON payload: ${error instanceof Error ? error.message : String(error)}`);
     }
 }
 
-function loadMetadataFromNative(): MetadataResponse {
-    return parseNativeJson<MetadataResponse>(
-        nativeSymbols.dispatch_metadata_json(),
-        "Native provider metadata returned a null pointer.",
+function loadMetadataFromCore(): MetadataResponse {
+    return parseCoreJson<MetadataResponse>(
+        coreSymbols.dispatch_metadata_json(),
+        "Provider core metadata returned a null pointer.",
     );
 }
 
 function getCachedMetadata(): MetadataResponse {
     if (metadataCache === null) {
-        metadataCache = loadMetadataFromNative();
+        metadataCache = loadMetadataFromCore();
     }
 
     return metadataCache;
 }
 
-export function warmNativeProviderMetadata(): void {
+export function warmCoreMetadata(): void {
     void getCachedMetadata();
 }
 
-export function getNativeProviderMetadata(): MetadataResponse {
+export function getCoreMetadata(): MetadataResponse {
     return getCachedMetadata();
 }
 
-export function executeNativeProviderCompute(requestPayload: unknown): ComputeResult {
+export function executeCoreCompute(requestPayload: unknown): ComputeResult {
     const requestJsonCString = Buffer.from(`${JSON.stringify(requestPayload)}\0`, "utf8");
-    const payload = parseNativeJson<ComputeResult | NativeErrorPayload>(
-        nativeSymbols.dispatch_compute_json(requestJsonCString),
-        "Native provider compute returned a null pointer.",
+    const payload = parseCoreJson<ComputeResult | CoreErrorPayload>(
+        coreSymbols.dispatch_compute_json(requestJsonCString),
+        "Provider core compute returned a null pointer.",
     );
 
-    if (isNativeErrorPayload(payload)) {
+    if (isCoreErrorPayload(payload)) {
         const code = typeof payload.code === "string" && payload.code.trim() !== ""
             ? payload.code.trim()
-            : "native_compute_error";
+            : "core_compute_error";
         const message = typeof payload.message === "string" && payload.message.trim() !== ""
             ? payload.message
-            : "Native compute returned an error.";
+            : "Provider core returned an error.";
 
-        throw new NativeComputeError(code, message);
+        throw new CoreComputeError(code, message);
     }
 
     return payload as ComputeResult;

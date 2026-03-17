@@ -1,10 +1,10 @@
 import { createProviderServer } from "./server";
-import { warmNativeProviderMetadata } from "./nativeCore";
+import { warmCoreMetadata } from "./coreBridge";
 
 try {
-	warmNativeProviderMetadata();
+	warmCoreMetadata();
 } catch (error) {
-	console.error("Failed to initialize native provider metadata.", error);
+	console.error("Failed to initialize provider core metadata.", error);
 	process.exit(1);
 }
 
