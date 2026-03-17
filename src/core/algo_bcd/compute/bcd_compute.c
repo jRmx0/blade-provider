@@ -16,7 +16,7 @@
 
 #include "../internal.h"
 #include "../check/bcd_check.h"
-#include "../../../../dependencies/cJSON/cjson_compat.h"
+#include "../../../../dependencies/cJSON/cjson.h"
 
 static char *bcd_create_error_json(const char *code, const char *message)
 {

@@ -6,7 +6,7 @@
  * then returns a deterministic success payload for metadata/UI testing.
  */
 
-#include "../../../../dependencies/cJSON/cjson_compat.h"
+#include "../../../../dependencies/cJSON/cjson.h"
 #include "../check/mock_algo_check.h"
 
 static char *mock_algo_create_error_json(const char *code, const char *message)

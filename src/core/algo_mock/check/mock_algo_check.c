@@ -4,7 +4,7 @@
 #include <string.h>
 
 #include "mock_algo_check.h"
-#include "../../../../dependencies/cJSON/cjson_compat.h"
+#include "../../../../dependencies/cJSON/cjson.h"
 
 typedef enum
 {
