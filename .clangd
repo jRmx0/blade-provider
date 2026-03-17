@@ -1,3 +1,6 @@
+Diagnostics:
+  Suppress:
+    - redefinition_different_typedef
 CompileFlags:
   Compiler: C:/mingw64/bin/gcc.exe
   BuiltinHeaders: QueryDriver
