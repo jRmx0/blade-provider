@@ -48,7 +48,25 @@ static char *create_dispatch_error_json(const char *code, const char *message)
 	return json;
 }
 
-static const char *parse_requested_algorithm_name(const char *request_json, char **error_json_out)
+static char *clone_string(const char *value)
+{
+	if (value == NULL)
+	{
+		return NULL;
+	}
+
+	size_t length = strlen(value);
+	char *copy = (char *)malloc(length + 1);
+	if (copy == NULL)
+	{
+		return NULL;
+	}
+
+	memcpy(copy, value, length + 1);
+	return copy;
+}
+
+static char *parse_requested_algorithm_name(const char *request_json, char **error_json_out)
 {
 	if (request_json == NULL)
 	{
@@ -72,8 +90,14 @@ static const char *parse_requested_algorithm_name(const char *request_json, char
 		return NULL;
 	}
 
-	const char *result = algorithm_name->valuestring;
+	char *result = clone_string(algorithm_name->valuestring);
 	cJSON_Delete(root);
+	if (result == NULL)
+	{
+		*error_json_out = create_dispatch_error_json("internal_error", "Failed to allocate algorithm name.");
+		return NULL;
+	}
+
 	return result;
 }
 
@@ -118,7 +142,7 @@ char *dispatch_metadata_json(void)
 char *dispatch_compute_json(const char *request_json)
 {
 	char *error_json = NULL;
-	const char *algorithm_name = parse_requested_algorithm_name(request_json, &error_json);
+	char *algorithm_name = parse_requested_algorithm_name(request_json, &error_json);
 	if (algorithm_name == NULL)
 	{
 		return error_json;
@@ -126,14 +150,19 @@ char *dispatch_compute_json(const char *request_json)
 
 	if (strcmp(algorithm_name, "Boustrophedon Cellular Decomposition") == 0)
 	{
-		return bcd_compute(request_json);
+		char *result = bcd_compute(request_json);
+		free(algorithm_name);
+		return result;
 	}
 
 	if (strcmp(algorithm_name, "Mock Metadata Matrix") == 0)
 	{
-		return mock_algo_compute(request_json);
+		char *result = mock_algo_compute(request_json);
+		free(algorithm_name);
+		return result;
 	}
 
+	free(algorithm_name);
 	return create_dispatch_error_json("unknown_algorithm", "Unknown algorithm requested.");
 }
 
