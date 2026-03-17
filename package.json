@@ -4,9 +4,8 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "build:native": "bun run scripts/build-native.ts",
-    "dev": "bun run build:native && bun --hot src/api/index.ts",
-    "start": "bun run build:native && bun run src/api/index.ts",
+    "dev": "bun --hot src/api/index.ts",
+    "start": "bun run src/api/index.ts",
     "typecheck": "bunx tsc --noEmit"
   },
   "devDependencies": {

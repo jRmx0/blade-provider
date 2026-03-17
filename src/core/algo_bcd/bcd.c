@@ -13,6 +13,10 @@
 #include "bcd.h"
 #include "internal.h"
 
+#include "check/bcd_check.c"
+#include "metadata/bcd_metadata.c"
+#include "compute/bcd_compute.c"
+
 char *bcd_get_metadata_json(void)
 {
 	return bcd_build_metadata_json();

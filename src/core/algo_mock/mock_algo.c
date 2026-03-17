@@ -7,7 +7,9 @@
 	* helper translation units.
  */
 
-#include "mock_algo.h"
+#include "check/mock_algo_check.c"
+#include "metadata/mock_algo_metadata.c"
+#include "compute/mock_algo_compute.c"
 
 char *mock_algo_build_metadata_json(void);
 char *mock_algo_run_compute(const char *input_environment_json);

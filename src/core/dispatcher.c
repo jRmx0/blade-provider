@@ -16,11 +16,9 @@
 
 #include <stdlib.h>
 #include <string.h>
-
-#include "dispatcher.h"
-#include "../../dependencies/cJSON/cjson_compat.h"
-#include "boustrophedon_cellular_decomposition/bcd.h"
-#include "mock_algo/mock_algo.h"
+#include "../../dependencies/cJSON/cJSON.c"
+#include "algo_bcd/bcd.c"
+#include "algo_mock/mock_algo.c"
 
 static cJSON *parse_algorithm_metadata_json(char *algorithm_json)
 {

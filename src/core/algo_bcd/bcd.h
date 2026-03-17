@@ -11,21 +11,7 @@
 #ifndef BCD_H
 #define BCD_H
 
-#ifdef _WIN32
-#define BCD_API __declspec(dllexport)
-#else
-#define BCD_API
-#endif
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-BCD_API char *bcd_get_metadata_json(void);
-BCD_API char *bcd_compute(const char *input_environment_json);
-
-#ifdef __cplusplus
-}
-#endif
+char *bcd_get_metadata_json(void);
+char *bcd_compute(const char *input_environment_json);
 
 #endif // BCD_H

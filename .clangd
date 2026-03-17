@@ -8,7 +8,7 @@ CompileFlags:
     - --target=x86_64-w64-windows-gnu
     - -Ic:/Users/justa/Documents/0x/Projects/BladeOfGrass/Codebase/Development/blade-provider/src
     - -Ic:/Users/justa/Documents/0x/Projects/BladeOfGrass/Codebase/Development/blade-provider/src/core
-    - -Ic:/Users/justa/Documents/0x/Projects/BladeOfGrass/Codebase/Development/blade-provider/src/core/boustrophedon_cellular_decomposition
+    - -Ic:/Users/justa/Documents/0x/Projects/BladeOfGrass/Codebase/Development/blade-provider/src/core/algo_bcd
     - -Ic:/Users/justa/Documents/0x/Projects/BladeOfGrass/Codebase/Development/blade-provider/dependencies/cJSON
     - -Ic:/Users/justa/Documents/0x/Projects/BladeOfGrass/Codebase/Development/blade-provider/dependencies/cvector
     - -Ic:/mingw64/x86_64-w64-mingw32/include
