@@ -5,6 +5,7 @@ import {
     getCoreMetadata,
     CoreComputeError,
 } from "./coreBridge";
+import { isRecord, parseRequestJsonBody } from "./jsonUtil";
 import { InMemoryJobStore } from "../job/jobStore";
 import type {
     ComputeAcceptedResponse,
@@ -12,10 +13,6 @@ import type {
     ErrorResponse,
     HealthResponse,
 } from "../types/providerTypes";
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return typeof value === "object" && value !== null && !Array.isArray(value);
-}
 
 function getQueuedAlgorithmName(rawBody: unknown): string {
     if (!isRecord(rawBody)) {
@@ -87,21 +84,6 @@ function methodNotAllowed(request: Request, allowedMethods: string[]) {
     return jsonResponse(body, 405);
 }
 
-async function parseJsonBody(request: Request) {
-    try {
-        return { ok: true as const, value: await request.json() };
-    } catch {
-        const body: ErrorResponse = {
-            error: {
-                code: "invalid_json",
-                message: "Request body must contain valid JSON.",
-            },
-        };
-
-        return { ok: false as const, response: jsonResponse(body, 400) };
-    }
-}
-
 async function handleHealth(request: Request, context: ServerContext) {
     if (request.method !== "GET") {
         return methodNotAllowed(request, ["GET", "OPTIONS"]);
@@ -147,9 +129,9 @@ async function handleComputeSubmission(request: Request, context: ServerContext)
         return methodNotAllowed(request, ["POST", "OPTIONS"]);
     }
 
-    const parsedBody = await parseJsonBody(request);
+    const parsedBody = await parseRequestJsonBody(request);
     if (!parsedBody.ok) {
-        return parsedBody.response;
+        return jsonResponse(parsedBody.errorBody, 400);
     }
 
     const queuedJob = context.jobs.createQueued({

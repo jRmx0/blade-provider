@@ -1,6 +1,7 @@
 import { cc, CString, type Pointer } from "bun:ffi";
 
 import type { ComputeResult, MetadataResponse } from "../types/providerTypes";
+import { isRecord, parseJsonString } from "./jsonUtil";
 
 const coreSymbols = cc({
     source: "./src/core/dispatcher.c",
@@ -40,10 +41,6 @@ export class CoreComputeError extends Error {
     }
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
 function isCoreErrorPayload(value: unknown): value is CoreErrorPayload {
     return isRecord(value) && value.status === "error";
 }
@@ -60,12 +57,7 @@ function readCoreJson(pointer: Pointer | null, nullMessage: string): string {
 
 function parseCoreJson<T>(pointer: Pointer | null, nullMessage: string): T {
     const json = readCoreJson(pointer, nullMessage);
-
-    try {
-        return JSON.parse(json) as T;
-    } catch (error) {
-        throw new Error(`Failed to parse core JSON payload: ${error instanceof Error ? error.message : String(error)}`);
-    }
+    return parseJsonString<T>(json, "core");
 }
 
 function loadMetadataFromCore(): MetadataResponse {

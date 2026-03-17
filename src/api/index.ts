@@ -1,5 +1,5 @@
-import { createProviderServer } from "./server";
 import { warmCoreMetadata } from "./coreBridge";
+import { createProviderServer } from "./server";
 
 try {
 	warmCoreMetadata();
