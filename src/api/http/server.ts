@@ -1,10 +1,10 @@
-import type { ProviderConfig } from "../../types/apiTypes";
+import type { ServerContext } from "../../types/apiTypes";
 import { getProviderConfig } from "../config/envParser";
 import {
     executeNativeProviderCompute,
     getNativeProviderMetadata,
     NativeComputeError,
-} from "../native/providerMetadataBridge";
+} from "../native/nativeCore";
 import { InMemoryJobStore } from "../../job/jobStore";
 import type {
     ComputeAcceptedResponse,
@@ -12,11 +12,6 @@ import type {
     ErrorResponse,
     HealthResponse,
 } from "../../types/providerTypes";
-
-interface ServerContext {
-    config: ProviderConfig;
-    jobs: InMemoryJobStore;
-}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
     return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -42,8 +37,8 @@ function getQueuedRequestId(rawBody: unknown): string | undefined {
         : undefined;
 }
 
-function jsonResponse(request: Request, config: ProviderConfig, body: unknown, status = 200) {
-    const headers = buildCorsHeaders(request, config);
+function jsonResponse(body: unknown, status = 200) {
+    const headers = buildCorsHeaders();
     headers.set("Content-Type", "application/json");
 
     return new Response(JSON.stringify(body, null, 2), {
@@ -52,14 +47,14 @@ function jsonResponse(request: Request, config: ProviderConfig, body: unknown, s
     });
 }
 
-function emptyResponse(request: Request, config: ProviderConfig, status = 204) {
+function emptyResponse(status = 204) {
     return new Response(null, {
         status,
-        headers: buildCorsHeaders(request, config),
+        headers: buildCorsHeaders(),
     });
 }
 
-function buildCorsHeaders(_request: Request, _config: ProviderConfig): Headers {
+function buildCorsHeaders(): Headers {
     const headers = new Headers();
     headers.set("Access-Control-Allow-Origin", "*");
     headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
@@ -69,7 +64,7 @@ function buildCorsHeaders(_request: Request, _config: ProviderConfig): Headers {
     return headers;
 }
 
-function notFound(request: Request, config: ProviderConfig) {
+function notFound() {
     const body: ErrorResponse = {
         error: {
             code: "not_found",
@@ -77,10 +72,10 @@ function notFound(request: Request, config: ProviderConfig) {
         },
     };
 
-    return jsonResponse(request, config, body, 404);
+    return jsonResponse(body, 404);
 }
 
-function methodNotAllowed(request: Request, config: ProviderConfig, allowedMethods: string[]) {
+function methodNotAllowed(request: Request, allowedMethods: string[]) {
     const body: ErrorResponse = {
         error: {
             code: "method_not_allowed",
@@ -89,10 +84,10 @@ function methodNotAllowed(request: Request, config: ProviderConfig, allowedMetho
         },
     };
 
-    return jsonResponse(request, config, body, 405);
+    return jsonResponse(body, 405);
 }
 
-async function parseJsonBody(request: Request, config: ProviderConfig) {
+async function parseJsonBody(request: Request) {
     try {
         return { ok: true as const, value: await request.json() };
     } catch {
@@ -103,13 +98,13 @@ async function parseJsonBody(request: Request, config: ProviderConfig) {
             },
         };
 
-        return { ok: false as const, response: jsonResponse(request, config, body, 400) };
+        return { ok: false as const, response: jsonResponse(body, 400) };
     }
 }
 
 async function handleHealth(request: Request, context: ServerContext) {
     if (request.method !== "GET") {
-        return methodNotAllowed(request, context.config, ["GET", "OPTIONS"]);
+        return methodNotAllowed(request, ["GET", "OPTIONS"]);
     }
 
     const body: HealthResponse = {
@@ -118,15 +113,15 @@ async function handleHealth(request: Request, context: ServerContext) {
         timestamp: new Date().toISOString(),
     };
 
-    return jsonResponse(request, context.config, body, 200);
+    return jsonResponse(body, 200);
 }
 
 async function handleMetadata(request: Request, context: ServerContext) {
     if (request.method !== "GET") {
-        return methodNotAllowed(request, context.config, ["GET", "OPTIONS"]);
+        return methodNotAllowed(request, ["GET", "OPTIONS"]);
     }
 
-    return jsonResponse(request, context.config, getNativeProviderMetadata(), 200);
+    return jsonResponse(getNativeProviderMetadata(), 200);
 }
 
 async function runComputeJob(
@@ -149,10 +144,10 @@ async function runComputeJob(
 
 async function handleComputeSubmission(request: Request, context: ServerContext) {
     if (request.method !== "POST") {
-        return methodNotAllowed(request, context.config, ["POST", "OPTIONS"]);
+        return methodNotAllowed(request, ["POST", "OPTIONS"]);
     }
 
-    const parsedBody = await parseJsonBody(request, context.config);
+    const parsedBody = await parseJsonBody(request);
     if (!parsedBody.ok) {
         return parsedBody.response;
     }
@@ -172,12 +167,12 @@ async function handleComputeSubmission(request: Request, context: ServerContext)
         pollUrl: `${origin}/compute/${queuedJob.jobId}`,
     };
 
-    return jsonResponse(request, context.config, responseBody, 202);
+    return jsonResponse(responseBody, 202);
 }
 
 async function handleComputeStatus(request: Request, context: ServerContext, jobId: string) {
     if (request.method !== "GET") {
-        return methodNotAllowed(request, context.config, ["GET", "OPTIONS"]);
+        return methodNotAllowed(request, ["GET", "OPTIONS"]);
     }
 
     const job = context.jobs.get(jobId);
@@ -189,18 +184,18 @@ async function handleComputeStatus(request: Request, context: ServerContext, job
             },
         };
 
-        return jsonResponse(request, context.config, body, 404);
+        return jsonResponse(body, 404);
     }
 
-    return jsonResponse(request, context.config, job satisfies ComputeJobState, 200);
+    return jsonResponse(job satisfies ComputeJobState, 200);
 }
 
 async function handleRoot(request: Request, context: ServerContext) {
     if (request.method !== "GET") {
-        return methodNotAllowed(request, context.config, ["GET", "OPTIONS"]);
+        return methodNotAllowed(request, ["GET", "OPTIONS"]);
     }
 
-    return jsonResponse(request, context.config, {
+    return jsonResponse({
         service: context.config.providerName,
         endpoints: {
             health: "/health",
@@ -216,7 +211,7 @@ async function handleRoot(request: Request, context: ServerContext) {
 
 async function routeRequest(request: Request, context: ServerContext) {
     if (request.method === "OPTIONS") {
-        return emptyResponse(request, context.config, 204);
+        return emptyResponse(204);
     }
 
     const url = new URL(request.url);
@@ -242,7 +237,7 @@ async function routeRequest(request: Request, context: ServerContext) {
         return handleComputeStatus(request, context, decodeURIComponent(jobId));
     }
 
-    return notFound(request, context.config);
+    return notFound();
 }
 
 export function createProviderServer() {

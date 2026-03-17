@@ -42,37 +42,6 @@ export interface Point {
     y: number;
 }
 
-export interface EnvironmentPolygonInput {
-    id?: string;
-    label?: string;
-    vertices: Point[];
-}
-
-export interface ComputeEnvironmentInput {
-    id?: string;
-    name?: string;
-    format?: "polygon" | "grid";
-    type?: "known" | "unknown";
-    zones: EnvironmentPolygonInput[];
-    obstacles: EnvironmentPolygonInput[];
-}
-
-export type ComputeParameterValue = string | number | boolean;
-
-export interface ComputeRequest {
-    algorithmName: string;
-    parameters?: Record<string, unknown>;
-    environment: ComputeEnvironmentInput;
-    requestId?: string;
-}
-
-export interface ResolvedComputeRequest {
-    algorithm: MetadataAlgorithmResponse;
-    parameters: Record<string, ComputeParameterValue>;
-    environment: ComputeEnvironmentInput;
-    requestId?: string;
-}
-
 export type ComputeJobStatus = "queued" | "running" | "completed" | "failed";
 
 export interface ComputeResult {
