@@ -1,4 +1,4 @@
-import type { ProviderConfig } from "../../types/apiTypes";
+import type { ProviderConfig } from "../types/apiTypes";
 
 const DEFAULT_PORT = 8080;
 const DEFAULT_PROVIDER_NAME = "blade-provider";

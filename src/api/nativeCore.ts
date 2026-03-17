@@ -1,6 +1,6 @@
 import { cc, CString, type Pointer } from "bun:ffi";
 
-import type { ComputeResult, MetadataResponse } from "../../types/providerTypes";
+import type { ComputeResult, MetadataResponse } from "../types/providerTypes";
 
 const nativeSymbols = cc({
     source: "./src/core/dispatcher.c",

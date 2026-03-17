@@ -1,17 +1,17 @@
-import type { ServerContext } from "../../types/apiTypes";
-import { getProviderConfig } from "../config/envParser";
+import type { ServerContext } from "../types/apiTypes";
+import { getProviderConfig } from "./envParser";
 import {
     executeNativeProviderCompute,
     getNativeProviderMetadata,
     NativeComputeError,
-} from "../native/nativeCore";
-import { InMemoryJobStore } from "../../job/jobStore";
+} from "./nativeCore";
+import { InMemoryJobStore } from "../job/jobStore";
 import type {
     ComputeAcceptedResponse,
     ComputeJobState,
     ErrorResponse,
     HealthResponse,
-} from "../../types/providerTypes";
+} from "../types/providerTypes";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
     return typeof value === "object" && value !== null && !Array.isArray(value);

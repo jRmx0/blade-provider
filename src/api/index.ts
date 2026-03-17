@@ -1,5 +1,5 @@
-import { createProviderServer } from "./http/server";
-import { warmNativeProviderMetadata } from "./native/nativeCore";
+import { createProviderServer } from "./server";
+import { warmNativeProviderMetadata } from "./nativeCore";
 
 try {
 	warmNativeProviderMetadata();
