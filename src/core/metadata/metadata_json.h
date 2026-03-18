@@ -6,6 +6,7 @@
 
 static inline void metadata_add_parameter(
     cJSON *parameters,
+    int id,
     bcd_metadata_param_section_t section,
     const char *name,
     bcd_metadata_param_type_t param_type,
@@ -17,6 +18,8 @@ static inline void metadata_add_parameter(
     cJSON *parameter = cJSON_CreateObject();
     const char *section_value = metadata_param_section_to_string(section);
     const char *app_handler_value = metadata_app_handler_to_string(app_handler);
+
+    cJSON_AddNumberToObject(parameter, "id", id);
 
     if (section_value != NULL)
     {
