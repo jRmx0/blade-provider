@@ -46,6 +46,7 @@ char *mock_algo_build_metadata_json(void)
 		return NULL;
 	}
 
+	cJSON_AddNumberToObject(algorithm, "id", 2);
 	cJSON_AddStringToObject(algorithm, "name", "Mock Metadata Matrix");
 
 	cJSON *parameters = cJSON_CreateArray();

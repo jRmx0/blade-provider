@@ -30,6 +30,7 @@ char *bcd_build_metadata_json(void)
 		return NULL;
 	}
 
+	cJSON_AddNumberToObject(algorithm, "id", 1);
 	cJSON_AddStringToObject(algorithm, "name", "Boustrophedon Cellular Decomposition");
 
 	cJSON *parameters = cJSON_CreateArray();

@@ -23,6 +23,7 @@ export interface MetadataParamResponse {
 }
 
 export interface MetadataAlgorithmResponse {
+    id: number;
     name: string;
     parameters: MetadataParamResponse[];
 }
