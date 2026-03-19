@@ -137,6 +137,8 @@ async function handleComputeSubmission(request: Request, context: ServerContext)
         return jsonResponse(parsedBody.errorBody, 400);
     }
 
+    console.log("[compute] Incoming request:", JSON.stringify(parsedBody.value, null, 2));
+
     const queuedJob = context.jobs.createQueued({
         algorithmName: getQueuedAlgorithmName(parsedBody.value),
         requestId: getQueuedRequestId(parsedBody.value),
