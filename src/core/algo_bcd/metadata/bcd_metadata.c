@@ -42,11 +42,11 @@ char *bcd_build_metadata_json(void)
 
 	cJSON_AddItemToObject(algorithm, "parameters", parameters);
 
-	metadata_add_parameter(parameters, 1, BCD_METADATA_PARAM_SECTION_COVERAGE_PATH, "Path Width", BCD_METADATA_PARAM_TYPE_DECIMAL, "15", NULL, 0, BCD_METADATA_APP_HANDLER_NONE);
-	metadata_add_parameter(parameters, 2, BCD_METADATA_PARAM_SECTION_COVERAGE_PATH, "Path Overlap", BCD_METADATA_PARAM_TYPE_DECIMAL, "5", NULL, 0, BCD_METADATA_APP_HANDLER_NONE);
-	metadata_add_parameter(parameters, 3, BCD_METADATA_PARAM_SECTION_ENVIRONMENT, "Format", BCD_METADATA_PARAM_TYPE_ENUM, metadata_format_to_string(BCD_METADATA_FORMAT_POLYGON), format_values, 1, BCD_METADATA_APP_HANDLER_ENVIRONMENT_FORMAT);
-	metadata_add_parameter(parameters, 4, BCD_METADATA_PARAM_SECTION_ENVIRONMENT, "Type", BCD_METADATA_PARAM_TYPE_ENUM, metadata_type_to_string(BCD_METADATA_TYPE_OFFLINE), type_values, 1, BCD_METADATA_APP_HANDLER_ENVIRONMENT_TYPE);
-	metadata_add_parameter(parameters, 5, BCD_METADATA_PARAM_SECTION_ENVIRONMENT, "Coordinate System", BCD_METADATA_PARAM_TYPE_ENUM, metadata_coordsystem_to_string(BCD_METADATA_COORDSYSTEM_DECIMAL), coordsystem_values, 1, BCD_METADATA_APP_HANDLER_ENVIRONMENT_COORDSYSTEM);
+	metadata_add_parameter(parameters, 1, "Path Width", BCD_METADATA_PARAM_TYPE_DECIMAL, NULL, 0, "15", BCD_METADATA_PARAM_SECTION_COVERAGE_PATH, BCD_METADATA_APP_HANDLER_NONE);
+	metadata_add_parameter(parameters, 2, "Path Overlap", BCD_METADATA_PARAM_TYPE_DECIMAL, NULL, 0, "5", BCD_METADATA_PARAM_SECTION_COVERAGE_PATH, BCD_METADATA_APP_HANDLER_NONE);
+	metadata_add_parameter(parameters, 3, "Format", BCD_METADATA_PARAM_TYPE_ENUM, format_values, 1, metadata_format_to_string(BCD_METADATA_FORMAT_POLYGON), BCD_METADATA_PARAM_SECTION_ENVIRONMENT, BCD_METADATA_APP_HANDLER_ENVIRONMENT_FORMAT);
+	metadata_add_parameter(parameters, 4, "Type", BCD_METADATA_PARAM_TYPE_ENUM, type_values, 1, metadata_type_to_string(BCD_METADATA_TYPE_OFFLINE), BCD_METADATA_PARAM_SECTION_ENVIRONMENT, BCD_METADATA_APP_HANDLER_ENVIRONMENT_TYPE);
+	metadata_add_parameter(parameters, 5, "Coordinate System", BCD_METADATA_PARAM_TYPE_ENUM, coordsystem_values, 1, metadata_coordsystem_to_string(BCD_METADATA_COORDSYSTEM_DECIMAL), BCD_METADATA_PARAM_SECTION_ENVIRONMENT, BCD_METADATA_APP_HANDLER_ENVIRONMENT_COORDSYSTEM);
 
 	char *json = cJSON_PrintUnformatted(algorithm);
 	cJSON_Delete(algorithm);

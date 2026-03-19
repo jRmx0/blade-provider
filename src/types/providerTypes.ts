@@ -14,11 +14,12 @@ export type AlgoParamType =
     | "Enum";
 
 export interface MetadataParamResponse {
-    section?: MetadataParamSection;
+    id: number;
     name: string;
     paramType: AlgoParamType;
     enumValues?: string[];
     defaultValue?: string;
+    section?: MetadataParamSection;
     appHandler?: string;
 }
 

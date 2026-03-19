@@ -73,8 +73,8 @@ Returns all algorithms the provider exposes, with their parameter schemas. Consu
           "id": 1,
           "name": "Path Width",
           "paramType": "Decimal",
-          "defaultValue": "15",
           "enumValues": [],
+          "defaultValue": "15",
           "section": "Coverage Path",
           "appHandler": null
         },
@@ -82,8 +82,8 @@ Returns all algorithms the provider exposes, with their parameter schemas. Consu
           "id": 2,
           "name": "Path Overlap",
           "paramType": "Decimal",
-          "defaultValue": "5",
           "enumValues": [],
+          "defaultValue": "5",
           "section": "Coverage Path",
           "appHandler": null
         },
@@ -91,8 +91,8 @@ Returns all algorithms the provider exposes, with their parameter schemas. Consu
           "id": 3,
           "name": "Format",
           "paramType": "Enum",
-          "defaultValue": "Polygon",
           "enumValues": ["Polygon"],
+          "defaultValue": "Polygon",
           "section": "Environment",
           "appHandler": "environment.format"
         },
@@ -100,8 +100,8 @@ Returns all algorithms the provider exposes, with their parameter schemas. Consu
           "id": 4,
           "name": "Type",
           "paramType": "Enum",
-          "defaultValue": "Off-Line",
           "enumValues": ["Off-Line"],
+          "defaultValue": "Off-Line",
           "section": "Environment",
           "appHandler": "environment.type"
         },
@@ -109,8 +109,8 @@ Returns all algorithms the provider exposes, with their parameter schemas. Consu
           "id": 5,
           "name": "Coordinate System",
           "paramType": "Enum",
-          "defaultValue": "Decimal",
           "enumValues": ["Decimal"],
+          "defaultValue": "Decimal",
           "section": "Environment",
           "appHandler": "environment.coordsystem"
         }
