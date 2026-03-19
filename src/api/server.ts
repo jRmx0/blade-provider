@@ -17,9 +17,14 @@ function getQueuedAlgorithmName(rawBody: unknown): string {
         return "Unknown algorithm";
     }
 
-    return typeof rawBody.algorithmName === "string" && rawBody.algorithmName.trim() !== ""
-        ? rawBody.algorithmName.trim()
-        : "Unknown algorithm";
+    const algorithmId = rawBody.algorithmId;
+    if (typeof algorithmId !== "number") {
+        return "Unknown algorithm";
+    }
+
+    const metadata = getCoreMetadata();
+    const algorithm = metadata.algorithms.find((a) => a.id === algorithmId);
+    return algorithm?.name ?? "Unknown algorithm";
 }
 
 function getQueuedRequestId(rawBody: unknown): string | undefined {
