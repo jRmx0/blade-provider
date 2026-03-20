@@ -116,34 +116,63 @@ Returns all algorithms the provider exposes, with their parameter schemas. Consu
         }
       ],
       "debugLayers": [
-        { 
+        {
           "id": 1,
           "key": "eventList",
           "name": "Event List",
-          "style": 
-          { 
-            "className": "text-purple-500 stroke-purple-500", 
-            "pointRadius": 4 
-          } 
+          "type": "Point",
+          "style": [
+            { "id": 10, "name": "pointShape",        "value": "circle"     },
+            { "id": 11, "name": "pointRadius",        "value": "4"          },
+            { "id": 20, "name": "pointBorderColor",   "value": "purple-500" },
+            { "id": 21, "name": "pointBorderWidth",   "value": "1"          },
+            { "id": 22, "name": "pointBorderStyle",   "value": "solid"      },
+            { "id": 23, "name": "pointBorderOpacity", "value": null         },
+            { "id": 30, "name": "pointFillColor",     "value": "purple-500" },
+            { "id": 31, "name": "pointFillOpacity",   "value": null         },
+            { "id": 40, "name": "pointIdPlacement",   "value": null         },
+            { "id": 41, "name": "pointIdColor",       "value": null         },
+            { "id": 42, "name": "pointIdFontSize",    "value": null         },
+            { "id": 43, "name": "pointIdOffset",      "value": null         },
+            { "id": 50, "name": "pointTextPlacement", "value": "outside-bottom" },
+            { "id": 51, "name": "pointTextColor",     "value": "purple-500" },
+            { "id": 52, "name": "pointTextFontSize",  "value": "11"         },
+            { "id": 53, "name": "pointTextOffset",    "value": "6"          }
+          ],
+          "label": {
+            "key": "eventType",
+            "values": [
+              { "value": "B_IN",       "color": "green-600"  },
+              { "value": "B_SIDE_IN",  "color": "teal-600"   },
+              { "value": "B_INIT",     "color": "green-200"  },
+              { "value": "B_OUT",      "color": "red-600"    },
+              { "value": "B_SIDE_OUT", "color": "pink-600"   },
+              { "value": "B_DEINIT",   "color": "red-200"    },
+              { "value": "IN",         "color": "green-400"  },
+              { "value": "SIDE_IN",    "color": "teal-400"   },
+              { "value": "OUT",        "color": "red-400"    },
+              { "value": "SIDE_OUT",   "color": "pink-400"   },
+              { "value": "FLOOR",      "color": "blue-400"   },
+              { "value": "CEILING",    "color": "orange-400" },
+              { "value": "NONE",       "color": null         }
+            ]
+          }
         },
-        { 
+        {
           "id": 2,
           "key": "cellList",
           "name": "Cell List",
-          "style": 
-          { 
-            "className": "text-blue-400 stroke-blue-400 fill-blue-400/10" 
-          } 
+          "type": "Polygon",
+          "style": [],
+          "label": null
         },
-        { 
+        {
           "id": 3,
           "key": "cellVisitOrder",
           "name": "Cell Visit Order",
-          "style": 
-          { 
-            "className": "text-yellow-300", 
-            "fontSize": 12 
-          } 
+          "type": "Line",
+          "style": [],
+          "label": null
         }
       ]
     }
@@ -162,15 +191,45 @@ Returns all algorithms the provider exposes, with their parameter schemas. Consu
 | `id` | `number` | Sequential identifier for this debug layer |
 | `key` | `string` | Matches the field name under `result.debug` in the compute response |
 | `name` | `string` | Human-readable display name |
-| `style` | `DebugLayerStyle` | Default rendering style for this layer |
+| `type` | `DebugLayerType` | Geometry primitive type of the objects produced by this layer |
+| `style` | `DebugLayerStyleAttribute[]` | Default rendering attributes — see [Debug Layer Styles](./debug-layer-styles.md) |
+| `label` | `DebugLayerLabel \| null` | Data binding and per-value text color overrides — `null` for layers with no text label |
 
-#### `DebugLayerStyle`
+#### `DebugLayerType`
+
+| Value | Description |
+|---|---|
+| `"Point"` | Layer items are rendered as individual point markers |
+| `"Line"` | Layer items are rendered as line segments or polylines |
+| `"Polygon"` | Layer items are rendered as filled or stroked polygon shapes |
+
+#### `DebugLayerStyleAttribute`
+
+`style` is an ordered array of `DebugLayerStyleAttribute` objects. The attribute set depends on the layer's `type`. See [Debug Layer Styles](./debug-layer-styles.md) for the full per-type attribute registry.
 
 | Field | Type | Notes |
 |---|---|---|
-| `className` | `string` | Tailwind utility classes for color, stroke, fill, and opacity |
-| `pointRadius` | `number?` | Point marker radius in pixels; present on point-rendered layers |
-| `fontSize` | `number?` | Label font size in pixels; present on text-rendered layers |
+| `id` | `number` | Attribute identifier, unique within the layer type's attribute family |
+| `name` | `string` | Attribute key — matches the family's attribute registry |
+| `value` | `string \| null` | Attribute value serialised as a string, or `null` when inactive |
+
+All attributes in a type's registry are always present in the array. `null` means the attribute produces no output — the renderer should skip it.
+
+#### `DebugLayerLabel`
+
+Declares the data field to use as the text label and provides per-value color overrides. Present on layers that carry a text label; `null` on all others.
+
+| Field | Type | Notes |
+|---|---|---|
+| `key` | `string` | Name of the field on each data item to use as the rendered text value |
+| `values` | `DebugLayerLabelValue[]` | All possible values the field can take, in definition order |
+
+#### `DebugLayerLabelValue`
+
+| Field | Type | Notes |
+|---|---|---|
+| `value` | `string` | The data value — matches what the algorithm emits in the compute result |
+| `color` | `string \| null` | Tailwind color token that overrides `pointTextColor` for points with this label value; `null` falls back to `pointTextColor` |
 
 ---
 
@@ -383,6 +442,7 @@ Poll `GET /compute/:jobId` until `status` is `"completed"` or `"failed"`.
   "debug": {
     "eventList": [
       {
+        // add id
         "polygonType": "BOUNDARY",
         "vertex": { "x": 0, "y": 0 },
         "eventType": "SIDE_IN",
@@ -392,7 +452,7 @@ Poll `GET /compute/:jobId` until `status` is `"completed"` or `"failed"`.
     ],
     "cellList": [
         {
-          "cellNumber": 0,
+          "cellNumber": 0, // Replace by id
           "ceilingBegin": { "x": 0, "y": 0 },
           "ceilingEnd": { "x": 100, "y": 0 },
           "floorBegin": { "x": 100, "y": 100 },
@@ -447,7 +507,7 @@ Poll `GET /compute/:jobId` until `status` is `"completed"` or `"failed"`.
 |---|---|---|
 | `polygonType` | `"BOUNDARY"` \| `"OBSTACLE"` | Whether the vertex belongs to the boundary or an obstacle |
 | `vertex` | `Point` | The polygon vertex that triggered the event |
-| `eventType` | `"SIDE_IN"` \| `"CEILING"` \| `"SIDE_OUT"` | BCD sweep-line event classification |
+| `eventType` | `"B_IN"` \| `"B_SIDE_IN"` \| `"B_INIT"` \| `"B_OUT"` \| `"B_SIDE_OUT"` \| `"B_DEINIT"` \| `"IN"` \| `"SIDE_IN"` \| `"OUT"` \| `"SIDE_OUT"` \| `"FLOOR"` \| `"CEILING"` \| `"NONE"` | BCD sweep-line event classification |
 | `floorEdge` | `Edge` | Active floor edge at the event; `{begin:{x:0,y:0},end:{x:0,y:0}}` when not applicable |
 | `ceilingEdge` | `Edge` | Active ceiling edge at the event; `{begin:{x:0,y:0},end:{x:0,y:0}}` when not applicable |
 
