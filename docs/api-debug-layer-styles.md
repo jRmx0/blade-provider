@@ -32,24 +32,24 @@ Color values are Tailwind color tokens (e.g. `"purple-500"`, `"blue-400/10"`). O
 
 | id | name | Allowed values |
 |----|------|----------------|
-| 10 | `pointShape` | `"circle"` \| `"square"` \| `"diamond"` \| `"cross"` \| `"triangle"` \| `null` |
-| 11 | `pointRadius` | Pixel radius as a string (e.g. `"4"`) \| `null` |
+| 10 | Point Shape | `"circle"` \| `"square"` \| `"diamond"` \| `"cross"` \| `"triangle"` \| `null` |
+| 11 | Point Radius | Pixel radius as a string (e.g. `"4"`) \| `null` |
 
 ### Border
 
 | id | name | Allowed values |
 |----|------|----------------|
-| 20 | `pointBorderColor` | Tailwind color token \| `null` (no border) |
-| 21 | `pointBorderWidth` | Pixel width as a string (e.g. `"1"`) \| `null` |
-| 22 | `pointBorderStyle` | `"solid"` \| `"dashed"` \| `"dotted"` \| `null` |
-| 23 | `pointBorderOpacity` | `"0"`–`"100"` \| `null` (full opacity) |
+| 20 | Point Border Color | Tailwind color token \| `null` (no border) |
+| 21 | Point Border Width | Pixel width as a string (e.g. `"1"`) \| `null` |
+| 22 | Point Border Style | `"solid"` \| `"dashed"` \| `"dotted"` \| `null` |
+| 23 | Point Border Opacity | `"0"`–`"100"` \| `null` (full opacity) |
 
 ### Fill
 
 | id | name | Allowed values |
 |----|------|----------------|
-| 30 | `pointFillColor` | Tailwind color token \| `null` (transparent) |
-| 31 | `pointFillOpacity` | `"0"`–`"100"` \| `null` (full opacity) |
+| 30 | Point Fill Color | Tailwind color token \| `null` (transparent) |
+| 31 | Point Fill Opacity | `"0"`–`"100"` \| `null` (full opacity) |
 
 ### Id label
 
@@ -57,23 +57,23 @@ Renders the point's own index within the layer array (e.g. `0`, `1`, `2`…).
 
 | id | name | Allowed values |
 |----|------|----------------|
-| 40 | `pointIdPlacement` | `"inside"` \| `"outside-left"` \| `"outside-right"` \| `"outside-top"` \| `"outside-bottom"` \| `null` (hidden) |
-| 41 | `pointIdColor` | Tailwind color token \| `null` |
-| 42 | `pointIdFontSize` | Pixel font size as a string (e.g. `"12"`) \| `null` |
-| 43 | `pointIdOffset` | Pixel offset from point center when an outside placement is active, as a string (e.g. `"8"`) \| `null` (renderer default) |
+| 40 | Point ID Placement | `"inside"` \| `"outside-left"` \| `"outside-right"` \| `"outside-top"` \| `"outside-bottom"` \| `null` (hidden) |
+| 41 | Point ID Color | Tailwind color token \| `null` |
+| 42 | Point ID Font Size | Pixel font size as a string (e.g. `"12"`) \| `null` |
+| 43 | Point ID Offset | Pixel offset from point center when an outside placement is active, as a string (e.g. `"8"`) \| `null` (renderer default) |
 
 ### Text label
 
-Renders a data value carried by the point (e.g. an algorithm-specific annotation). Placement must differ from `pointIdPlacement` when both are active.
+Renders a data value carried by the point (e.g. an algorithm-specific annotation). Placement must differ from **Point ID Placement** when both are active.
 
-`pointTextColor` is the default text label color. When the layer's [`label`](./api.md#debuglayerlabel) declares a non-null `color` for the current text value, that color overrides `pointTextColor` for that point only.
+**Point Label Color** is the default text label color. When the layer's [`label`](./api.md#debuglayerlabel) declares a non-null `color` for the current text value, that color overrides **Point Label Color** for that point only.
 
 | id | name | Allowed values |
 |----|------|----------------|
-| 50 | `pointTextPlacement` | `"inside"` \| `"outside-left"` \| `"outside-right"` \| `"outside-top"` \| `"outside-bottom"` \| `null` (hidden) |
-| 51 | `pointTextColor` | Tailwind color token \| `null` |
-| 52 | `pointTextFontSize` | Pixel font size as a string (e.g. `"12"`) \| `null` |
-| 53 | `pointTextOffset` | Pixel offset from point center when an outside placement is active, as a string (e.g. `"8"`) \| `null` (renderer default) |
+| 50 | Point Label Placement | `"inside"` \| `"outside-left"` \| `"outside-right"` \| `"outside-top"` \| `"outside-bottom"` \| `null` (hidden) |
+| 51 | Point Label Color | Tailwind color token \| `null` |
+| 52 | Point Label Font Size | Pixel font size as a string (e.g. `"12"`) \| `null` |
+| 53 | Point Label Offset | Pixel offset from point center when an outside placement is active, as a string (e.g. `"8"`) \| `null` (renderer default) |
 
 ---
 

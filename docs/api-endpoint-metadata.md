@@ -61,30 +61,31 @@ Returns all algorithms the provider exposes, with their parameter schemas. Consu
       "debugLayers": [
         {
           "id": 1,
+          "zIndex": 1,
           "key": "eventList",
           "name": "Event List",
           "type": "Point",
           "style": [
-            { "id": 10, "name": "pointShape",        "value": "circle"     },
-            { "id": 11, "name": "pointRadius",        "value": "4"          },
-            { "id": 20, "name": "pointBorderColor",   "value": "purple-500" },
-            { "id": 21, "name": "pointBorderWidth",   "value": "1"          },
-            { "id": 22, "name": "pointBorderStyle",   "value": "solid"      },
-            { "id": 23, "name": "pointBorderOpacity", "value": null         },
-            { "id": 30, "name": "pointFillColor",     "value": "purple-500" },
-            { "id": 31, "name": "pointFillOpacity",   "value": null         },
-            { "id": 40, "name": "pointIdPlacement",   "value": null         },
-            { "id": 41, "name": "pointIdColor",       "value": null         },
-            { "id": 42, "name": "pointIdFontSize",    "value": null         },
-            { "id": 43, "name": "pointIdOffset",      "value": null         },
-            { "id": 50, "name": "pointTextPlacement", "value": "outside-bottom" },
-            { "id": 51, "name": "pointTextColor",     "value": "purple-500" },
-            { "id": 52, "name": "pointTextFontSize",  "value": "11"         },
-            { "id": 53, "name": "pointTextOffset",    "value": "6"          }
+            { "id": 10, "name": "Point Shape",          "value": "circle"     },
+            { "id": 11, "name": "Point Radius",          "value": "4"          },
+            { "id": 20, "name": "Point Border Color",    "value": "purple-500" },
+            { "id": 21, "name": "Point Border Width",    "value": "1"          },
+            { "id": 22, "name": "Point Border Style",    "value": "solid"      },
+            { "id": 23, "name": "Point Border Opacity",  "value": null         },
+            { "id": 30, "name": "Point Fill Color",      "value": "purple-500" },
+            { "id": 31, "name": "Point Fill Opacity",    "value": null         },
+            { "id": 40, "name": "Point ID Placement",    "value": null         },
+            { "id": 41, "name": "Point ID Color",        "value": null         },
+            { "id": 42, "name": "Point ID Font Size",    "value": null         },
+            { "id": 43, "name": "Point ID Offset",       "value": null         },
+            { "id": 50, "name": "Point Label Placement", "value": "outside-bottom" },
+            { "id": 51, "name": "Point Label Color",     "value": "purple-500" },
+            { "id": 52, "name": "Point Label Font Size", "value": "11"         },
+            { "id": 53, "name": "Point Label Offset",    "value": "6"          }
           ],
           "label": {
             "key": "eventType",
-            "values": [
+            "enumValues": [
               { "value": "B_IN",       "color": "green-600"  },
               { "value": "B_SIDE_IN",  "color": "teal-600"   },
               { "value": "B_INIT",     "color": "green-200"  },
@@ -103,6 +104,7 @@ Returns all algorithms the provider exposes, with their parameter schemas. Consu
         },
         {
           "id": 2,
+          "zIndex": 2,
           "key": "cellList",
           "name": "Cell List",
           "type": "Polygon",
@@ -111,6 +113,7 @@ Returns all algorithms the provider exposes, with their parameter schemas. Consu
         },
         {
           "id": 3,
+          "zIndex": 3,
           "key": "cellVisitOrder",
           "name": "Cell Visit Order",
           "type": "Line",
@@ -136,6 +139,7 @@ Returns all algorithms the provider exposes, with their parameter schemas. Consu
 | Field | Type | Notes |
 |---|---|---|
 | `id` | `number` | Sequential identifier for this debug layer |
+| `zIndex` | `number` | Render order — layers with a lower `zIndex` are drawn first (bottom); higher values are drawn on top |
 | `key` | `string` | Matches the field name under `result.debug` in the compute response |
 | `name` | `string` | Human-readable display name |
 | `type` | `DebugLayerType` | Geometry primitive type of the objects produced by this layer |
@@ -157,7 +161,7 @@ Returns all algorithms the provider exposes, with their parameter schemas. Consu
 | Field | Type | Notes |
 |---|---|---|
 | `id` | `number` | Attribute identifier, unique within the layer type's attribute family |
-| `name` | `string` | Attribute key — matches the family's attribute registry |
+| `name` | `string` | Human-readable display name for the attribute; use `id` for programmatic identification |
 | `value` | `string \| null` | Attribute value serialised as a string, or `null` when inactive |
 
 All attributes in a type's registry are always present in the array. `null` means the attribute produces no output — the renderer should skip it.
@@ -169,11 +173,11 @@ Declares the data field to use as the text label and provides per-value color ov
 | Field | Type | Notes |
 |---|---|---|
 | `key` | `string` | Name of the field on each data item to use as the rendered text value |
-| `values` | `DebugLayerLabelValue[]` | All possible values the field can take, in definition order |
+| `enumValues` | `DebugLayerLabelValue[]` | All possible values the field can take, in definition order |
 
 ### `DebugLayerLabelValue`
 
 | Field | Type | Notes |
 |---|---|---|
 | `value` | `string` | The data value — matches what the algorithm emits in the compute result |
-| `color` | `string \| null` | Tailwind color token that overrides `pointTextColor` for points with this label value; `null` falls back to `pointTextColor` |
+| `color` | `string \| null` | Tailwind color token that overrides **Point Label Color** for points with this label value; `null` falls back to **Point Label Color** |
