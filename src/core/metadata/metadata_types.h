@@ -136,4 +136,25 @@ static inline const char *metadata_coordsystem_to_string(bcd_metadata_coordsyste
     }
 }
 
+typedef enum {
+    BCD_METADATA_DEBUG_LAYER_TYPE_POINT = 0,
+    BCD_METADATA_DEBUG_LAYER_TYPE_LINE,
+    BCD_METADATA_DEBUG_LAYER_TYPE_POLYGON
+} bcd_metadata_debug_layer_type_t;
+
+static inline const char *metadata_debug_layer_type_to_string(bcd_metadata_debug_layer_type_t layer_type)
+{
+    switch (layer_type)
+    {
+    case BCD_METADATA_DEBUG_LAYER_TYPE_POINT:
+        return "Point";
+    case BCD_METADATA_DEBUG_LAYER_TYPE_LINE:
+        return "Line";
+    case BCD_METADATA_DEBUG_LAYER_TYPE_POLYGON:
+        return "Polygon";
+    default:
+        return "Point";
+    }
+}
+
 #endif // METADATA_TYPES_H

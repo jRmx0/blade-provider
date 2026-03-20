@@ -56,9 +56,9 @@ char *bcd_build_metadata_json(void)
 	}
 	cJSON_AddItemToObject(algorithm, "debugLayers", debug_layers);
 
-	metadata_add_debug_layer(debug_layers, 1, "eventList",       "Event List",       "text-purple-500 stroke-purple-500",              4,  -1);
-	metadata_add_debug_layer(debug_layers, 2, "cellList",        "Cell List",        "text-blue-400 stroke-blue-400 fill-blue-400/10", -1, -1);
-	metadata_add_debug_layer(debug_layers, 3, "cellVisitOrder", "Cell Visit Order", "text-yellow-300",                                -1,  12);
+	metadata_add_debug_layer(debug_layers, 1, "eventList",       "Event List",       BCD_METADATA_DEBUG_LAYER_TYPE_POINT,   "text-purple-500 stroke-purple-500",              4,  -1);
+	metadata_add_debug_layer(debug_layers, 2, "cellList",        "Cell List",        BCD_METADATA_DEBUG_LAYER_TYPE_POLYGON, "text-blue-400 stroke-blue-400 fill-blue-400/10", -1, -1);
+	metadata_add_debug_layer(debug_layers, 3, "cellVisitOrder", "Cell Visit Order", BCD_METADATA_DEBUG_LAYER_TYPE_POINT,   "text-yellow-300",                                -1,  12);
 
 	char *json = cJSON_PrintUnformatted(algorithm);
 	cJSON_Delete(algorithm);

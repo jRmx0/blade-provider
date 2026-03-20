@@ -57,6 +57,7 @@ static inline void metadata_add_debug_layer(
     int id,
     const char *key,
     const char *name,
+    bcd_metadata_debug_layer_type_t layer_type,
     const char *class_name,
     int point_radius,
     int font_size)
@@ -65,6 +66,7 @@ static inline void metadata_add_debug_layer(
     cJSON_AddNumberToObject(layer, "id", id);
     cJSON_AddStringToObject(layer, "key", key);
     cJSON_AddStringToObject(layer, "name", name);
+    cJSON_AddStringToObject(layer, "type", metadata_debug_layer_type_to_string(layer_type));
 
     cJSON *style = cJSON_CreateObject();
     cJSON_AddStringToObject(style, "className", class_name);
