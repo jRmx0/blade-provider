@@ -46,14 +46,6 @@ export interface Point {
 
 export type ComputeJobStatus = "queued" | "running" | "completed" | "failed";
 
-export interface ComputeResult {
-    zoneCoverage: number;
-    routeOverlap: number;
-    turnCount: number;
-    route: Point[];
-    intermediateCalculations: Record<string, unknown>;
-}
-
 export interface ComputeJobError {
     code: string;
     message: string;
@@ -68,7 +60,7 @@ export interface ComputeJobState {
     completedAt?: string;
     requestId?: string;
     error?: ComputeJobError;
-    result?: ComputeResult;
+    result?: Record<string, unknown>;
 }
 
 export interface ComputeAcceptedResponse {

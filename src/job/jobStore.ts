@@ -1,4 +1,4 @@
-import type { ComputeJobError, ComputeJobState, ComputeResult } from "../types/providerTypes";
+import type { ComputeJobError, ComputeJobState } from "../types/providerTypes";
 
 function cloneJobState(jobState: ComputeJobState): ComputeJobState {
     return structuredClone(jobState);
@@ -37,7 +37,7 @@ export class InMemoryJobStore {
         return cloneJobState(jobState);
     }
 
-    markCompleted(jobId: string, result: ComputeResult): ComputeJobState | undefined {
+    markCompleted(jobId: string, result: Record<string, unknown>): ComputeJobState | undefined {
         const jobState = this.jobs.get(jobId);
         if (!jobState) {
             return undefined;
