@@ -60,7 +60,7 @@ char *coverage_path_planning_process(const input_environment_t *env)
 	rc = compute_bcd_motion(&cell_list,
 							(const cvector_vector_type(int) *)&path_list,
 							&motion_plan,
-							0.25);
+							env->path_width - env->path_overlap);
 	if (rc != 0)
 	{
 		printf("coverage_path_planning: BCD motion computation failed (code %d)\n", rc);
