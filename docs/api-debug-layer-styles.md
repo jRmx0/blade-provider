@@ -121,4 +121,37 @@ The group is always centered on the edge midpoint. When `n ≥ 2` the minimum-di
 
 ## Polygon Style Attributes
 
-_Not yet defined. `style` is an empty array for Polygon layers._
+Applies to layers with `type: "Polygon"`. All 19 attributes are always emitted.
+
+A Polygon is composed of **corner vertices** (the points at each boundary corner), a **boundary edge** (the closed stroke outline), and an optional **fill**. The corner-vertex attribute group reuses the same IDs and names as the [Point Style Attributes](#point-style-attributes) section above, **excluding the Text Label group (IDs 50–54)** which polygons do not carry.
+
+### Corner Vertex
+
+Corner-vertex attributes (IDs 10–44) are identical to the [Point Style Attributes](#point-style-attributes) section above — the same 11 attributes, IDs, names, and allowed values apply. The Text Label group (IDs 50–54) is not part of the Polygon attribute set.
+
+### Polygon Edge
+
+| id | name | Allowed values |
+|----|------|----------------|
+| 60 | Polygon Edge Color | Tailwind color token with optional opacity (e.g. `"slate-400"`, `"slate-400/50"`) \| `null` |
+| 61 | Polygon Edge Width | Tailwind spacing token (e.g. `"1"`) \| `null` |
+| 62 | Polygon Edge Style | `"solid"` \| `"dashed"` \| `"dotted"` \| `null` |
+
+### Polygon Fill
+
+| id | name | Allowed values |
+|----|------|----------------|
+| 80 | Polygon Fill Color | Tailwind color token with optional slash opacity (e.g. `"blue-400/20"`) \| `null` (transparent) |
+| 81 | Polygon Fill Style | `"solid"` \| `"hatched"` \| `null` |
+
+`"hatched"` renders the fill as a 45° diagonal stripe pattern. When **Polygon Fill Color** is non-null and **Polygon Fill Style** is `null`, the renderer defaults to `"solid"`.
+
+### Polygon ID
+
+Renders the polygon's own index within the layer array (e.g. `0`, `1`, `2`…) at the polygon centroid.
+
+| id | name | Allowed values |
+|----|------|----------------|
+| 82 | Polygon ID Color | Tailwind color token \| `null` |
+| 83 | Polygon ID Font Size | Tailwind text size class (e.g. `"text-xs"`, `"text-sm"`, `"text-base"`) \| `null` |
+| 84 | Polygon ID Font Weight | Tailwind font weight class (e.g. `"font-normal"`, `"font-medium"`, `"font-bold"`) \| `null` |

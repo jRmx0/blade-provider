@@ -108,7 +108,27 @@ Returns all algorithms the provider exposes, with their parameter schemas. Consu
           "key": "cellList",
           "name": "Cell List",
           "type": "Polygon",
-          "style": [],
+          "style": [
+            { "id": 10, "name": "Point Shape",           "value": null        },
+            { "id": 11, "name": "Point Radius",           "value": null        },
+            { "id": 20, "name": "Point Border Color",     "value": null        },
+            { "id": 21, "name": "Point Border Width",     "value": null        },
+            { "id": 22, "name": "Point Border Style",     "value": null        },
+            { "id": 30, "name": "Point Fill Color",       "value": null        },
+            { "id": 40, "name": "Point ID Placement",     "value": null        },
+            { "id": 41, "name": "Point ID Color",         "value": null        },
+            { "id": 42, "name": "Point ID Font Size",     "value": null        },
+            { "id": 43, "name": "Point ID Font Weight",   "value": null        },
+            { "id": 44, "name": "Point ID Offset",        "value": null        },
+            { "id": 60, "name": "Polygon Edge Color",     "value": "slate-400" },
+            { "id": 61, "name": "Polygon Edge Width",     "value": "1"         },
+            { "id": 62, "name": "Polygon Edge Style",     "value": "solid"     },
+            { "id": 80, "name": "Polygon Fill Color",     "value": null        },
+            { "id": 81, "name": "Polygon Fill Style",     "value": null        },
+            { "id": 82, "name": "Polygon ID Color",       "value": "slate-500" },
+            { "id": 83, "name": "Polygon ID Font Size",   "value": "text-xs"   },
+            { "id": 84, "name": "Polygon ID Font Weight", "value": "font-medium"}
+          ],
           "label": null
         },
         {
