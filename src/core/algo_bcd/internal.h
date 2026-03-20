@@ -61,10 +61,9 @@ typedef struct
     uint32_t obstacle_count;
 } input_environment_t;
 
-// Processes the input environment JSON and returns a newly allocated JSON string
-// with shape: { "status": "ok", "event_list": [ ... ], "cell_list": [ ... ], "path_list": [ ... ], "motion_plan": { ... } } on success, or
-// { "status": "error", "message": "..." } on failure. Caller must free().
-char *coverage_path_planning_process(const char *input_environment_json);
+// Runs the BCD computation pipeline on a pre-validated, pre-parsed environment.
+// Returns a newly allocated JSON string; caller must free().
+char *coverage_path_planning_process(const input_environment_t *env);
 
 // API calls
 

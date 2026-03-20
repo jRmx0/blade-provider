@@ -44,20 +44,7 @@ char *bcd_run_compute(const char *input_environment_json)
 		return bcd_create_error_json(check_result.code, check_result.message);
 	}
 
+	char *result = coverage_path_planning_process(&environment);
 	free_input_environment(&environment);
-
-	cJSON *response = cJSON_CreateObject();
-	if (response == NULL)
-	{
-		return NULL;
-	}
-
-	cJSON_AddStringToObject(response, "status", "error");
-	cJSON_AddStringToObject(response, "code", "not_implemented");
-	cJSON_AddStringToObject(response, "message", "Native BCD compute has not been wired into blade-provider yet.");
-	cJSON_AddBoolToObject(response, "inputReceived", input_environment_json != NULL);
-
-	char *json = cJSON_PrintUnformatted(response);
-	cJSON_Delete(response);
-	return json;
+	return result;
 }
