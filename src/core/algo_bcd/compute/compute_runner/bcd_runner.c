@@ -34,6 +34,8 @@ static char *serialize_result_json(const bcd_event_list_t *event_list,
 			const cell_motion_plan_t *section = &motion_plan->section[i];
 			cJSON *jsection = cJSON_CreateObject();
 
+			cJSON_AddNumberToObject(jsection, "id", i);
+
 			cJSON *coverage_path_arr = cJSON_CreateArray();
 			cJSON_AddItemToObject(jsection, "coveragePath", coverage_path_arr);
 			if (section->ox)

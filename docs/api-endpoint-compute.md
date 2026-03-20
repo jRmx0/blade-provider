@@ -150,6 +150,7 @@ Poll `GET /compute/:jobId` until `status` is `"completed"` or `"failed"`.
     "coveragePlan": {
       "sections": [
         {
+          "id": 0,
           "coveragePath": [
             { "x": 5, "y": 5 },
             { "x": 95, "y": 5 },
@@ -204,6 +205,7 @@ Poll `GET /compute/:jobId` until `status` is `"completed"` or `"failed"`.
   "coveragePlan": {
     "sections": [
       {
+        "id": 0,
         "coveragePath": [
           { "x": 5, "y": 5 },
           { "x": 95, "y": 5 },
@@ -264,6 +266,7 @@ Poll `GET /compute/:jobId` until `status` is `"completed"` or `"failed"`.
 
 | Field | Type | Notes |
 |---|---|---|
+| `id` | `number` | Sequential index of the section |
 | `coveragePath` | `Point[]` | Ordered boustrophedon waypoints for this cell |
 | `transitPath` | `Point[]` | Waypoints from the end of the previous section to the start of this one; currently always `[]` (not yet computed) |
 
