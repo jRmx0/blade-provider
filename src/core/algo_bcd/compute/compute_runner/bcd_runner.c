@@ -62,7 +62,7 @@ char *coverage_path_planning_process(const char *input_environment_json)
 		printf("coverage_path_planning: BCD cell computation failed (code %d)\n", rc);
 		return err_cleanup(&env, &event_list, &cell_list, NULL, NULL, rc);
 	}
-	printf("coverage_path_planning: successfully generated %d cells\n", cvector_size(cell_list));
+	printf("coverage_path_planning: successfully generated %zu cells\n", cvector_size(cell_list));
 	// log_bcd_cell_list((const cvector_vector_type(bcd_cell_t) *) &cell_list);
 
 	cvector_vector_type(int) path_list = NULL;
@@ -72,7 +72,7 @@ char *coverage_path_planning_process(const char *input_environment_json)
 		printf("coverage_path_planning: BCD path computation failed (code %d)\n", rc);
 		return err_cleanup(&env, &event_list, &cell_list, &path_list, NULL, rc);
 	}
-	printf("coverage_path_planning: successfully generated path with %d visits\n", cvector_size(path_list));
+	printf("coverage_path_planning: successfully generated path with %zu visits\n", cvector_size(path_list));
 	// log_bcd_path_list((const cvector_vector_type(int) *)&path_list);
 
 	bcd_motion_plan_t motion_plan = {0};
@@ -640,6 +640,8 @@ static void log_event_list(const bcd_event_list_t *event_list)
 				break;
 			case CEILING:
 				type_str = "CEILING";
+				break;
+			case NONE:
 				break;
 			}
 			printf("  Event %d: (%.2f, %.2f) type=%s polygon=%s\n",
