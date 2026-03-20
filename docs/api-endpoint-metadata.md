@@ -71,17 +71,17 @@ Returns all algorithms the provider exposes, with their parameter schemas. Consu
             { "id": 20, "name": "Point Border Color",    "value": "purple-500" },
             { "id": 21, "name": "Point Border Width",    "value": "1"          },
             { "id": 22, "name": "Point Border Style",    "value": "solid"      },
-            { "id": 23, "name": "Point Border Opacity",  "value": null         },
             { "id": 30, "name": "Point Fill Color",      "value": "purple-500" },
-            { "id": 31, "name": "Point Fill Opacity",    "value": null         },
             { "id": 40, "name": "Point ID Placement",    "value": null         },
             { "id": 41, "name": "Point ID Color",        "value": null         },
             { "id": 42, "name": "Point ID Font Size",    "value": null         },
-            { "id": 43, "name": "Point ID Offset",       "value": null         },
+            { "id": 43, "name": "Point ID Font Weight",  "value": null         },
+            { "id": 44, "name": "Point ID Offset",       "value": null         },
             { "id": 50, "name": "Point Label Placement", "value": "outside-bottom" },
             { "id": 51, "name": "Point Label Color",     "value": "purple-500" },
-            { "id": 52, "name": "Point Label Font Size", "value": "11"         },
-            { "id": 53, "name": "Point Label Offset",    "value": "6"          }
+            { "id": 52, "name": "Point Label Font Size", "value": "text-xs"       },
+            { "id": 53, "name": "Point Label Font Weight","value": "font-medium"  },
+            { "id": 54, "name": "Point Label Offset",    "value": "6"             }
           ],
           "label": {
             "key": "eventType",
