@@ -219,6 +219,7 @@ Poll `GET /compute/:jobId` until `status` is `"completed"` or `"failed"`.
   "debug": {
     "eventList": [
       {
+        "id": 0,
         "polygonType": "BOUNDARY",
         "vertex": { "x": 0, "y": 0 },
         "eventType": "SIDE_IN",
@@ -282,6 +283,7 @@ Poll `GET /compute/:jobId` until `status` is `"completed"` or `"failed"`.
 
 | Field | Type | Notes |
 |---|---|---|
+| `id` | `number` | Sequential index of the event |
 | `polygonType` | `"BOUNDARY"` \| `"OBSTACLE"` | Whether the vertex belongs to the boundary or an obstacle |
 | `vertex` | `Point` | The polygon vertex that triggered the event |
 | `eventType` | `"B_IN"` \| `"B_SIDE_IN"` \| `"B_INIT"` \| `"B_OUT"` \| `"B_SIDE_OUT"` \| `"B_DEINIT"` \| `"IN"` \| `"SIDE_IN"` \| `"OUT"` \| `"SIDE_OUT"` \| `"FLOOR"` \| `"CEILING"` \| `"NONE"` | BCD sweep-line event classification |

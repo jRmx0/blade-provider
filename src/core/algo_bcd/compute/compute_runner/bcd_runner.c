@@ -84,6 +84,7 @@ static char *serialize_result_json(const bcd_event_list_t *event_list,
 		{
 			const bcd_event_t *ev = &event_list->bcd_events[i];
 			cJSON *jev = cJSON_CreateObject();
+			cJSON_AddNumberToObject(jev, "id", i);
 			cJSON_AddStringToObject(jev, "polygonType", polygon_type_to_string(ev->polygon_type));
 			cJSON *jv = cJSON_CreateObject();
 			cJSON_AddNumberToObject(jv, "x", ev->polygon_vertex.x);
