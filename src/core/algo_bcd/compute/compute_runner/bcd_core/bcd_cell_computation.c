@@ -4,7 +4,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include "../../../../../../dependencies/cvector/cvector.h"
-#include "../bcd_runner.h"
+#include "../../../internal.h"
 #include "bcd_event_list_building.h"
 #include "bcd_cell_computation.h"
 

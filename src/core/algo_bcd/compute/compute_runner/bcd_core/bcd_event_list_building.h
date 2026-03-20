@@ -4,7 +4,7 @@
 #define BOUSTROPHEDON_CELLULAR_DECOMPOSITION_H
 
 #include <stdbool.h>
-#include "../bcd_runner.h"
+#include "../../../internal.h"
 
 typedef enum {
     B_IN,

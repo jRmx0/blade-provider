@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include "bcd_runner.h"
-#include "../../../dependencies/cJSON/cJSON.h"
-#include "../../../dependencies/cvector/cvector.h"
+#include "../../../../../dependencies/cJSON/cJSON.h"
+#include "../../../../../dependencies/cvector/cvector.h"
 #include "bcd_core/bcd_event_list_building.h"
 #include "bcd_core/bcd_cell_computation.h"
 #include "bcd_core/bcd_coverage_planning.h"

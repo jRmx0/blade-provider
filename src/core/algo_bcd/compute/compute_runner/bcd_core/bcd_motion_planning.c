@@ -3,7 +3,6 @@
 #include <math.h>
 #include "../../../../../../dependencies/cvector/cvector.h"
 
-#include "../bcd_runner.h"
 #include "bcd_cell_computation.h"
 #include "bcd_motion_planning.h"
 
