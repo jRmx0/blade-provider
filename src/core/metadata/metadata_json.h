@@ -52,4 +52,33 @@ static inline void metadata_add_parameter(
     cJSON_AddItemToArray(parameters, parameter);
 }
 
+static inline void metadata_add_debug_layer(
+    cJSON *debug_layers,
+    int id,
+    const char *key,
+    const char *name,
+    const char *class_name,
+    int point_radius,
+    int font_size)
+{
+    cJSON *layer = cJSON_CreateObject();
+    cJSON_AddNumberToObject(layer, "id", id);
+    cJSON_AddStringToObject(layer, "key", key);
+    cJSON_AddStringToObject(layer, "name", name);
+
+    cJSON *style = cJSON_CreateObject();
+    cJSON_AddStringToObject(style, "className", class_name);
+    if (point_radius >= 0)
+    {
+        cJSON_AddNumberToObject(style, "pointRadius", point_radius);
+    }
+    if (font_size >= 0)
+    {
+        cJSON_AddNumberToObject(style, "fontSize", font_size);
+    }
+    cJSON_AddItemToObject(layer, "style", style);
+
+    cJSON_AddItemToArray(debug_layers, layer);
+}
+
 #endif // METADATA_JSON_H

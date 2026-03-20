@@ -73,14 +73,8 @@ static char *serialize_result_json(const bcd_event_list_t *event_list,
 	cJSON_AddItemToObject(root, "debug", debug_obj);
 
 	// debug.eventList
-	cJSON *event_list_obj = cJSON_CreateObject();
-	cJSON_AddItemToObject(debug_obj, "eventList", event_list_obj);
-	cJSON *event_list_style = cJSON_CreateObject();
-	cJSON_AddStringToObject(event_list_style, "className", "text-purple-500 stroke-purple-500");
-	cJSON_AddNumberToObject(event_list_style, "pointRadius", 4);
-	cJSON_AddItemToObject(event_list_obj, "style", event_list_style);
 	cJSON *event_data_arr = cJSON_CreateArray();
-	cJSON_AddItemToObject(event_list_obj, "data", event_data_arr);
+	cJSON_AddItemToObject(debug_obj, "eventList", event_data_arr);
 
 	if (event_list && event_list->bcd_events && event_list->length > 0)
 	{
@@ -122,13 +116,8 @@ static char *serialize_result_json(const bcd_event_list_t *event_list,
 	}
 
 	// debug.cellList
-	cJSON *cell_list_obj = cJSON_CreateObject();
-	cJSON_AddItemToObject(debug_obj, "cellList", cell_list_obj);
-	cJSON *cell_list_style = cJSON_CreateObject();
-	cJSON_AddStringToObject(cell_list_style, "className", "text-blue-400 stroke-blue-400 fill-blue-400/10");
-	cJSON_AddItemToObject(cell_list_obj, "style", cell_list_style);
 	cJSON *cell_data_arr = cJSON_CreateArray();
-	cJSON_AddItemToObject(cell_list_obj, "data", cell_data_arr);
+	cJSON_AddItemToObject(debug_obj, "cellList", cell_data_arr);
 
 	if (cell_list && *cell_list)
 	{
@@ -211,14 +200,8 @@ static char *serialize_result_json(const bcd_event_list_t *event_list,
 	}
 
 	// debug.cellVisitOrder
-	cJSON *cell_visit_order_obj = cJSON_CreateObject();
-	cJSON_AddItemToObject(debug_obj, "cellVisitOrder", cell_visit_order_obj);
-	cJSON *cell_visit_style = cJSON_CreateObject();
-	cJSON_AddStringToObject(cell_visit_style, "className", "text-yellow-300");
-	cJSON_AddNumberToObject(cell_visit_style, "fontSize", 12);
-	cJSON_AddItemToObject(cell_visit_order_obj, "style", cell_visit_style);
 	cJSON *visit_data_arr = cJSON_CreateArray();
-	cJSON_AddItemToObject(cell_visit_order_obj, "data", visit_data_arr);
+	cJSON_AddItemToObject(debug_obj, "cellVisitOrder", visit_data_arr);
 
 	if (path_list && *path_list)
 	{

@@ -114,6 +114,37 @@ Returns all algorithms the provider exposes, with their parameter schemas. Consu
           "section": "Environment",
           "appHandler": "environment.coordsystem"
         }
+      ],
+      "debugLayers": [
+        { 
+          "id": 1,
+          "key": "eventList",
+          "name": "Event List",
+          "style": 
+          { 
+            "className": "text-purple-500 stroke-purple-500", 
+            "pointRadius": 4 
+          } 
+        },
+        { 
+          "id": 2,
+          "key": "cellList",
+          "name": "Cell List",
+          "style": 
+          { 
+            "className": "text-blue-400 stroke-blue-400 fill-blue-400/10" 
+          } 
+        },
+        { 
+          "id": 3,
+          "key": "cellVisitOrder",
+          "name": "Cell Visit Order",
+          "style": 
+          { 
+            "className": "text-yellow-300", 
+            "fontSize": 12 
+          } 
+        }
       ]
     }
   ]
@@ -121,6 +152,25 @@ Returns all algorithms the provider exposes, with their parameter schemas. Consu
 ```
 
 `appHandler` values tell the consumer that this parameter is bound to an environment-level property (format, type, coordinate system) rather than being a free-form algorithm input. Consumers should resolve these from the environment state rather than prompting the user separately.
+
+`debugLayers` is present on algorithms that produce debug output as part of their compute result. Each entry declares the default display style for one named debug layer. Consumers should use this style as the initial rendering config but may override it locally.
+
+#### `DebugLayerMetadata`
+
+| Field | Type | Notes |
+|---|---|---|
+| `id` | `number` | Sequential identifier for this debug layer |
+| `key` | `string` | Matches the field name under `result.debug` in the compute response |
+| `name` | `string` | Human-readable display name |
+| `style` | `DebugLayerStyle` | Default rendering style for this layer |
+
+#### `DebugLayerStyle`
+
+| Field | Type | Notes |
+|---|---|---|
+| `className` | `string` | Tailwind utility classes for color, stroke, fill, and opacity |
+| `pointRadius` | `number?` | Point marker radius in pixels; present on point-rendered layers |
+| `fontSize` | `number?` | Label font size in pixels; present on text-rendered layers |
 
 ---
 
@@ -277,26 +327,9 @@ Poll `GET /compute/:jobId` until `status` is `"completed"` or `"failed"`.
       ]
     },
     "debug": {
-      "eventList": {
-        "style": {
-          "className": "stroke-amber-400 fill-amber-400/20 opacity-80",
-          "pointRadius": 4
-        },
-        "data": ["..."]
-      },
-      "cellList": {
-        "style": {
-          "className": "stroke-sky-400 fill-sky-400/15 opacity-70"
-        },
-        "data": ["..."]
-      },
-      "cellVisitOrder": {
-        "style": {
-          "className": "text-white fill-slate-800/70 opacity-90",
-          "fontSize": 11
-        },
-        "data": [0]
-      }
+      "eventList":      ["..."],
+      "cellList":       ["..."],
+      "cellVisitOrder": [0]
     }
   }
 }
@@ -348,26 +381,16 @@ Poll `GET /compute/:jobId` until `status` is `"completed"` or `"failed"`.
     ]
   },
   "debug": {
-    "eventList": {
-      "style": {
-        "className": "stroke-amber-400 fill-amber-400/20 opacity-80",
-        "pointRadius": 4
-      },
-      "data": [
-        {
-          "polygonType": "BOUNDARY",
-          "vertex": { "x": 0, "y": 0 },
-          "eventType": "SIDE_IN",
-          "floorEdge": { "begin": { "x": 0, "y": 0 }, "end": { "x": 0, "y": 0 } },
-          "ceilingEdge": { "begin": { "x": 0, "y": 0 }, "end": { "x": 0, "y": 0 } }
-        }
-      ]
-    },
-    "cellList": {
-      "style": {
-        "className": "stroke-sky-400 fill-sky-400/15 opacity-70"
-      },
-      "data": [
+    "eventList": [
+      {
+        "polygonType": "BOUNDARY",
+        "vertex": { "x": 0, "y": 0 },
+        "eventType": "SIDE_IN",
+        "floorEdge": { "begin": { "x": 0, "y": 0 }, "end": { "x": 0, "y": 0 } },
+        "ceilingEdge": { "begin": { "x": 0, "y": 0 }, "end": { "x": 0, "y": 0 } }
+      }
+    ],
+    "cellList": [
         {
           "cellNumber": 0,
           "ceilingBegin": { "x": 0, "y": 0 },
@@ -384,15 +407,8 @@ Poll `GET /compute/:jobId` until `status` is `"completed"` or `"failed"`.
           "visited": true,
           "cleaned": true
         }
-      ]
-    },
-    "cellVisitOrder": {
-      "style": {
-        "className": "text-white fill-slate-800/70 opacity-90",
-        "fontSize": 11
-      },
-      "data": [0]
-    }
+    ],
+    "cellVisitOrder": [0]
   }
 }
 ```
@@ -421,26 +437,9 @@ Poll `GET /compute/:jobId` until `status` is `"completed"` or `"failed"`.
 
 | Field | Type | Notes |
 |---|---|---|
-| `eventList` | `DebugLayer<BcdEvent>` | Sweep-line events produced by the BCD algorithm |
-| `cellList` | `DebugLayer<BcdCell>` | Decomposed cells in discovery order |
-| `cellVisitOrder` | `DebugLayer<number>` | Cell indices in planned visit order; values are indices into `cellList.data` |
-
-#### `DebugLayer<T>`
-
-Each debug layer wraps its data array with a default display style that blade-terminal uses out of the box. Users can override `style` locally inside blade-terminal.
-
-| Field | Type | Notes |
-|---|---|---|
-| `style` | `DebugLayerStyle` | Default rendering style for this layer |
-| `data` | `T[]` | The layer's data items |
-
-#### `DebugLayerStyle`
-
-| Field | Type | Notes |
-|---|---|---|
-| `className` | `string` | Tailwind utility classes for color, stroke, fill, and opacity |
-| `pointRadius` | `number?` | Point marker radius in pixels; used by `eventList` |
-| `fontSize` | `number?` | Label font size in pixels; used by `cellVisitOrder` |
+| `eventList` | `BcdEvent[]` | Sweep-line events produced by the BCD algorithm |
+| `cellList` | `BcdCell[]` | Decomposed cells in discovery order |
+| `cellVisitOrder` | `number[]` | Cell indices in planned visit order; values are indices into `cellList` |
 
 #### `BcdEvent`
 

@@ -48,6 +48,18 @@ char *bcd_build_metadata_json(void)
 	metadata_add_parameter(parameters, 4, "Type", BCD_METADATA_PARAM_TYPE_ENUM, type_values, 1, metadata_type_to_string(BCD_METADATA_TYPE_OFFLINE), BCD_METADATA_PARAM_SECTION_ENVIRONMENT, BCD_METADATA_APP_HANDLER_ENVIRONMENT_TYPE);
 	metadata_add_parameter(parameters, 5, "Coordinate System", BCD_METADATA_PARAM_TYPE_ENUM, coordsystem_values, 1, metadata_coordsystem_to_string(BCD_METADATA_COORDSYSTEM_DECIMAL), BCD_METADATA_PARAM_SECTION_ENVIRONMENT, BCD_METADATA_APP_HANDLER_ENVIRONMENT_COORDSYSTEM);
 
+	cJSON *debug_layers = cJSON_CreateArray();
+	if (debug_layers == NULL)
+	{
+		cJSON_Delete(algorithm);
+		return NULL;
+	}
+	cJSON_AddItemToObject(algorithm, "debugLayers", debug_layers);
+
+	metadata_add_debug_layer(debug_layers, 1, "eventList",       "Event List",       "text-purple-500 stroke-purple-500",              4,  -1);
+	metadata_add_debug_layer(debug_layers, 2, "cellList",        "Cell List",        "text-blue-400 stroke-blue-400 fill-blue-400/10", -1, -1);
+	metadata_add_debug_layer(debug_layers, 3, "cellVisitOrder", "Cell Visit Order", "text-yellow-300",                                -1,  12);
+
 	char *json = cJSON_PrintUnformatted(algorithm);
 	cJSON_Delete(algorithm);
 	return json;
