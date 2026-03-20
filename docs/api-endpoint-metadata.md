@@ -117,7 +117,32 @@ Returns all algorithms the provider exposes, with their parameter schemas. Consu
           "key": "cellVisitOrder",
           "name": "Cell Visit Order",
           "type": "Line",
-          "style": [],
+          "style": [
+            { "id": 10, "name": "Point Shape",              "value": "circle"           },
+            { "id": 11, "name": "Point Radius",              "value": "3"               },
+            { "id": 20, "name": "Point Border Color",        "value": null              },
+            { "id": 21, "name": "Point Border Width",        "value": null              },
+            { "id": 22, "name": "Point Border Style",        "value": null              },
+            { "id": 30, "name": "Point Fill Color",          "value": "blue-400"        },
+            { "id": 40, "name": "Point ID Placement",        "value": "inside"     },
+            { "id": 41, "name": "Point ID Color",            "value": "blue-400"        },
+            { "id": 42, "name": "Point ID Font Size",        "value": "text-xs"         },
+            { "id": 43, "name": "Point ID Font Weight",      "value": "font-medium"     },
+            { "id": 44, "name": "Point ID Offset",           "value": "6"               },
+            { "id": 50, "name": "Point Label Placement",     "value": null              },
+            { "id": 51, "name": "Point Label Color",         "value": null              },
+            { "id": 52, "name": "Point Label Font Size",     "value": null              },
+            { "id": 53, "name": "Point Label Font Weight",   "value": null              },
+            { "id": 54, "name": "Point Label Offset",        "value": null              },
+            { "id": 60, "name": "Line Edge Color",           "value": "blue-400"        },
+            { "id": 61, "name": "Line Edge Width",           "value": "1"               },
+            { "id": 62, "name": "Line Edge Style",           "value": "solid"           },
+            { "id": 70, "name": "Line Arrow Start",          "value": null              },
+            { "id": 71, "name": "Line Arrow End",            "value": null              },
+            { "id": 72, "name": "Line Arrow Mid",            "value": "line_end_arrow"  },
+            { "id": 73, "name": "Line Arrow Mid Spacing",    "value": "12"              },
+            { "id": 74, "name": "Line Arrow Size",           "value": "3"               }
+          ],
           "label": null
         }
       ]

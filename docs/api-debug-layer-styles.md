@@ -79,7 +79,43 @@ Renders a data value carried by the point (e.g. an algorithm-specific annotation
 
 ## Line Style Attributes
 
-_Not yet defined. `style` is an empty array for Line layers._
+Applies to layers with `type: "Line"`. All 24 attributes are always emitted.
+
+A Line is composed of **point-vertices** (the dots at each waypoint) and **edges** (the segments connecting them). The point-vertex attribute group reuses the same IDs and names as the [Point Style Attributes](#point-style-attributes) section above — the allowed values and semantics are identical.
+
+### Point Vertex
+
+Point-vertex attributes (IDs 10–54) are identical to the [Point Style Attributes](#point-style-attributes) section above. The same 16 attributes, IDs, names, and allowed values apply.
+
+### Edge
+
+| id | name | Allowed values |
+|----|------|----------------|
+| 60 | Line Edge Color | Tailwind color token with optional opacity (e.g. `"blue-400"`, `"blue-400/50"`) \| `null` |
+| 61 | Line Edge Width | Tailwind spacing token (e.g. `"1"`) \| `null` |
+| 62 | Line Edge Style | `"solid"` \| `"dashed"` \| `"dotted"` \| `null` |
+
+### Arrow
+
+Arrow shape values are [Google Material Icon](https://fonts.google.com/icons?icon.query=line) names serialised in kebab-case.
+
+| id | name | Allowed values |
+|----|------|----------------|
+| 70 | Line Arrow Start | `"line_start_arrow"` \| `"line_start_arrow_notch"` \| `null` (no start arrow) |
+| 71 | Line Arrow End | `"line_end_arrow"` \| `"line_end_arrow_notch"` \| `null` (no end arrow) |
+| 72 | Line Arrow Mid | `"line_end_arrow"` \| `"line_end_arrow_notch"` \| `null` (no mid arrows) |
+| 73 | Line Arrow Mid Spacing | Tailwind spacing token — interval between mid-arrows \| `null` |
+| 74 | Line Arrow Size | Tailwind spacing token — arrowhead size \| `null` |
+
+**Mid-arrow count and placement** (applies when `Line Arrow Mid` and `Line Arrow Mid Spacing` are both non-null):
+
+Let `L` = rendered edge length, `S` = `Line Arrow Mid Spacing` value.
+
+Count: `n = max(1, floor(L / S) - 1)`
+
+Position of arrow `i` along the edge: `pos(i) = L/2 + (i − (n−1)/2) × S` for `i = 0 … n−1`
+
+The group is always centered on the edge midpoint. When `n ≥ 2` the minimum-distance rule is enforced — first and last mid-arrow are at least `S` from each terminus. When `n = 1` a single arrow is placed at the midpoint and the minimum-distance rule does not apply.
 
 ---
 
