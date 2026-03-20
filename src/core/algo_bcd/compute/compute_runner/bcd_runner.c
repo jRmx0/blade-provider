@@ -127,7 +127,7 @@ static char *serialize_result_json(const bcd_event_list_t *event_list,
 			const bcd_cell_t *cell = &(*cell_list)[i];
 			cJSON *jcell = cJSON_CreateObject();
 
-			cJSON_AddNumberToObject(jcell, "cellNumber", i);
+			cJSON_AddNumberToObject(jcell, "id", i);
 
 			cJSON *jc_begin = cJSON_CreateObject();
 			cJSON_AddNumberToObject(jc_begin, "x", cell->c_begin.x);

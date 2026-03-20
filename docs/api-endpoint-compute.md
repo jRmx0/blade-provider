@@ -226,7 +226,7 @@ Poll `GET /compute/:jobId` until `status` is `"completed"` or `"failed"`.
     ],
     "cellList": [
       {
-        "cellNumber": 0,
+        "id": 0,
         "ceilingBegin": { "x": 0, "y": 0 },
         "ceilingEnd": { "x": 100, "y": 0 },
         "floorBegin": { "x": 100, "y": 100 },
@@ -289,7 +289,7 @@ Poll `GET /compute/:jobId` until `status` is `"completed"` or `"failed"`.
 
 | Field | Type | Notes |
 |---|---|---|
-| `cellNumber` | `number` | Sequential index of the cell |
+| `id` | `number` | Sequential index of the cell |
 | `ceilingBegin` | `Point` | Left endpoint of the ceiling span |
 | `ceilingEnd` | `Point` | Right endpoint of the ceiling span |
 | `floorBegin` | `Point` | Left endpoint of the floor span |
