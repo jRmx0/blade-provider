@@ -263,13 +263,41 @@ Poll `GET /compute/:jobId` until `status` is `"completed"` or `"failed"`.
   "completedAt": "2026-03-20T12:00:01.200Z",
   "requestId": "optional-client-trace-id",
   "result": {
-    "route": [
-      { "x": 5, "y": 5 },
-      { "x": 95, "y": 5 },
-      { "x": 95, "y": 20 },
-      { "x": 5, "y": 20 }
-    ],
-    "intermediateCalculations": {}
+    "coveragePlan": {
+      "sections": [
+        {
+          "coveragePath": [
+            { "x": 5, "y": 5 },
+            { "x": 95, "y": 5 },
+            { "x": 95, "y": 20 },
+            { "x": 5, "y": 20 }
+          ],
+          "transitPath": []
+        }
+      ]
+    },
+    "debug": {
+      "eventList": {
+        "style": {
+          "className": "stroke-amber-400 fill-amber-400/20 opacity-80",
+          "pointRadius": 4
+        },
+        "data": ["..."]
+      },
+      "cellList": {
+        "style": {
+          "className": "stroke-sky-400 fill-sky-400/15 opacity-70"
+        },
+        "data": ["..."]
+      },
+      "cellVisitOrder": {
+        "style": {
+          "className": "text-white fill-slate-800/70 opacity-90",
+          "fontSize": 11
+        },
+        "data": [0]
+      }
+    }
   }
 }
 ```
@@ -306,20 +334,145 @@ Poll `GET /compute/:jobId` until `status` is `"completed"` or `"failed"`.
 
 ```json
 {
-  "route": [
-    { "x": 5, "y": 5 },
-    { "x": 95, "y": 5 },
-    { "x": 95, "y": 20 },
-    { "x": 5, "y": 20 }
-  ],
-  "intermediateCalculations": {}
+  "coveragePlan": {
+    "sections": [
+      {
+        "coveragePath": [
+          { "x": 5, "y": 5 },
+          { "x": 95, "y": 5 },
+          { "x": 95, "y": 20 },
+          { "x": 5, "y": 20 }
+        ],
+        "transitPath": []
+      }
+    ]
+  },
+  "debug": {
+    "eventList": {
+      "style": {
+        "className": "stroke-amber-400 fill-amber-400/20 opacity-80",
+        "pointRadius": 4
+      },
+      "data": [
+        {
+          "polygonType": "BOUNDARY",
+          "vertex": { "x": 0, "y": 0 },
+          "eventType": "SIDE_IN",
+          "floorEdge": { "begin": { "x": 0, "y": 0 }, "end": { "x": 0, "y": 0 } },
+          "ceilingEdge": { "begin": { "x": 0, "y": 0 }, "end": { "x": 0, "y": 0 } }
+        }
+      ]
+    },
+    "cellList": {
+      "style": {
+        "className": "stroke-sky-400 fill-sky-400/15 opacity-70"
+      },
+      "data": [
+        {
+          "cellNumber": 0,
+          "ceilingBegin": { "x": 0, "y": 0 },
+          "ceilingEnd": { "x": 100, "y": 0 },
+          "floorBegin": { "x": 100, "y": 100 },
+          "floorEnd": { "x": 0, "y": 100 },
+          "ceilingEdges": [
+            { "begin": { "x": 0, "y": 0 }, "end": { "x": 100, "y": 0 } }
+          ],
+          "floorEdges": [
+            { "begin": { "x": 100, "y": 100 }, "end": { "x": 0, "y": 100 } }
+          ],
+          "open": false,
+          "visited": true,
+          "cleaned": true
+        }
+      ]
+    },
+    "cellVisitOrder": {
+      "style": {
+        "className": "text-white fill-slate-800/70 opacity-90",
+        "fontSize": 11
+      },
+      "data": [0]
+    }
+  }
 }
 ```
 
+#### Top-level fields
+
 | Field | Type | Notes |
 |---|---|---|
-| `route` | `Point[]` | Ordered coverage path waypoints |
-| `intermediateCalculations` | `object` | Algorithm-specific debug data; shape varies |
+| `coveragePlan` | `CoveragePlan` | Primary output — the computed coverage path |
+| `debug` | `BcdDebug` | Internal algorithm data; useful for visualization and debugging |
+
+#### `CoveragePlan`
+
+| Field | Type | Notes |
+|---|---|---|
+| `sections` | `CoverageSection[]` | One entry per BCD cell visited, in visit order |
+
+#### `CoverageSection`
+
+| Field | Type | Notes |
+|---|---|---|
+| `coveragePath` | `Point[]` | Ordered boustrophedon waypoints for this cell |
+| `transitPath` | `Point[]` | Waypoints from the end of the previous section to the start of this one; currently always `[]` (not yet computed) |
+
+#### `BcdDebug`
+
+| Field | Type | Notes |
+|---|---|---|
+| `eventList` | `DebugLayer<BcdEvent>` | Sweep-line events produced by the BCD algorithm |
+| `cellList` | `DebugLayer<BcdCell>` | Decomposed cells in discovery order |
+| `cellVisitOrder` | `DebugLayer<number>` | Cell indices in planned visit order; values are indices into `cellList.data` |
+
+#### `DebugLayer<T>`
+
+Each debug layer wraps its data array with a default display style that blade-terminal uses out of the box. Users can override `style` locally inside blade-terminal.
+
+| Field | Type | Notes |
+|---|---|---|
+| `style` | `DebugLayerStyle` | Default rendering style for this layer |
+| `data` | `T[]` | The layer's data items |
+
+#### `DebugLayerStyle`
+
+| Field | Type | Notes |
+|---|---|---|
+| `className` | `string` | Tailwind utility classes for color, stroke, fill, and opacity |
+| `pointRadius` | `number?` | Point marker radius in pixels; used by `eventList` |
+| `fontSize` | `number?` | Label font size in pixels; used by `cellVisitOrder` |
+
+#### `BcdEvent`
+
+| Field | Type | Notes |
+|---|---|---|
+| `polygonType` | `"BOUNDARY"` \| `"OBSTACLE"` | Whether the vertex belongs to the boundary or an obstacle |
+| `vertex` | `Point` | The polygon vertex that triggered the event |
+| `eventType` | `"SIDE_IN"` \| `"CEILING"` \| `"SIDE_OUT"` | BCD sweep-line event classification |
+| `floorEdge` | `Edge` | Active floor edge at the event; `{begin:{x:0,y:0},end:{x:0,y:0}}` when not applicable |
+| `ceilingEdge` | `Edge` | Active ceiling edge at the event; `{begin:{x:0,y:0},end:{x:0,y:0}}` when not applicable |
+
+#### `BcdCell`
+
+| Field | Type | Notes |
+|---|---|---|
+| `cellNumber` | `number` | Sequential index of the cell |
+| `ceilingBegin` | `Point` | Left endpoint of the ceiling span |
+| `ceilingEnd` | `Point` | Right endpoint of the ceiling span |
+| `floorBegin` | `Point` | Left endpoint of the floor span |
+| `floorEnd` | `Point` | Right endpoint of the floor span |
+| `ceilingEdges` | `Edge[]` | Polygon edges forming the ceiling boundary of this cell |
+| `floorEdges` | `Edge[]` | Polygon edges forming the floor boundary of this cell |
+| `open` | `boolean` | `true` while the cell has no closing sweep event yet |
+| `visited` | `boolean` | `true` once the path planner has scheduled this cell |
+| `cleaned` | `boolean` | `true` once the motion planner has generated coverage for this cell |
+
+#### `Edge`
+
+| Field | Type |
+|---|---|
+| `begin` | `Point` |
+| `end` | `Point` |
 
 ---
 
