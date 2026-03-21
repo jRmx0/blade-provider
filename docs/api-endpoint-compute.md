@@ -220,11 +220,8 @@ Poll `GET /compute/:jobId` until `status` is `"completed"` or `"failed"`.
     "eventList": [
       {
         "id": 0,
-        "polygonType": "BOUNDARY",
-        "vertex": { "x": 0, "y": 0 },
-        "eventType": "SIDE_IN",
-        "floorEdge": { "begin": { "x": 0, "y": 0 }, "end": { "x": 0, "y": 0 } },
-        "ceilingEdge": { "begin": { "x": 0, "y": 0 }, "end": { "x": 0, "y": 0 } }
+        "point": { "x": 0, "y": 0 },
+        "eventType": "SIDE_IN"
       }
     ],
     "cellList": [
@@ -289,11 +286,8 @@ Poll `GET /compute/:jobId` until `status` is `"completed"` or `"failed"`.
 | Field | Type | Notes |
 |---|---|---|
 | `id` | `number` | Sequential index of the event |
-| `polygonType` | `"BOUNDARY"` \| `"OBSTACLE"` | Whether the vertex belongs to the boundary or an obstacle |
-| `vertex` | `Point` | The polygon vertex that triggered the event |
+| `point` | `Point` | The polygon vertex that triggered the event |
 | `eventType` | `"B_IN"` \| `"B_SIDE_IN"` \| `"B_INIT"` \| `"B_OUT"` \| `"B_SIDE_OUT"` \| `"B_DEINIT"` \| `"IN"` \| `"SIDE_IN"` \| `"OUT"` \| `"SIDE_OUT"` \| `"FLOOR"` \| `"CEILING"` \| `"NONE"` | BCD sweep-line event classification |
-| `floorEdge` | `Edge` | Active floor edge at the event; `{begin:{x:0,y:0},end:{x:0,y:0}}` when not applicable |
-| `ceilingEdge` | `Edge` | Active ceiling edge at the event; `{begin:{x:0,y:0},end:{x:0,y:0}}` when not applicable |
 
 ### `BcdCell`
 
@@ -303,10 +297,3 @@ Poll `GET /compute/:jobId` until `status` is `"completed"` or `"failed"`.
 | `vertices` | `Point[]` | The four span corners in order: `ceilingBegin`, `ceilingEnd`, `floorEnd`, `floorBegin` |
 | `winding` | `"clockwise"` \| `"counter-clockwise"` | Winding direction of `vertices` in screen coordinates (Y increases downward) — currently always `"clockwise"` |
 | `centroidPoint` | `Point` | Centroid of the four span corners — average of `ceilingBegin`, `ceilingEnd`, `floorBegin`, `floorEnd`. Useful for label placement and hit-testing |
-
-### `Edge`
-
-| Field | Type |
-|---|---|
-| `begin` | `Point` |
-| `end` | `Point` |

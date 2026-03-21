@@ -86,34 +86,11 @@ static char *serialize_result_json(const bcd_event_list_t *event_list,
 			const bcd_event_t *ev = &event_list->bcd_events[i];
 			cJSON *jev = cJSON_CreateObject();
 			cJSON_AddNumberToObject(jev, "id", i);
-			cJSON_AddStringToObject(jev, "polygonType", polygon_type_to_string(ev->polygon_type));
 			cJSON *jv = cJSON_CreateObject();
 			cJSON_AddNumberToObject(jv, "x", ev->polygon_vertex.x);
 			cJSON_AddNumberToObject(jv, "y", ev->polygon_vertex.y);
-			cJSON_AddItemToObject(jev, "vertex", jv);
+			cJSON_AddItemToObject(jev, "point", jv);
 			cJSON_AddStringToObject(jev, "eventType", event_type_to_string(ev->bcd_event_type));
-
-			cJSON *jfloor = cJSON_CreateObject();
-			cJSON *jfb = cJSON_CreateObject();
-			cJSON_AddNumberToObject(jfb, "x", ev->floor_edge.begin.x);
-			cJSON_AddNumberToObject(jfb, "y", ev->floor_edge.begin.y);
-			cJSON_AddItemToObject(jfloor, "begin", jfb);
-			cJSON *jfe = cJSON_CreateObject();
-			cJSON_AddNumberToObject(jfe, "x", ev->floor_edge.end.x);
-			cJSON_AddNumberToObject(jfe, "y", ev->floor_edge.end.y);
-			cJSON_AddItemToObject(jfloor, "end", jfe);
-			cJSON_AddItemToObject(jev, "floorEdge", jfloor);
-
-			cJSON *jceil = cJSON_CreateObject();
-			cJSON *jcb = cJSON_CreateObject();
-			cJSON_AddNumberToObject(jcb, "x", ev->ceiling_edge.begin.x);
-			cJSON_AddNumberToObject(jcb, "y", ev->ceiling_edge.begin.y);
-			cJSON_AddItemToObject(jceil, "begin", jcb);
-			cJSON *jce = cJSON_CreateObject();
-			cJSON_AddNumberToObject(jce, "x", ev->ceiling_edge.end.x);
-			cJSON_AddNumberToObject(jce, "y", ev->ceiling_edge.end.y);
-			cJSON_AddItemToObject(jceil, "end", jce);
-			cJSON_AddItemToObject(jev, "ceilingEdge", jceil);
 
 			cJSON_AddItemToArray(event_data_arr, jev);
 		}
