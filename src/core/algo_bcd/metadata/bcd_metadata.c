@@ -60,12 +60,12 @@ char *bcd_build_metadata_json(void)
 	{
 		cJSON *layer = cJSON_CreateObject();
 		cJSON_AddNumberToObject(layer, "id",     1);
-		cJSON_AddNumberToObject(layer, "zIndex", 1);
 		cJSON_AddStringToObject(layer, "debugKey", "eventList");
 		cJSON_AddStringToObject(layer, "name",   "Event List");
 		cJSON_AddStringToObject(layer, "type",   "Point");
 
 		cJSON *style = cJSON_CreateArray();
+		metadata_add_style_attr(style, 1,  "Z-Index",             "100");
 		metadata_add_style_attr(style, 10, "Point Shape",             "circle");
 		metadata_add_style_attr(style, 11, "Point Radius",            "4");
 		metadata_add_style_attr(style, 12, "Point Overlap Spacing",   NULL);
@@ -112,12 +112,12 @@ char *bcd_build_metadata_json(void)
 	{
 		cJSON *layer = cJSON_CreateObject();
 		cJSON_AddNumberToObject(layer, "id",     2);
-		cJSON_AddNumberToObject(layer, "zIndex", 2);
 		cJSON_AddStringToObject(layer, "debugKey", "cellList");
 		cJSON_AddStringToObject(layer, "name",   "Cell List");
 		cJSON_AddStringToObject(layer, "type",   "Polygon");
 
 		cJSON *style = cJSON_CreateArray();
+		metadata_add_style_attr(style, 1,  "Z-Index",             "110");
 		/* Corner vertex (10-44, excluding overlap 12-13 and text label 50-54) */
 		metadata_add_style_attr(style, 10, "Point Shape",             NULL);
 		metadata_add_style_attr(style, 11, "Point Radius",            NULL);
@@ -160,12 +160,12 @@ char *bcd_build_metadata_json(void)
 	{
 		cJSON *layer = cJSON_CreateObject();
 		cJSON_AddNumberToObject(layer, "id",     3);
-		cJSON_AddNumberToObject(layer, "zIndex", 3);
 		cJSON_AddStringToObject(layer, "debugKey", "cellVisitOrder");
 		cJSON_AddStringToObject(layer, "name",   "Cell Visit Order");
 		cJSON_AddStringToObject(layer, "type",   "Line");
 
 		cJSON *style = cJSON_CreateArray();
+		metadata_add_style_attr(style, 1,  "Z-Index",             "120");
 		/* Point vertex (all 18 Point attributes) */
 		metadata_add_style_attr(style, 10, "Point Shape",             "circle");
 		metadata_add_style_attr(style, 11, "Point Radius",            "3");

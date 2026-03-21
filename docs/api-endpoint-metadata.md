@@ -61,11 +61,11 @@ Returns all algorithms the provider exposes, with their parameter schemas. Consu
       "debugLayers": [
         {
           "id": 1,
-          "zIndex": 1,
           "debugKey": "eventList",
           "name": "Event List",
           "type": "Point",
           "style": [
+            { "id": 1,  "name": "Z-Index",                "value": "100"        },
             { "id": 10, "name": "Point Shape",              "value": "circle"     },
             { "id": 11, "name": "Point Radius",              "value": "4"          },
             { "id": 12, "name": "Point Overlap Spacing",     "value": null         },
@@ -106,11 +106,11 @@ Returns all algorithms the provider exposes, with their parameter schemas. Consu
         },
         {
           "id": 2,
-          "zIndex": 2,
           "debugKey": "cellList",
           "name": "Cell List",
           "type": "Polygon",
           "style": [
+            { "id": 1,  "name": "Z-Index",                "value": "110"        },
             { "id": 10, "name": "Point Shape",              "value": null        },
             { "id": 11, "name": "Point Radius",              "value": null        },
             { "id": 20, "name": "Point Border Color",        "value": null        },
@@ -143,11 +143,11 @@ Returns all algorithms the provider exposes, with their parameter schemas. Consu
         },
         {
           "id": 3,
-          "zIndex": 3,
           "debugKey": "cellVisitOrder",
           "name": "Cell Visit Order",
           "type": "Line",
           "style": [
+            { "id": 1,  "name": "Z-Index",                "value": "120"        },
             { "id": 10, "name": "Point Shape",              "value": "circle"           },
             { "id": 11, "name": "Point Radius",              "value": "3"               },
             { "id": 12, "name": "Point Overlap Spacing",     "value": "8"               },
@@ -196,7 +196,6 @@ Returns all algorithms the provider exposes, with their parameter schemas. Consu
 | Field | Type | Notes |
 |---|---|---|
 | `id` | `number` | Sequential identifier for this debug layer |
-| `zIndex` | `number` | Render order — layers with a lower `zIndex` are drawn first (bottom); higher values are drawn on top |
 | `debugKey` | `string` | Matches the field name under `result.debug` in the compute response |
 | `name` | `string` | Human-readable display name |
 | `type` | `DebugLayerType` | Geometry primitive type of the objects produced by this layer |

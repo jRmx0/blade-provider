@@ -22,6 +22,16 @@ All attributes in a type's registry are **always** present in the array. No attr
 
 ---
 
+## Universal Style Attributes
+
+Applies to all layer types. Always emitted as the first element in the `style` array.
+
+| id | name | Allowed values |
+|----|------|----------------|
+| 1 | Z-Index | Positive integer serialised as a string (e.g. `"100"`, `"110"`) — lower values are drawn first (bottom) |
+
+---
+
 ## Point Style Attributes
 
 Applies to layers with `type: "Point"`. All 18 attributes are always emitted.

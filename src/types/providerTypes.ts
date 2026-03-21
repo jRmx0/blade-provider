@@ -43,7 +43,6 @@ export interface DebugLayerLabel {
 
 export interface MetadataDebugLayerResponse {
     id: number;
-    zIndex: number;
     debugKey: string;
     name: string;
     type: DebugLayerType;
