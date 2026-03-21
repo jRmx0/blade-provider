@@ -230,19 +230,14 @@ Poll `GET /compute/:jobId` until `status` is `"completed"` or `"failed"`.
     "cellList": [
       {
         "id": 0,
-        "ceilingBegin": { "x": 0, "y": 0 },
-        "ceilingEnd": { "x": 100, "y": 0 },
-        "floorBegin": { "x": 100, "y": 100 },
-        "floorEnd": { "x": 0, "y": 100 },
-        "ceilingEdges": [
-          { "begin": { "x": 0, "y": 0 }, "end": { "x": 100, "y": 0 } }
+        "vertices": [
+          { "x": 0, "y": 0 },
+          { "x": 100, "y": 0 },
+          { "x": 100, "y": 100 },
+          { "x": 0, "y": 100 }
         ],
-        "floorEdges": [
-          { "begin": { "x": 100, "y": 100 }, "end": { "x": 0, "y": 100 } }
-        ],
-        "open": false,
-        "visited": true,
-        "cleaned": true
+        "winding": "clockwise",
+        "centroidPoint": { "x": 50, "y": 50 }
       }
     ],
     "cellVisitOrder": [
@@ -305,15 +300,9 @@ Poll `GET /compute/:jobId` until `status` is `"completed"` or `"failed"`.
 | Field | Type | Notes |
 |---|---|---|
 | `id` | `number` | Sequential index of the cell |
-| `ceilingBegin` | `Point` | Left endpoint of the ceiling span |
-| `ceilingEnd` | `Point` | Right endpoint of the ceiling span |
-| `floorBegin` | `Point` | Left endpoint of the floor span |
-| `floorEnd` | `Point` | Right endpoint of the floor span |
-| `ceilingEdges` | `Edge[]` | Polygon edges forming the ceiling boundary of this cell |
-| `floorEdges` | `Edge[]` | Polygon edges forming the floor boundary of this cell |
-| `open` | `boolean` | `true` while the cell has no closing sweep event yet |
-| `visited` | `boolean` | `true` once the path planner has scheduled this cell |
-| `cleaned` | `boolean` | `true` once the motion planner has generated coverage for this cell |
+| `vertices` | `Point[]` | The four span corners in order: `ceilingBegin`, `ceilingEnd`, `floorEnd`, `floorBegin` |
+| `winding` | `"clockwise"` \| `"counter-clockwise"` | Winding direction of `vertices` in screen coordinates (Y increases downward) — currently always `"clockwise"` |
+| `centroidPoint` | `Point` | Centroid of the four span corners — average of `ceilingBegin`, `ceilingEnd`, `floorBegin`, `floorEnd`. Useful for label placement and hit-testing |
 
 ### `Edge`
 

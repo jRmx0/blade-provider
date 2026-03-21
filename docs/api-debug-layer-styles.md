@@ -64,10 +64,10 @@ Renders the point's own index within the layer array (e.g. `0`, `1`, `2`…).
 
 | id | name | Allowed values |
 |----|------|----------------|
-| 40 | Point ID Placement | `"inside"` \| `"outside-left"` \| `"outside-right"` \| `"outside-top"` \| `"outside-bottom"` \| `null` (hidden) |
-| 41 | Point ID Color | Tailwind color token \| `null` |
-| 42 | Point ID Font Size | Tailwind text size class (e.g. `"text-xs"`, `"text-sm"`, `"text-base"`) \| `null` |
-| 43 | Point ID Font Weight | Tailwind font weight class (e.g. `"font-normal"`, `"font-medium"`, `"font-bold"`) \| `null` |
+| 40 | Point ID Color | Tailwind color token \| `null` |
+| 41 | Point ID Font Size | Tailwind text size class (e.g. `"text-xs"`, `"text-sm"`, `"text-base"`) \| `null` |
+| 42 | Point ID Font Weight | Tailwind font weight class (e.g. `"font-normal"`, `"font-medium"`, `"font-bold"`) \| `null` |
+| 43 | Point ID Placement | `"inside"` \| `"outside-left"` \| `"outside-right"` \| `"outside-top"` \| `"outside-bottom"` \| `null` (hidden) |
 | 44 | Point ID Offset | Tailwind spacing token for the offset from point center when an outside placement is active (e.g. `"2"`) \| `null` (renderer default) |
 
 ### Text Label
@@ -130,7 +130,7 @@ The group is always centered on the edge midpoint. When `n ≥ 2` the minimum-di
 
 ## Polygon Style Attributes
 
-Applies to layers with `type: "Polygon"`. All 19 attributes are always emitted.
+Applies to layers with `type: "Polygon"`. All 27 attributes are always emitted.
 
 A Polygon is composed of **corner vertices** (the points at each boundary corner), a **boundary edge** (the closed stroke outline), and an optional **fill**. The corner-vertex attribute group reuses the same IDs and names as the [Point Style Attributes](#point-style-attributes) section above, **excluding the Overlap group (IDs 12–13) and the Text Label group (IDs 50–54)** which polygons do not carry.
 
@@ -164,3 +164,11 @@ Renders the polygon's own index within the layer array (e.g. `0`, `1`, `2`…) a
 | 82 | Polygon ID Color | Tailwind color token \| `null` |
 | 83 | Polygon ID Font Size | Tailwind text size class (e.g. `"text-xs"`, `"text-sm"`, `"text-base"`) \| `null` |
 | 84 | Polygon ID Font Weight | Tailwind font weight class (e.g. `"font-normal"`, `"font-medium"`, `"font-bold"`) \| `null` |
+| 85 | Polygon ID Shape | `"circle"` \| `"square"` \| `null` (no marker background) |
+| 86 | Polygon ID Radius | Tailwind spacing token for marker size (e.g. `"4"`, `"6"`) \| `null` |
+| 87 | Polygon ID Border Color | Tailwind color token \| `null` |
+| 88 | Polygon ID Border Width | Tailwind spacing token (e.g. `"1"`) \| `null` |
+| 89 | Polygon ID Border Style | `"solid"` \| `"dashed"` \| `"dotted"` \| `null` |
+| 90 | Polygon ID Fill Color | Tailwind color token with optional slash opacity (e.g. `"slate-500/80"`) \| `null` |
+| 91 | Polygon ID Placement | `"inside"` \| `"outside-left"` \| `"outside-right"` \| `"outside-top"` \| `"outside-bottom"` \| `null` (hidden) |
+| 92 | Polygon ID Offset | Tailwind spacing token for offset from centroid when an outside placement is active (e.g. `"2"`) \| `null` (renderer default) |

@@ -133,71 +133,24 @@ static char *serialize_result_json(const bcd_event_list_t *event_list,
 
 			cJSON_AddNumberToObject(jcell, "id", i);
 
-			cJSON *jc_begin = cJSON_CreateObject();
-			cJSON_AddNumberToObject(jc_begin, "x", cell->c_begin.x);
-			cJSON_AddNumberToObject(jc_begin, "y", cell->c_begin.y);
-			cJSON_AddItemToObject(jcell, "ceilingBegin", jc_begin);
-
-			cJSON *jc_end = cJSON_CreateObject();
-			cJSON_AddNumberToObject(jc_end, "x", cell->c_end.x);
-			cJSON_AddNumberToObject(jc_end, "y", cell->c_end.y);
-			cJSON_AddItemToObject(jcell, "ceilingEnd", jc_end);
-
-			cJSON *jf_begin = cJSON_CreateObject();
-			cJSON_AddNumberToObject(jf_begin, "x", cell->f_begin.x);
-			cJSON_AddNumberToObject(jf_begin, "y", cell->f_begin.y);
-			cJSON_AddItemToObject(jcell, "floorBegin", jf_begin);
-
-			cJSON *jf_end = cJSON_CreateObject();
-			cJSON_AddNumberToObject(jf_end, "x", cell->f_end.x);
-			cJSON_AddNumberToObject(jf_end, "y", cell->f_end.y);
-			cJSON_AddItemToObject(jcell, "floorEnd", jf_end);
-
-			cJSON *ceiling_edges = cJSON_CreateArray();
-			if (cell->ceiling_edge_list)
+			/* vertices: c_begin -> c_end -> f_end -> f_begin (clockwise) */
+			cJSON *vertices = cJSON_CreateArray();
+			const point_t corners[4] = { cell->c_begin, cell->c_end, cell->f_end, cell->f_begin };
+			for (int j = 0; j < 4; ++j)
 			{
-				int ceiling_edge_count = cvector_size(cell->ceiling_edge_list);
-				for (int j = 0; j < ceiling_edge_count; ++j)
-				{
-					const polygon_edge_t *edge = &cell->ceiling_edge_list[j];
-					cJSON *jedge = cJSON_CreateObject();
-					cJSON *jbegin = cJSON_CreateObject();
-					cJSON_AddNumberToObject(jbegin, "x", edge->begin.x);
-					cJSON_AddNumberToObject(jbegin, "y", edge->begin.y);
-					cJSON_AddItemToObject(jedge, "begin", jbegin);
-					cJSON *jend = cJSON_CreateObject();
-					cJSON_AddNumberToObject(jend, "x", edge->end.x);
-					cJSON_AddNumberToObject(jend, "y", edge->end.y);
-					cJSON_AddItemToObject(jedge, "end", jend);
-					cJSON_AddItemToArray(ceiling_edges, jedge);
-				}
+				cJSON *jpt = cJSON_CreateObject();
+				cJSON_AddNumberToObject(jpt, "x", corners[j].x);
+				cJSON_AddNumberToObject(jpt, "y", corners[j].y);
+				cJSON_AddItemToArray(vertices, jpt);
 			}
-			cJSON_AddItemToObject(jcell, "ceilingEdges", ceiling_edges);
+			cJSON_AddItemToObject(jcell, "vertices", vertices);
+			cJSON_AddStringToObject(jcell, "winding", "clockwise");
 
-			cJSON *floor_edges = cJSON_CreateArray();
-			if (cell->floor_edge_list)
-			{
-				int floor_edge_count = cvector_size(cell->floor_edge_list);
-				for (int j = 0; j < floor_edge_count; ++j)
-				{
-					const polygon_edge_t *edge = &cell->floor_edge_list[j];
-					cJSON *jedge = cJSON_CreateObject();
-					cJSON *jbegin = cJSON_CreateObject();
-					cJSON_AddNumberToObject(jbegin, "x", edge->begin.x);
-					cJSON_AddNumberToObject(jbegin, "y", edge->begin.y);
-					cJSON_AddItemToObject(jedge, "begin", jbegin);
-					cJSON *jend = cJSON_CreateObject();
-					cJSON_AddNumberToObject(jend, "x", edge->end.x);
-					cJSON_AddNumberToObject(jend, "y", edge->end.y);
-					cJSON_AddItemToObject(jedge, "end", jend);
-					cJSON_AddItemToArray(floor_edges, jedge);
-				}
-			}
-			cJSON_AddItemToObject(jcell, "floorEdges", floor_edges);
-
-			cJSON_AddBoolToObject(jcell, "open", cell->open);
-			cJSON_AddBoolToObject(jcell, "visited", cell->visited);
-			cJSON_AddBoolToObject(jcell, "cleaned", cell->cleaned);
+			point_t cp = bcd_cell_interior_point(cell);
+			cJSON *jpoint = cJSON_CreateObject();
+			cJSON_AddNumberToObject(jpoint, "x", cp.x);
+			cJSON_AddNumberToObject(jpoint, "y", cp.y);
+			cJSON_AddItemToObject(jcell, "centroidPoint", jpoint);
 
 			cJSON_AddItemToArray(cell_data_arr, jcell);
 		}
