@@ -62,7 +62,7 @@ Returns all algorithms the provider exposes, with their parameter schemas. Consu
         {
           "id": 1,
           "zIndex": 1,
-          "key": "eventList",
+          "debugKey": "eventList",
           "name": "Event List",
           "type": "Point",
           "style": [
@@ -107,7 +107,7 @@ Returns all algorithms the provider exposes, with their parameter schemas. Consu
         {
           "id": 2,
           "zIndex": 2,
-          "key": "cellList",
+          "debugKey": "cellList",
           "name": "Cell List",
           "type": "Polygon",
           "style": [
@@ -144,7 +144,7 @@ Returns all algorithms the provider exposes, with their parameter schemas. Consu
         {
           "id": 3,
           "zIndex": 3,
-          "key": "cellVisitOrder",
+          "debugKey": "cellVisitOrder",
           "name": "Cell Visit Order",
           "type": "Line",
           "style": [
@@ -197,7 +197,7 @@ Returns all algorithms the provider exposes, with their parameter schemas. Consu
 |---|---|---|
 | `id` | `number` | Sequential identifier for this debug layer |
 | `zIndex` | `number` | Render order — layers with a lower `zIndex` are drawn first (bottom); higher values are drawn on top |
-| `key` | `string` | Matches the field name under `result.debug` in the compute response |
+| `debugKey` | `string` | Matches the field name under `result.debug` in the compute response |
 | `name` | `string` | Human-readable display name |
 | `type` | `DebugLayerType` | Geometry primitive type of the objects produced by this layer |
 | `style` | `DebugLayerStyleAttribute[]` | Default rendering attributes — see [Debug Layer Styles](./api-debug-layer-styles.md) |

@@ -44,7 +44,7 @@ export interface DebugLayerLabel {
 export interface MetadataDebugLayerResponse {
     id: number;
     zIndex: number;
-    key: string;
+    debugKey: string;
     name: string;
     type: DebugLayerType;
     style: DebugLayerStyleAttribute[];

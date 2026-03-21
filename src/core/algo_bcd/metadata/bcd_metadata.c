@@ -61,7 +61,7 @@ char *bcd_build_metadata_json(void)
 		cJSON *layer = cJSON_CreateObject();
 		cJSON_AddNumberToObject(layer, "id",     1);
 		cJSON_AddNumberToObject(layer, "zIndex", 1);
-		cJSON_AddStringToObject(layer, "key",    "eventList");
+		cJSON_AddStringToObject(layer, "debugKey", "eventList");
 		cJSON_AddStringToObject(layer, "name",   "Event List");
 		cJSON_AddStringToObject(layer, "type",   "Point");
 
@@ -113,7 +113,7 @@ char *bcd_build_metadata_json(void)
 		cJSON *layer = cJSON_CreateObject();
 		cJSON_AddNumberToObject(layer, "id",     2);
 		cJSON_AddNumberToObject(layer, "zIndex", 2);
-		cJSON_AddStringToObject(layer, "key",    "cellList");
+		cJSON_AddStringToObject(layer, "debugKey", "cellList");
 		cJSON_AddStringToObject(layer, "name",   "Cell List");
 		cJSON_AddStringToObject(layer, "type",   "Polygon");
 
@@ -161,7 +161,7 @@ char *bcd_build_metadata_json(void)
 		cJSON *layer = cJSON_CreateObject();
 		cJSON_AddNumberToObject(layer, "id",     3);
 		cJSON_AddNumberToObject(layer, "zIndex", 3);
-		cJSON_AddStringToObject(layer, "key",    "cellVisitOrder");
+		cJSON_AddStringToObject(layer, "debugKey", "cellVisitOrder");
 		cJSON_AddStringToObject(layer, "name",   "Cell Visit Order");
 		cJSON_AddStringToObject(layer, "type",   "Line");
 
