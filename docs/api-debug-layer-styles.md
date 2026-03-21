@@ -24,7 +24,7 @@ All attributes in a type's registry are **always** present in the array. No attr
 
 ## Point Style Attributes
 
-Applies to layers with `type: "Point"`. All 16 attributes are always emitted.
+Applies to layers with `type: "Point"`. All 18 attributes are always emitted.
 
 Color values are Tailwind color tokens; opacity is expressed inline via slash notation (e.g. `"purple-500"`, `"purple-500/50"`). Font size values are Tailwind text size classes (e.g. `"text-xs"`, `"text-sm"`, `"text-base"`). Spatial values (radius, width, offset) are Tailwind spacing tokens (e.g. `"1"`, `"2"`, `"4"`).
 
@@ -34,6 +34,15 @@ Color values are Tailwind color tokens; opacity is expressed inline via slash no
 |----|------|----------------|
 | 10 | Point Shape | `"circle"` \| `"square"` \| `"diamond"` \| `"cross"` \| `"triangle"` \| `null` |
 | 11 | Point Radius | Tailwind spacing token (e.g. `"4"`) \| `null` |
+
+### Overlap
+
+Controls how the renderer spreads apart multiple points that share the same canvas position (e.g. multiple visit entries on the same cell centroid).
+
+| id | name | Allowed values |
+|----|------|----------------|
+| 12 | Point Overlap Spacing | Tailwind spacing token — distance between stacked points (e.g. `"8"`) \| `null` (renderer default) |
+| 13 | Point Overlap Layout | `"grid"` \| `null` (no spread) |
 
 ### Border
 
@@ -79,13 +88,13 @@ Renders a data value carried by the point (e.g. an algorithm-specific annotation
 
 ## Line Style Attributes
 
-Applies to layers with `type: "Line"`. All 24 attributes are always emitted.
+Applies to layers with `type: "Line"`. All 26 attributes are always emitted.
 
 A Line is composed of **point-vertices** (the dots at each waypoint) and **edges** (the segments connecting them). The point-vertex attribute group reuses the same IDs and names as the [Point Style Attributes](#point-style-attributes) section above — the allowed values and semantics are identical.
 
 ### Point Vertex
 
-Point-vertex attributes (IDs 10–54) are identical to the [Point Style Attributes](#point-style-attributes) section above. The same 16 attributes, IDs, names, and allowed values apply.
+Point-vertex attributes (IDs 10–54) are identical to the [Point Style Attributes](#point-style-attributes) section above. The same 18 attributes, IDs, names, and allowed values apply.
 
 ### Edge
 
@@ -123,11 +132,11 @@ The group is always centered on the edge midpoint. When `n ≥ 2` the minimum-di
 
 Applies to layers with `type: "Polygon"`. All 19 attributes are always emitted.
 
-A Polygon is composed of **corner vertices** (the points at each boundary corner), a **boundary edge** (the closed stroke outline), and an optional **fill**. The corner-vertex attribute group reuses the same IDs and names as the [Point Style Attributes](#point-style-attributes) section above, **excluding the Text Label group (IDs 50–54)** which polygons do not carry.
+A Polygon is composed of **corner vertices** (the points at each boundary corner), a **boundary edge** (the closed stroke outline), and an optional **fill**. The corner-vertex attribute group reuses the same IDs and names as the [Point Style Attributes](#point-style-attributes) section above, **excluding the Overlap group (IDs 12–13) and the Text Label group (IDs 50–54)** which polygons do not carry.
 
 ### Corner Vertex
 
-Corner-vertex attributes (IDs 10–44) are identical to the [Point Style Attributes](#point-style-attributes) section above — the same 11 attributes, IDs, names, and allowed values apply. The Text Label group (IDs 50–54) is not part of the Polygon attribute set.
+Corner-vertex attributes (IDs 10–44, excluding 12–13) are identical to the [Point Style Attributes](#point-style-attributes) section above — the same 11 attributes, IDs, names, and allowed values apply. The Overlap group (IDs 12–13) and Text Label group (IDs 50–54) are not part of the Polygon attribute set.
 
 ### Polygon Edge
 

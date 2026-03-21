@@ -164,7 +164,7 @@ Poll `GET /compute/:jobId` until `status` is `"completed"` or `"failed"`.
     "debug": {
       "eventList":      ["..."],
       "cellList":       ["..."],
-      "cellVisitOrder": [0]
+      "cellVisitOrder": ["..."]
     }
   }
 }
@@ -245,7 +245,9 @@ Poll `GET /compute/:jobId` until `status` is `"completed"` or `"failed"`.
         "cleaned": true
       }
     ],
-    "cellVisitOrder": [0]
+    "cellVisitOrder": [
+      { "id": 0, "cellId": 0, "point": { "x": 50, "y": 50 } }
+    ]
   }
 }
 ```
@@ -277,7 +279,15 @@ Poll `GET /compute/:jobId` until `status` is `"completed"` or `"failed"`.
 |---|---|---|
 | `eventList` | `BcdEvent[]` | Sweep-line events produced by the BCD algorithm |
 | `cellList` | `BcdCell[]` | Decomposed cells in discovery order |
-| `cellVisitOrder` | `number[]` | Cell indices in planned visit order; values are indices into `cellList` |
+| `cellVisitOrder` | `CellVisitEntry[]` | Planned cell visit sequence, in visit order |
+
+### `CellVisitEntry`
+
+| Field | Type | Notes |
+|---|---|---|
+| `id` | `number` | Sequential visit index (0-based); unique across the array — use this as the rendering key |
+| `cellId` | `number` | Index into `cellList` for the cell being visited; may repeat if the same cell is visited more than once |
+| `point` | `Point` | Centroid of the cell's four span corners (`ceilingBegin`, `ceilingEnd`, `floorBegin`, `floorEnd`). Always the same value for a given `cellId`. Renderers are responsible for offsetting markers when multiple entries share a `cellId` |
 
 ### `BcdEvent`
 
