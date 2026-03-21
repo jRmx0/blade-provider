@@ -52,35 +52,50 @@ static inline void metadata_add_parameter(
     cJSON_AddItemToArray(parameters, parameter);
 }
 
-static inline void metadata_add_debug_layer(
-    cJSON *debug_layers,
+/*
+ * Appends one style attribute entry { "id": id, "name": name, "value": value|null }
+ * to the given style array.  Pass NULL for value to emit a JSON null.
+ */
+static inline void metadata_add_style_attr(
+    cJSON *style_arr,
     int id,
-    const char *key,
     const char *name,
-    bcd_metadata_debug_layer_type_t layer_type,
-    const char *class_name,
-    int point_radius,
-    int font_size)
+    const char *value)
 {
-    cJSON *layer = cJSON_CreateObject();
-    cJSON_AddNumberToObject(layer, "id", id);
-    cJSON_AddStringToObject(layer, "key", key);
-    cJSON_AddStringToObject(layer, "name", name);
-    cJSON_AddStringToObject(layer, "type", metadata_debug_layer_type_to_string(layer_type));
-
-    cJSON *style = cJSON_CreateObject();
-    cJSON_AddStringToObject(style, "className", class_name);
-    if (point_radius >= 0)
+    cJSON *attr = cJSON_CreateObject();
+    cJSON_AddNumberToObject(attr, "id", id);
+    cJSON_AddStringToObject(attr, "name", name);
+    if (value != NULL)
     {
-        cJSON_AddNumberToObject(style, "pointRadius", point_radius);
+        cJSON_AddStringToObject(attr, "value", value);
     }
-    if (font_size >= 0)
+    else
     {
-        cJSON_AddNumberToObject(style, "fontSize", font_size);
+        cJSON_AddNullToObject(attr, "value");
     }
-    cJSON_AddItemToObject(layer, "style", style);
+    cJSON_AddItemToArray(style_arr, attr);
+}
 
-    cJSON_AddItemToArray(debug_layers, layer);
+/*
+ * Appends one label enum entry { "value": val, "color": color|null }
+ * to the given enumValues array.  Pass NULL for color to emit a JSON null.
+ */
+static inline void metadata_add_label_enum_value(
+    cJSON *enum_values,
+    const char *value,
+    const char *color)
+{
+    cJSON *entry = cJSON_CreateObject();
+    cJSON_AddStringToObject(entry, "value", value);
+    if (color != NULL)
+    {
+        cJSON_AddStringToObject(entry, "color", color);
+    }
+    else
+    {
+        cJSON_AddNullToObject(entry, "color");
+    }
+    cJSON_AddItemToArray(enum_values, entry);
 }
 
 #endif // METADATA_JSON_H

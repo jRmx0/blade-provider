@@ -23,10 +23,39 @@ export interface MetadataParamResponse {
     appHandler?: string;
 }
 
+export interface DebugLayerStyleAttribute {
+    id: number;
+    name: string;
+    value: string | null;
+}
+
+export type DebugLayerType = "Point" | "Line" | "Polygon";
+
+export interface DebugLayerLabelEnumValue {
+    value: string;
+    color: string | null;
+}
+
+export interface DebugLayerLabel {
+    key: string;
+    enumValues: DebugLayerLabelEnumValue[];
+}
+
+export interface MetadataDebugLayerResponse {
+    id: number;
+    zIndex: number;
+    key: string;
+    name: string;
+    type: DebugLayerType;
+    style: DebugLayerStyleAttribute[];
+    label: DebugLayerLabel | null;
+}
+
 export interface MetadataAlgorithmResponse {
     id: number;
     name: string;
     parameters: MetadataParamResponse[];
+    debugLayers?: MetadataDebugLayerResponse[];
 }
 
 export interface MetadataResponse {

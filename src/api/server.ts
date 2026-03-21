@@ -121,7 +121,7 @@ async function runComputeJob(
         context.jobs.markCompleted(jobId, result);
     } catch (error) {
         context.jobs.markFailed(jobId, {
-            code: error instanceof CoreComputeError ? error.code : "compute_failed",
+            code: error instanceof CoreComputeError ? error.code : "internal_error",
             message: error instanceof Error ? error.message : String(error),
         });
     }

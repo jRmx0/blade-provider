@@ -37,7 +37,7 @@ Returns all algorithms the provider exposes, with their parameter schemas. Consu
           "enumValues": ["Polygon"],
           "defaultValue": "Polygon",
           "section": "Environment",
-          "appHandler": "environment.format"
+          "appHandler": "env.format"
         },
         {
           "id": 4,
@@ -46,7 +46,7 @@ Returns all algorithms the provider exposes, with their parameter schemas. Consu
           "enumValues": ["Off-Line"],
           "defaultValue": "Off-Line",
           "section": "Environment",
-          "appHandler": "environment.type"
+          "appHandler": "env.type"
         },
         {
           "id": 5,
@@ -55,7 +55,7 @@ Returns all algorithms the provider exposes, with their parameter schemas. Consu
           "enumValues": ["Decimal"],
           "defaultValue": "Decimal",
           "section": "Environment",
-          "appHandler": "environment.coordsystem"
+          "appHandler": "env.coordsystem"
         }
       ],
       "debugLayers": [

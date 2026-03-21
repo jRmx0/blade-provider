@@ -49,7 +49,7 @@ static inline const char *metadata_param_section_to_string(bcd_metadata_param_se
     case BCD_METADATA_PARAM_SECTION_GENERAL:
         return "General";
     case BCD_METADATA_PARAM_SECTION_COVERAGE_PATH:
-        return "Coverage path";
+        return "Coverage Path";
     case BCD_METADATA_PARAM_SECTION_ENVIRONMENT:
         return "Environment";
     case BCD_METADATA_PARAM_SECTION_OBJECT:
