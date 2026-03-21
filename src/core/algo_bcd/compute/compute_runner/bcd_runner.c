@@ -7,6 +7,7 @@
 #include "bcd_core/bcd_cell_computation.h"
 #include "bcd_core/bcd_coverage_planning.h"
 #include "bcd_core/bcd_motion_planning.h"
+#include "bcd_core/bcd_geometry.h"
 
 static void log_event_list(const bcd_event_list_t *event_list);
 static const char *event_type_to_string(bcd_event_type_t t);
@@ -211,7 +212,19 @@ static char *serialize_result_json(const bcd_event_list_t *event_list,
 		int path_count = cvector_size(*path_list);
 		for (int i = 0; i < path_count; ++i)
 		{
-			cJSON_AddItemToArray(visit_data_arr, cJSON_CreateNumber((*path_list)[i]));
+			int cell_id = (*path_list)[i];
+			point_t p = bcd_cell_interior_point(&(*cell_list)[cell_id]);
+
+			cJSON *entry = cJSON_CreateObject();
+			cJSON_AddNumberToObject(entry, "id", i);
+			cJSON_AddNumberToObject(entry, "cellId", cell_id);
+
+		cJSON *jpoint = cJSON_CreateObject();
+		cJSON_AddNumberToObject(jpoint, "x", p.x);
+		cJSON_AddNumberToObject(jpoint, "y", p.y);
+		cJSON_AddItemToObject(entry, "point", jpoint);
+
+			cJSON_AddItemToArray(visit_data_arr, entry);
 		}
 	}
 

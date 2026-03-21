@@ -17,6 +17,7 @@
 #include "compute_runner/bcd_core/bcd_cell_computation.c"
 #include "compute_runner/bcd_core/bcd_coverage_planning.c"
 #include "compute_runner/bcd_core/bcd_motion_planning.c"
+#include "compute_runner/bcd_core/bcd_geometry.c"
 #include "compute_runner/bcd_runner.c"
 
 static char *bcd_create_error_json(const char *code, const char *message)
