@@ -28,7 +28,7 @@ Applies to all layer types. Always emitted as the first element in the `style` a
 
 | id | name | Allowed values |
 |----|------|----------------|
-| 1 | Z-Index | Positive integer serialised as a string (e.g. `"100"`, `"110"`) — lower values are drawn first (bottom) |
+| 5 | Z-Index | Positive integer serialised as a string (e.g. `"100"`, `"110"`) — lower values are drawn first (bottom) |
 
 ---
 

@@ -65,7 +65,7 @@ char *bcd_build_metadata_json(void)
 		cJSON_AddStringToObject(layer, "type",   "Point");
 
 		cJSON *style = cJSON_CreateArray();
-		metadata_add_style_attr(style, 1,  "Z-Index",             "100");
+		metadata_add_style_attr(style, 5,  "Z-Index",             "100");
 		metadata_add_style_attr(style, 10, "Point Shape",             "circle");
 		metadata_add_style_attr(style, 11, "Point Radius",            "4");
 		metadata_add_style_attr(style, 12, "Point Overlap Spacing",   NULL);
@@ -117,7 +117,7 @@ char *bcd_build_metadata_json(void)
 		cJSON_AddStringToObject(layer, "type",   "Polygon");
 
 		cJSON *style = cJSON_CreateArray();
-		metadata_add_style_attr(style, 1,  "Z-Index",             "110");
+		metadata_add_style_attr(style, 5,  "Z-Index",             "110");
 		/* Corner vertex (10-44, excluding overlap 12-13 and text label 50-54) */
 		metadata_add_style_attr(style, 10, "Point Shape",             NULL);
 		metadata_add_style_attr(style, 11, "Point Radius",            NULL);
@@ -165,7 +165,7 @@ char *bcd_build_metadata_json(void)
 		cJSON_AddStringToObject(layer, "type",   "Line");
 
 		cJSON *style = cJSON_CreateArray();
-		metadata_add_style_attr(style, 1,  "Z-Index",             "120");
+		metadata_add_style_attr(style, 5,  "Z-Index",             "120");
 		/* Point vertex (all 18 Point attributes) */
 		metadata_add_style_attr(style, 10, "Point Shape",             "circle");
 		metadata_add_style_attr(style, 11, "Point Radius",            "3");
