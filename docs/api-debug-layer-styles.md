@@ -36,7 +36,7 @@ Applies to all layer types. Always emitted as the first element in the `style` a
 
 Applies to layers with `type: "Point"`. All 18 attributes are always emitted.
 
-Color values are Tailwind color tokens; opacity is expressed inline via slash notation (e.g. `"purple-500"`, `"purple-500/50"`). Font size values are Tailwind text size classes (e.g. `"text-xs"`, `"text-sm"`, `"text-base"`). Spatial values (radius, width, offset) are Tailwind spacing tokens (e.g. `"1"`, `"2"`, `"4"`).
+Geometric color values (border, fill) are CSS hex strings with optional 8-digit alpha (e.g. `"#a855f7"`, `"#a855f7cc"`). Text color values (ID, label) are Tailwind color tokens. Font size values are Tailwind text size classes (e.g. `"text-xs"`, `"text-sm"`, `"text-base"`). Spatial values (radius, width, offset) are Tailwind spacing tokens (e.g. `"1"`, `"2"`, `"4"`).
 
 ### Marker Shape
 
@@ -58,7 +58,7 @@ Controls how the renderer spreads apart multiple points that share the same canv
 
 | id | name | Allowed values |
 |----|------|----------------|
-| 20 | Point Border Color | Tailwind color token with optional opacity (e.g. `"purple-500"`, `"purple-500/50"`) \| `null` (no border) |
+| 20 | Point Border Color | CSS hex string with optional alpha (e.g. `"#a855f7"`, `"#a855f7cc"`) \| `null` (no border) |
 | 21 | Point Border Width | Tailwind spacing token (e.g. `"1"`) \| `null` |
 | 22 | Point Border Style | `"solid"` \| `"dashed"` \| `"dotted"` \| `null` |
 
@@ -66,7 +66,7 @@ Controls how the renderer spreads apart multiple points that share the same canv
 
 | id | name | Allowed values |
 |----|------|----------------|
-| 30 | Point Fill Color | Tailwind color token with optional opacity (e.g. `"purple-500"`, `"purple-500/50"`) \| `null` (transparent) |
+| 30 | Point Fill Color | CSS hex string with optional alpha (e.g. `"#a855f7"`, `"#a855f7cc"`) \| `null` (transparent) |
 
 ### Id Label
 
@@ -110,7 +110,7 @@ Point-vertex attributes (IDs 10–54) are identical to the [Point Style Attribut
 
 | id | name | Allowed values |
 |----|------|----------------|
-| 60 | Line Edge Color | Tailwind color token with optional opacity (e.g. `"blue-400"`, `"blue-400/50"`) \| `null` |
+| 60 | Line Edge Color | CSS hex string with optional alpha (e.g. `"#60a5fa"`, `"#60a5fa80"`) \| `null` |
 | 61 | Line Edge Width | Tailwind spacing token (e.g. `"1"`) \| `null` |
 | 62 | Line Edge Style | `"solid"` \| `"dashed"` \| `"dotted"` \| `null` |
 
@@ -152,7 +152,7 @@ Corner-vertex attributes (IDs 10–44, excluding 12–13) are identical to the [
 
 | id | name | Allowed values |
 |----|------|----------------|
-| 60 | Polygon Edge Color | Tailwind color token with optional opacity (e.g. `"slate-400"`, `"slate-400/50"`) \| `null` |
+| 60 | Polygon Edge Color | CSS hex string with optional alpha (e.g. `"#94a3b8"`, `"#94a3b880"`) \| `null` |
 | 61 | Polygon Edge Width | Tailwind spacing token (e.g. `"1"`) \| `null` |
 | 62 | Polygon Edge Style | `"solid"` \| `"dashed"` \| `"dotted"` \| `null` |
 
@@ -160,7 +160,7 @@ Corner-vertex attributes (IDs 10–44, excluding 12–13) are identical to the [
 
 | id | name | Allowed values |
 |----|------|----------------|
-| 80 | Polygon Fill Color | Tailwind color token with optional slash opacity (e.g. `"blue-400/20"`) \| `null` (transparent) |
+| 80 | Polygon Fill Color | CSS hex string with optional alpha (e.g. `"#60a5fa"`, `"#60a5fa33"`) \| `null` (transparent) |
 | 81 | Polygon Fill Style | `"solid"` \| `"hatched"` \| `null` |
 
 `"hatched"` renders the fill as a 45° diagonal stripe pattern. When **Polygon Fill Color** is non-null and **Polygon Fill Style** is `null`, the renderer defaults to `"solid"`.
@@ -176,9 +176,9 @@ Renders the polygon's own index within the layer array (e.g. `0`, `1`, `2`…) a
 | 84 | Polygon ID Font Weight | Tailwind font weight class (e.g. `"font-normal"`, `"font-medium"`, `"font-bold"`) \| `null` |
 | 85 | Polygon ID Shape | `"circle"` \| `"square"` \| `null` (no marker background) |
 | 86 | Polygon ID Radius | Tailwind spacing token for marker size (e.g. `"4"`, `"6"`) \| `null` |
-| 87 | Polygon ID Border Color | Tailwind color token \| `null` |
+| 87 | Polygon ID Border Color | CSS hex string with optional alpha (e.g. `"#94a3b8"`, `"#94a3b880"`) \| `null` |
 | 88 | Polygon ID Border Width | Tailwind spacing token (e.g. `"1"`) \| `null` |
 | 89 | Polygon ID Border Style | `"solid"` \| `"dashed"` \| `"dotted"` \| `null` |
-| 90 | Polygon ID Fill Color | Tailwind color token with optional slash opacity (e.g. `"slate-500/80"`) \| `null` |
+| 90 | Polygon ID Fill Color | CSS hex string with optional alpha (e.g. `"#60a5fa"`, `"#60a5fa33"`) \| `null` |
 | 91 | Polygon ID Placement | `"inside"` \| `"outside-left"` \| `"outside-right"` \| `"outside-top"` \| `"outside-bottom"` \| `null` (hidden) |
 | 92 | Polygon ID Offset | Tailwind spacing token for offset from centroid when an outside placement is active (e.g. `"2"`) \| `null` (renderer default) |

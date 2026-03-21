@@ -70,10 +70,10 @@ char *bcd_build_metadata_json(void)
 		metadata_add_style_attr(style, 11, "Point Radius",            "4");
 		metadata_add_style_attr(style, 12, "Point Overlap Spacing",   NULL);
 		metadata_add_style_attr(style, 13, "Point Overlap Layout",    NULL);
-		metadata_add_style_attr(style, 20, "Point Border Color",      "purple-500");
+		metadata_add_style_attr(style, 20, "Point Border Color",      "#a855f7");
 		metadata_add_style_attr(style, 21, "Point Border Width",      "1");
 		metadata_add_style_attr(style, 22, "Point Border Style",      "solid");
-		metadata_add_style_attr(style, 30, "Point Fill Color",        "purple-500");
+		metadata_add_style_attr(style, 30, "Point Fill Color",        "#a855f7");
 		metadata_add_style_attr(style, 40, "Point ID Color",          NULL);
 		metadata_add_style_attr(style, 41, "Point ID Font Size",      NULL);
 		metadata_add_style_attr(style, 42, "Point ID Font Weight",    NULL);
@@ -131,7 +131,7 @@ char *bcd_build_metadata_json(void)
 		metadata_add_style_attr(style, 43, "Point ID Placement",      NULL);
 		metadata_add_style_attr(style, 44, "Point ID Offset",         NULL);
 		/* Polygon Edge */
-		metadata_add_style_attr(style, 60, "Polygon Edge Color",      "slate-400");
+		metadata_add_style_attr(style, 60, "Polygon Edge Color",      "#94a3b8");
 		metadata_add_style_attr(style, 61, "Polygon Edge Width",      "1");
 		metadata_add_style_attr(style, 62, "Polygon Edge Style",      "solid");
 		/* Polygon Fill */
@@ -174,7 +174,7 @@ char *bcd_build_metadata_json(void)
 		metadata_add_style_attr(style, 20, "Point Border Color",      NULL);
 		metadata_add_style_attr(style, 21, "Point Border Width",      NULL);
 		metadata_add_style_attr(style, 22, "Point Border Style",      NULL);
-		metadata_add_style_attr(style, 30, "Point Fill Color",        "blue-400");
+		metadata_add_style_attr(style, 30, "Point Fill Color",        "#60a5fa");
 		metadata_add_style_attr(style, 40, "Point ID Color",          "blue-400");
 		metadata_add_style_attr(style, 41, "Point ID Font Size",      "text-xs");
 		metadata_add_style_attr(style, 42, "Point ID Font Weight",    "font-medium");
@@ -186,7 +186,7 @@ char *bcd_build_metadata_json(void)
 		metadata_add_style_attr(style, 53, "Point Label Font Weight", NULL);
 		metadata_add_style_attr(style, 54, "Point Label Offset",      NULL);
 		/* Line Edge */
-		metadata_add_style_attr(style, 60, "Line Edge Color",         "blue-400");
+		metadata_add_style_attr(style, 60, "Line Edge Color",         "#60a5fa");
 		metadata_add_style_attr(style, 61, "Line Edge Width",         "1");
 		metadata_add_style_attr(style, 62, "Line Edge Style",         "solid");
 		/* Arrow */
