@@ -6,9 +6,9 @@ Consumers should use these as the initial rendering configuration but may overri
 
 ---
 
-## `DebugLayerStyleAttribute`
+## `LayerStyleAttribute`
 
-Each element of the `style` array on a `DebugLayerMetadata` object is a `DebugLayerStyleAttribute`:
+Each element of the `style` array on a `LayerMetadata` object is a `LayerStyleAttribute`:
 
 | Field | Type | Notes |
 |---|---|---|
@@ -70,7 +70,7 @@ Controls how the renderer spreads apart multiple points that share the same canv
 
 ### Id Label
 
-Renders the point's own index within the layer array (e.g. `0`, `1`, `2`…).
+Renders the point's own index within the layer array (e.g. `1`, `2`, `3`…).
 
 | id | name | Allowed values |
 |----|------|----------------|
@@ -84,7 +84,7 @@ Renders the point's own index within the layer array (e.g. `0`, `1`, `2`…).
 
 Renders a data value carried by the point (e.g. an algorithm-specific annotation). Placement must differ from **Point ID Placement** when both are active.
 
-**Point Label Color** is the default text label color. When the layer's [`label`](./api.md#debuglayerlabel) declares a non-null `color` for the current text value, that color overrides **Point Label Color** for that point only.
+**Point Label Color** is the default text label color. When the layer's [`label`](./api-endpoint-metadata.md#layerlabel) declares a non-null `color` for the current text value, that color overrides **Point Label Color** for that point only.
 
 | id | name | Allowed values |
 |----|------|----------------|
@@ -167,7 +167,7 @@ Corner-vertex attributes (IDs 10–44, excluding 12–13) are identical to the [
 
 ### Polygon ID
 
-Renders the polygon's own index within the layer array (e.g. `0`, `1`, `2`…) at the polygon centroid.
+Renders the polygon's own index within the layer array (e.g. `1`, `2`, `3`…) at the polygon centroid.
 
 | id | name | Allowed values |
 |----|------|----------------|

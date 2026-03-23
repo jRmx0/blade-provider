@@ -352,7 +352,7 @@ The following types describe the `debug.layers` entries when `algorithmName` is 
 | Field | Type | Notes |
 |---|---|---|
 | `id` | `number` | Sequential visit index (1-based); unique across the array — use as the rendering key |
-| `pointLabel` | `number` | The `cellId` this visit targets — index into `cellList`. May repeat if the same cell is visited more than once. Used as the canvas point label. Renderers are responsible for offsetting markers when multiple entries share a `pointLabel` |
+| `pointLabel` | `number` | Matches the `id` of the target `BcdCell` in the `cellList` layer. May repeat if the same cell is visited more than once. Used as the canvas point label. Renderers are responsible for offsetting markers when multiple entries share a `pointLabel` |
 | `point` | `Point` | Centroid of the cell's four span corners (`ceilingBegin`, `ceilingEnd`, `floorBegin`, `floorEnd`). Always the same value for a given `pointLabel` |
 
 ### `BcdEvent`

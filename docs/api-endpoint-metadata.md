@@ -227,11 +227,42 @@ Returns all algorithms the provider exposes, with their parameter schemas. Consu
 
 ## Types
 
+### `AlgorithmMetadata`
+
+| Field | Type | Notes |
+|---|---|---|
+| `id` | `number` | Unique numeric identifier for the algorithm — pass as `algorithmId` in compute requests |
+| `name` | `string` | Human-readable display name |
+| `parameters` | `ParameterMetadata[]` | Parameter schema declarations; use to build input forms |
+| `layers` | `LayerMetadata[]` | All renderable output layers declared by this algorithm |
+
+### `ParameterMetadata`
+
+| Field | Type | Notes |
+|---|---|---|
+| `id` | `number` | Unique numeric identifier for this parameter |
+| `name` | `string` | Parameter name — used as the key in the compute request `parameters` object |
+| `paramType` | `ParameterType` | Value data type — see [`ParameterType`](#parametertype) |
+| `enumValues` | `string[]` | Allowed values when `paramType` is `"Enum"`; empty array for all other types |
+| `defaultValue` | `string` | Default value serialised as a string |
+| `section` | `string` | UI grouping label |
+| `appHandler` | `string \| null` | When non-null, binds this parameter to an environment-level property — see the `appHandler` note above |
+
+### `ParameterType`
+
+| Value | Description |
+|---|---|
+| `"Integer"` | Whole number |
+| `"Decimal"` | Floating-point |
+| `"Boolean"` | Boolean |
+| `"Enum"` | One of `enumValues` |
+| `"String"` | Arbitrary string |
+
 ### `LayerMetadata`
 
 | Field | Type | Notes |
 |---|---|---|
-| `id` | `number` | Sequential identifier for this layer |
+| `id` | `number` | Unique numeric identifier for this layer |
 | `cppLayer` | `string?` | Present on coverage path plan layers. Names the field in `result.coveragePathPlan` that holds the data (e.g. `"segments"`) |
 | `debugLayer` | `string?` | Present on debug layers. Matches the `source` value on the corresponding entry in `result.debug.layers` |
 | `name` | `string` | Human-readable display name |
