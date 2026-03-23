@@ -147,19 +147,8 @@ Poll `GET /compute/:jobId` until `status` is `"completed"` or `"failed"`.
   "completedAt": "2026-03-20T12:00:01.200Z",
   "requestId": "optional-client-trace-id",
   "result": {
-    "coveragePlan": {
-      "sections": [
-        {
-          "id": 0,
-          "coveragePath": [
-            { "x": 5, "y": 5 },
-            { "x": 95, "y": 5 },
-            { "x": 95, "y": 20 },
-            { "x": 5, "y": 20 }
-          ],
-          "transitPath": []
-        }
-      ]
+    "coveragePathPlan": {
+      "segments": ["..."]
     },
     "debug": {
       "eventList":      ["..."],
@@ -202,17 +191,35 @@ Poll `GET /compute/:jobId` until `status` is `"completed"` or `"failed"`.
 
 ```json
 {
-  "coveragePlan": {
-    "sections": [
+  "coveragePathPlan": {
+    "segments": [
       {
         "id": 0,
-        "coveragePath": [
+        "type": "coverage",
+        "path": [
           { "x": 5, "y": 5 },
           { "x": 95, "y": 5 },
           { "x": 95, "y": 20 },
           { "x": 5, "y": 20 }
-        ],
-        "transitPath": []
+        ]
+      },
+      {
+        "id": 1,
+        "type": "transit",
+        "path": [
+          { "x": 5, "y": 20 },
+          { "x": 5, "y": 5 }
+        ]
+      },
+      {
+        "id": 2,
+        "type": "coverage",
+        "path": [
+          { "x": 5, "y": 5 },
+          { "x": 95, "y": 5 },
+          { "x": 95, "y": 20 },
+          { "x": 5, "y": 20 }
+        ]
       }
     ]
   },
@@ -248,22 +255,41 @@ Poll `GET /compute/:jobId` until `status` is `"completed"` or `"failed"`.
 
 | Field | Type | Notes |
 |---|---|---|
-| `coveragePlan` | `CoveragePlan` | Primary output — the computed coverage path |
-| `debug` | `BcdDebug` | Internal algorithm data; useful for visualization and debugging |
+| `coveragePathPlan` | `CoveragePathPlan` | Primary output container |
+| `debug` | `AlgorithmDebug` | Algorithm-specific debug payload; keys match `debugKey` values from `debugLayers` metadata |
 
-### `CoveragePlan`
-
-| Field | Type | Notes |
-|---|---|---|
-| `sections` | `CoverageSection[]` | One entry per BCD cell visited, in visit order |
-
-### `CoverageSection`
+### `CoveragePathPlan`
 
 | Field | Type | Notes |
 |---|---|---|
-| `id` | `number` | Sequential index of the section |
-| `coveragePath` | `Point[]` | Ordered boustrophedon waypoints for this cell |
-| `transitPath` | `Point[]` | Waypoints from the end of the previous section to the start of this one; currently always `[]` (not yet computed) |
+| `segments` | `CoveragePathPlanSegment[]` | Ordered execution sequence; robot walks it start-to-end |
+
+### `CoveragePathPlanSegment`
+
+| Field | Type | Notes |
+|---|---|---|
+| `id` | `number` | Sequential index (0-based) |
+| `type` | `CoveragePathPlanSegmentType` | Segment role — see [`CoveragePathPlanSegmentType`](#coveragepathplansegmenttype) |
+| `path` | `Point[]` | Ordered waypoints, in execution order |
+
+### `CoveragePathPlanSegmentType`
+
+Extensible string enum. Providers must emit only defined values. Consumers must accept unknown values without error and render them neutrally.
+
+| Value | Description |
+|---|---|
+| `"coverage"` | Active working path — tool engaged |
+| `"transit"` | Repositioning path — tool not engaged |
+
+### `AlgorithmDebug`
+
+A key-value map `{ [debugKey: string]: object[] }` where each key corresponds to a `debugKey` declared in the algorithm's `debugLayers` metadata. The shape of each entry in the array is algorithm-defined — see the algorithm-specific section below.
+
+---
+
+## BCD-Specific Types
+
+The following types describe the shape of `debug` entries when `algorithmName` is `"Boustrophedon Cellular Decomposition"`.
 
 ### `BcdDebug`
 
