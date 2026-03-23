@@ -236,8 +236,8 @@ Returns all algorithms the provider exposes, with their parameter schemas. Consu
 | `debugLayer` | `string?` | Present on debug layers. Matches the `source` value on the corresponding entry in `result.debug.layers` |
 | `name` | `string` | Human-readable display name |
 | `type` | `LayerType` | Geometry primitive type of the objects produced by this layer |
-| `style` | `DebugLayerStyleAttribute[]` | Default rendering attributes — see [Debug Layer Styles](./api-debug-layer-styles.md) |
-| `label` | `DebugLayerLabel \| null` | Data binding and per-value text color overrides — `null` for layers with no text label |
+| `style` | `LayerStyleAttribute[]` | Default rendering attributes — see [Debug Layer Styles](./api-debug-layer-styles.md) |
+| `label` | `LayerLabel \| null` | Data binding and per-value text color overrides — `null` for layers with no text label |
 
 Exactly one of `cppLayer` or `debugLayer` is present on any given layer entry.
 
@@ -249,9 +249,9 @@ Exactly one of `cppLayer` or `debugLayer` is present on any given layer entry.
 | `"Line"` | Layer items are rendered as line segments or polylines |
 | `"Polygon"` | Layer items are rendered as filled or stroked polygon shapes |
 
-### `DebugLayerStyleAttribute`
+### `LayerStyleAttribute`
 
-`style` is an ordered array of `DebugLayerStyleAttribute` objects. The attribute set depends on the layer's `type`. See [Debug Layer Styles](./api-debug-layer-styles.md) for the full per-type attribute registry.
+`style` is an ordered array of `LayerStyleAttribute` objects. The attribute set depends on the layer's `type`. See [Debug Layer Styles](./api-debug-layer-styles.md) for the full per-type attribute registry.
 
 | Field | Type | Notes |
 |---|---|---|
@@ -261,16 +261,16 @@ Exactly one of `cppLayer` or `debugLayer` is present on any given layer entry.
 
 All attributes in a type's registry are always present in the array. `null` means the attribute produces no output — the renderer should skip it.
 
-### `DebugLayerLabel`
+### `LayerLabel`
 
 Declares the data field to use as the text label and provides per-value color overrides. Present on layers that carry a text label; `null` on all others.
 
 | Field | Type | Notes |
 |---|---|---|
 | `key` | `string` | Name of the field on each data item to use as the rendered text value |
-| `enumValues` | `DebugLayerLabelValue[]` | All possible values the field can take, in definition order |
+| `enumValues` | `LayerLabelValue[]` | All possible values the field can take, in definition order |
 
-### `DebugLayerLabelValue`
+### `LayerLabelValue`
 
 | Field | Type | Notes |
 |---|---|---|

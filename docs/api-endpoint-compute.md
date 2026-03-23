@@ -192,7 +192,7 @@ Poll `GET /compute/:jobId` until `status` is `"completed"` or `"failed"`.
   "coveragePathPlan": {
     "segments": [
       {
-        "id": 0,
+        "id": 1,
         "type": "coverage",
         "path": [
           { "x": 5, "y": 5 },
@@ -202,7 +202,7 @@ Poll `GET /compute/:jobId` until `status` is `"completed"` or `"failed"`.
         ]
       },
       {
-        "id": 1,
+        "id": 2,
         "type": "transit",
         "path": [
           { "x": 5, "y": 20 },
@@ -210,7 +210,7 @@ Poll `GET /compute/:jobId` until `status` is `"completed"` or `"failed"`.
         ]
       },
       {
-        "id": 2,
+        "id": 3,
         "type": "coverage",
         "path": [
           { "x": 5, "y": 5 },
@@ -224,19 +224,19 @@ Poll `GET /compute/:jobId` until `status` is `"completed"` or `"failed"`.
   "debug": {
     "layers": [
       {
-        "id": 1,
+        "id": 10,
         "source": "eventList",
         "list": [
           /*event*/
           {
             "id": 1,
             "pointLabel": "SIDE_IN",
-            "point": { "x": 0, "y": 0 },
+            "point": { "x": 0, "y": 0 }
           }
         ]
       },
       {
-        "id": 2,
+        "id": 11,
         "source": "cellList",
         "winding": "clockwise",
         "list": [
@@ -251,16 +251,16 @@ Poll `GET /compute/:jobId` until `status` is `"completed"` or `"failed"`.
               { "x": 0, "y": 100 }
             ]
           }
-        ],
+        ]
       },
       {
-        "id": 3,
+        "id": 12,
         "source": "cellVisitOrder",
         "list": [
           { 
             /*sequence entry*/
             "id": 1, 
-            "pointLabel": 1, // cellId 
+            "pointLabel": 1, /* cellId */
             "point": { "x": 50, "y": 50 } 
           }
         ]
@@ -287,7 +287,7 @@ Poll `GET /compute/:jobId` until `status` is `"completed"` or `"failed"`.
 
 | Field | Type | Notes |
 |---|---|---|
-| `id` | `number` | Sequential index (0-based) |
+| `id` | `number` | Sequential index (1-based) |
 | `type` | `CoveragePathPlanSegmentType` | Segment role — see [`CoveragePathPlanSegmentType`](#coveragepathplansegmenttype) |
 | `path` | `Point[]` | Ordered waypoints, in execution order |
 
@@ -351,7 +351,7 @@ The following types describe the `debug.layers` entries when `algorithmName` is 
 
 | Field | Type | Notes |
 |---|---|---|
-| `id` | `number` | Sequential visit index (0-based); unique across the array — use as the rendering key |
+| `id` | `number` | Sequential visit index (1-based); unique across the array — use as the rendering key |
 | `pointLabel` | `number` | The `cellId` this visit targets — index into `cellList`. May repeat if the same cell is visited more than once. Used as the canvas point label. Renderers are responsible for offsetting markers when multiple entries share a `pointLabel` |
 | `point` | `Point` | Centroid of the cell's four span corners (`ceilingBegin`, `ceilingEnd`, `floorBegin`, `floorEnd`). Always the same value for a given `pointLabel` |
 
@@ -359,7 +359,7 @@ The following types describe the `debug.layers` entries when `algorithmName` is 
 
 | Field | Type | Notes |
 |---|---|---|
-| `id` | `number` | Sequential index of the event |
+| `id` | `number` | Sequential index of the event (1-based) |
 | `point` | `Point` | The polygon vertex that triggered the event |
 | `pointLabel` | `"B_IN"` \| `"B_SIDE_IN"` \| `"B_INIT"` \| `"B_OUT"` \| `"B_SIDE_OUT"` \| `"B_DEINIT"` \| `"IN"` \| `"SIDE_IN"` \| `"OUT"` \| `"SIDE_OUT"` \| `"FLOOR"` \| `"CEILING"` \| `"NONE"` | BCD sweep-line event classification, used as the canvas point label |
 
@@ -367,6 +367,6 @@ The following types describe the `debug.layers` entries when `algorithmName` is 
 
 | Field | Type | Notes |
 |---|---|---|
-| `id` | `number` | Sequential index of the cell |
+| `id` | `number` | Sequential index of the cell (1-based) |
 | `vertices` | `Point[]` | The four span corners in order: `ceilingBegin`, `ceilingEnd`, `floorEnd`, `floorBegin` |
 | `centroidPoint` | `Point` | Centroid of the four span corners — average of `ceilingBegin`, `ceilingEnd`, `floorBegin`, `floorEnd`. Useful for label placement and hit-testing |
