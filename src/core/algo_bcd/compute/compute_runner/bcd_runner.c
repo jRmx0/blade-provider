@@ -21,26 +21,28 @@ static char *serialize_result_json(const bcd_event_list_t *event_list,
 {
 	cJSON *root = cJSON_CreateObject();
 
-	// coveragePlan
-	cJSON *coverage_plan_obj = cJSON_CreateObject();
-	cJSON_AddItemToObject(root, "coveragePlan", coverage_plan_obj);
-	cJSON *sections_arr = cJSON_CreateArray();
-	cJSON_AddItemToObject(coverage_plan_obj, "sections", sections_arr);
+	// coveragePathPlan
+	cJSON *coverage_path_plan_obj = cJSON_CreateObject();
+	cJSON_AddItemToObject(root, "coveragePathPlan", coverage_path_plan_obj);
+	cJSON *segments_arr = cJSON_CreateArray();
+	cJSON_AddItemToObject(coverage_path_plan_obj, "segments", segments_arr);
 
 	if (motion_plan && motion_plan->section)
 	{
 		int section_count = cvector_size(motion_plan->section);
+		int segment_id = 0;
 		for (int i = 0; i < section_count; ++i)
 		{
 			const cell_motion_plan_t *section = &motion_plan->section[i];
-			cJSON *jsection = cJSON_CreateObject();
 
-			cJSON_AddNumberToObject(jsection, "id", i);
-
-			cJSON *coverage_path_arr = cJSON_CreateArray();
-			cJSON_AddItemToObject(jsection, "coveragePath", coverage_path_arr);
-			if (section->ox)
+			// coverage segment
+			if (section->ox && cvector_size(section->ox) > 0)
 			{
+				cJSON *jsegment = cJSON_CreateObject();
+				cJSON_AddNumberToObject(jsegment, "id", segment_id++);
+				cJSON_AddStringToObject(jsegment, "type", "coverage");
+				cJSON *path_arr = cJSON_CreateArray();
+				cJSON_AddItemToObject(jsegment, "path", path_arr);
 				int point_count = cvector_size(section->ox);
 				for (int j = 0; j < point_count; ++j)
 				{
@@ -48,14 +50,19 @@ static char *serialize_result_json(const bcd_event_list_t *event_list,
 					cJSON *jpoint = cJSON_CreateObject();
 					cJSON_AddNumberToObject(jpoint, "x", point->x);
 					cJSON_AddNumberToObject(jpoint, "y", point->y);
-					cJSON_AddItemToArray(coverage_path_arr, jpoint);
+					cJSON_AddItemToArray(path_arr, jpoint);
 				}
+				cJSON_AddItemToArray(segments_arr, jsegment);
 			}
 
-			cJSON *transit_path_arr = cJSON_CreateArray();
-			cJSON_AddItemToObject(jsection, "transitPath", transit_path_arr);
-			if (section->nav)
+			// transit segment
+			if (section->nav && cvector_size(section->nav) > 0)
 			{
+				cJSON *jsegment = cJSON_CreateObject();
+				cJSON_AddNumberToObject(jsegment, "id", segment_id++);
+				cJSON_AddStringToObject(jsegment, "type", "transit");
+				cJSON *path_arr = cJSON_CreateArray();
+				cJSON_AddItemToObject(jsegment, "path", path_arr);
 				int nav_count = cvector_size(section->nav);
 				for (int j = 0; j < nav_count; ++j)
 				{
@@ -63,11 +70,10 @@ static char *serialize_result_json(const bcd_event_list_t *event_list,
 					cJSON *jpoint = cJSON_CreateObject();
 					cJSON_AddNumberToObject(jpoint, "x", point->x);
 					cJSON_AddNumberToObject(jpoint, "y", point->y);
-					cJSON_AddItemToArray(transit_path_arr, jpoint);
+					cJSON_AddItemToArray(path_arr, jpoint);
 				}
+				cJSON_AddItemToArray(segments_arr, jsegment);
 			}
-
-			cJSON_AddItemToArray(sections_arr, jsection);
 		}
 	}
 
