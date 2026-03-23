@@ -151,9 +151,7 @@ Poll `GET /compute/:jobId` until `status` is `"completed"` or `"failed"`.
       "segments": ["..."]
     },
     "debug": {
-      "eventList":      ["..."],
-      "cellList":       ["..."],
-      "cellVisitOrder": ["..."]
+      "layers": ["..."]
     }
   }
 }
@@ -224,28 +222,49 @@ Poll `GET /compute/:jobId` until `status` is `"completed"` or `"failed"`.
     ]
   },
   "debug": {
-    "eventList": [
+    "layers": [
       {
-        "id": 0,
-        "point": { "x": 0, "y": 0 },
-        "eventType": "SIDE_IN"
-      }
-    ],
-    "cellList": [
+        "id": 1,
+        "source": "eventList",
+        "list": [
+          /*event*/
+          {
+            "id": 1,
+            "pointLabel": "SIDE_IN",
+            "point": { "x": 0, "y": 0 },
+          }
+        ]
+      },
       {
-        "id": 0,
-        "vertices": [
-          { "x": 0, "y": 0 },
-          { "x": 100, "y": 0 },
-          { "x": 100, "y": 100 },
-          { "x": 0, "y": 100 }
-        ],
+        "id": 2,
+        "source": "cellList",
         "winding": "clockwise",
-        "centroidPoint": { "x": 50, "y": 50 }
+        "list": [
+          { 
+            /*cell*/
+            "id": 1,
+            "centroidPoint": { "x": 50, "y": 50 },
+            "vertices": [
+              { "x": 0, "y": 0 },
+              { "x": 100, "y": 0 },
+              { "x": 100, "y": 100 },
+              { "x": 0, "y": 100 }
+            ]
+          }
+        ],
+      },
+      {
+        "id": 3,
+        "source": "cellVisitOrder",
+        "list": [
+          { 
+            /*sequence entry*/
+            "id": 1, 
+            "pointLabel": 1, // cellId 
+            "point": { "x": 50, "y": 50 } 
+          }
+        ]
       }
-    ],
-    "cellVisitOrder": [
-      { "id": 0, "cellId": 0, "point": { "x": 50, "y": 50 } }
     ]
   }
 }
@@ -256,7 +275,7 @@ Poll `GET /compute/:jobId` until `status` is `"completed"` or `"failed"`.
 | Field | Type | Notes |
 |---|---|---|
 | `coveragePathPlan` | `CoveragePathPlan` | Primary output container |
-| `debug` | `AlgorithmDebug` | Algorithm-specific debug payload; keys match `layerKey` values from `layers` metadata |
+| `debug` | `AlgorithmDebug` | Algorithm-specific debug output — see [`AlgorithmDebug`](#algorithmdebug) |
 
 ### `CoveragePathPlan`
 
@@ -283,29 +302,58 @@ Extensible string enum. Providers must emit only defined values. Consumers must 
 
 ### `AlgorithmDebug`
 
-A key-value map `{ [layerKey: string]: object[] }` where each key corresponds to a `layerKey` declared in the algorithm's `layers` metadata. The shape of each entry in the array is algorithm-defined — see the algorithm-specific section below.
+| Field | Type | Notes |
+|---|---|---|
+| `layers` | `DebugResultLayer[]` | All debug output layers for this run, in declaration order |
+
+### `DebugResultLayer`
+
+Base shape shared by every debug layer. Algorithm-specific layers may carry additional top-level fields alongside `id`, `source`, and `list`.
+
+| Field | Type | Notes |
+|---|---|---|
+| `id` | `number` | Matches `layer.id` from `GET /metadata` — use to look up style and display config |
+| `source` | `string` | Identifies the layer kind (e.g. `"eventList"`, `"cellList"`) — matches `layer.debugLayer` in metadata |
+| `list` | `object[]` | Data items for this layer; shape is algorithm and layer-kind specific |
 
 ---
 
 ## BCD-Specific Types
 
-The following types describe the shape of `debug` entries when `algorithmName` is `"Boustrophedon Cellular Decomposition"`.
+The following types describe the `debug.layers` entries when `algorithmName` is `"Boustrophedon Cellular Decomposition"`.
 
-### `BcdDebug`
+### `source: "eventList"` layer
 
 | Field | Type | Notes |
 |---|---|---|
-| `eventList` | `BcdEvent[]` | Sweep-line events produced by the BCD algorithm |
-| `cellList` | `BcdCell[]` | Decomposed cells in discovery order |
-| `cellVisitOrder` | `CellVisitEntry[]` | Planned cell visit sequence, in visit order |
+| `id` | `number` | Matches `layer.id` from metadata |
+| `source` | `"eventList"` | — |
+| `list` | `BcdEvent[]` | Sweep-line events produced by the BCD algorithm |
+
+### `source: "cellList"` layer
+
+| Field | Type | Notes |
+|---|---|---|
+| `id` | `number` | Matches `layer.id` from metadata |
+| `source` | `"cellList"` | — |
+| `winding` | `"clockwise"` \| `"counter-clockwise"` | Winding direction shared by all cells in this run — currently always `"clockwise"` |
+| `list` | `BcdCell[]` | Decomposed cells in discovery order |
+
+### `source: "cellVisitOrder"` layer
+
+| Field | Type | Notes |
+|---|---|---|
+| `id` | `number` | Matches `layer.id` from metadata |
+| `source` | `"cellVisitOrder"` | — |
+| `list` | `CellVisitEntry[]` | Planned cell visit sequence, in visit order |
 
 ### `CellVisitEntry`
 
 | Field | Type | Notes |
 |---|---|---|
-| `id` | `number` | Sequential visit index (0-based); unique across the array — use this as the rendering key |
-| `cellId` | `number` | Index into `cellList` for the cell being visited; may repeat if the same cell is visited more than once |
-| `point` | `Point` | Centroid of the cell's four span corners (`ceilingBegin`, `ceilingEnd`, `floorBegin`, `floorEnd`). Always the same value for a given `cellId`. Renderers are responsible for offsetting markers when multiple entries share a `cellId` |
+| `id` | `number` | Sequential visit index (0-based); unique across the array — use as the rendering key |
+| `pointLabel` | `number` | The `cellId` this visit targets — index into `cellList`. May repeat if the same cell is visited more than once. Used as the canvas point label. Renderers are responsible for offsetting markers when multiple entries share a `pointLabel` |
+| `point` | `Point` | Centroid of the cell's four span corners (`ceilingBegin`, `ceilingEnd`, `floorBegin`, `floorEnd`). Always the same value for a given `pointLabel` |
 
 ### `BcdEvent`
 
@@ -313,7 +361,7 @@ The following types describe the shape of `debug` entries when `algorithmName` i
 |---|---|---|
 | `id` | `number` | Sequential index of the event |
 | `point` | `Point` | The polygon vertex that triggered the event |
-| `eventType` | `"B_IN"` \| `"B_SIDE_IN"` \| `"B_INIT"` \| `"B_OUT"` \| `"B_SIDE_OUT"` \| `"B_DEINIT"` \| `"IN"` \| `"SIDE_IN"` \| `"OUT"` \| `"SIDE_OUT"` \| `"FLOOR"` \| `"CEILING"` \| `"NONE"` | BCD sweep-line event classification |
+| `pointLabel` | `"B_IN"` \| `"B_SIDE_IN"` \| `"B_INIT"` \| `"B_OUT"` \| `"B_SIDE_OUT"` \| `"B_DEINIT"` \| `"IN"` \| `"SIDE_IN"` \| `"OUT"` \| `"SIDE_OUT"` \| `"FLOOR"` \| `"CEILING"` \| `"NONE"` | BCD sweep-line event classification, used as the canvas point label |
 
 ### `BcdCell`
 
@@ -321,5 +369,4 @@ The following types describe the shape of `debug` entries when `algorithmName` i
 |---|---|---|
 | `id` | `number` | Sequential index of the cell |
 | `vertices` | `Point[]` | The four span corners in order: `ceilingBegin`, `ceilingEnd`, `floorEnd`, `floorBegin` |
-| `winding` | `"clockwise"` \| `"counter-clockwise"` | Winding direction of `vertices` in screen coordinates (Y increases downward) — currently always `"clockwise"` |
 | `centroidPoint` | `Point` | Centroid of the four span corners — average of `ceilingBegin`, `ceilingEnd`, `floorBegin`, `floorEnd`. Useful for label placement and hit-testing |

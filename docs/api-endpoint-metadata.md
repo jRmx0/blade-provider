@@ -61,11 +61,47 @@ Returns all algorithms the provider exposes, with their parameter schemas. Consu
       "layers": [
         {
           "id": 1,
-          "layerKey": "eventList",
+          "cppLayer": "segments",
+          "name": "Coverage Path",
+          "type": "Line",
+          "style": [
+            { "id": 5,  "name": "Z-Index",                  "value": "100"        },
+            { "id": 10, "name": "Point Shape",              "value":  null              },
+            { "id": 11, "name": "Point Radius",              "value": null              },
+            { "id": 12, "name": "Point Overlap Spacing",     "value": null              },
+            { "id": 13, "name": "Point Overlap Layout",      "value": null              },
+            { "id": 20, "name": "Point Border Color",        "value": null              },
+            { "id": 21, "name": "Point Border Width",        "value": null              },
+            { "id": 22, "name": "Point Border Style",        "value": null              },
+            { "id": 30, "name": "Point Fill Color",          "value": null              },
+            { "id": 40, "name": "Point ID Color",            "value": null              },
+            { "id": 41, "name": "Point ID Font Size",        "value": null              },
+            { "id": 42, "name": "Point ID Font Weight",      "value": null              },
+            { "id": 43, "name": "Point ID Placement",        "value": null              },
+            { "id": 44, "name": "Point ID Offset",           "value": null              },
+            { "id": 50, "name": "Point Label Placement",     "value": null              },
+            { "id": 51, "name": "Point Label Color",         "value": null              },
+            { "id": 52, "name": "Point Label Font Size",     "value": null              },
+            { "id": 53, "name": "Point Label Font Weight",   "value": null              },
+            { "id": 54, "name": "Point Label Offset",        "value": null              },
+            { "id": 60, "name": "Line Edge Color",           "value": "#60a5fa"         },
+            { "id": 61, "name": "Line Edge Width",           "value": "1"               },
+            { "id": 62, "name": "Line Edge Style",           "value": "solid"           },
+            { "id": 70, "name": "Line Arrow Start",          "value": null              },
+            { "id": 71, "name": "Line Arrow End",            "value": null              },
+            { "id": 72, "name": "Line Arrow Mid",            "value": "line_end_arrow"  },
+            { "id": 73, "name": "Line Arrow Mid Spacing",    "value": "12"              },
+            { "id": 74, "name": "Line Arrow Size",           "value": "3"               }
+          ],
+          "label": null
+        },
+        {
+          "id": 10,
+          "debugLayer": "eventList",
           "name": "Event List",
           "type": "Point",
           "style": [
-            { "id": 5,  "name": "Z-Index",                "value": "100"        },
+            { "id": 5,  "name": "Z-Index",                "value": "110"        },
             { "id": 10, "name": "Point Shape",              "value": "circle"     },
             { "id": 11, "name": "Point Radius",              "value": "4"          },
             { "id": 12, "name": "Point Overlap Spacing",     "value": null         },
@@ -86,7 +122,7 @@ Returns all algorithms the provider exposes, with their parameter schemas. Consu
             { "id": 54, "name": "Point Label Offset",    "value": "6"             }
           ],
           "label": {
-            "key": "eventType",
+            "key": "pointLabel",
             "enumValues": [
               { "value": "B_IN",       "color": "green-600"  },
               { "value": "B_SIDE_IN",  "color": "teal-600"   },
@@ -105,12 +141,12 @@ Returns all algorithms the provider exposes, with their parameter schemas. Consu
           }
         },
         {
-          "id": 2,
-          "layerKey": "cellList",
+          "id": 11,
+          "debugLayer": "cellList",
           "name": "Cell List",
           "type": "Polygon",
           "style": [
-            { "id": 5,  "name": "Z-Index",                "value": "110"        },
+            { "id": 5,  "name": "Z-Index",                "value": "120"        },
             { "id": 10, "name": "Point Shape",              "value": null        },
             { "id": 11, "name": "Point Radius",              "value": null        },
             { "id": 20, "name": "Point Border Color",        "value": null        },
@@ -142,12 +178,12 @@ Returns all algorithms the provider exposes, with their parameter schemas. Consu
           "label": null
         },
         {
-          "id": 3,
-          "layerKey": "cellVisitOrder",
+          "id": 12,
+          "debugLayer": "cellVisitOrder",
           "name": "Cell Visit Order",
           "type": "Line",
           "style": [
-            { "id": 5,  "name": "Z-Index",                "value": "120"        },
+            { "id": 5,  "name": "Z-Index",                "value": "130"        },
             { "id": 10, "name": "Point Shape",              "value": "circle"           },
             { "id": 11, "name": "Point Radius",              "value": "3"               },
             { "id": 12, "name": "Point Overlap Spacing",     "value": "8"               },
@@ -185,24 +221,27 @@ Returns all algorithms the provider exposes, with their parameter schemas. Consu
 
 `appHandler` values tell the consumer that this parameter is bound to an environment-level property (format, type, coordinate system) rather than being a free-form algorithm input. Consumers should resolve these from the environment state rather than prompting the user separately.
 
-`layers` is present on algorithms that produce debug output as part of their compute result. Each entry declares the default display style for one named debug layer. Consumers should use this style as the initial rendering config but may override it locally.
+`layers` declares all renderable output layers for an algorithm. Coverage layers carry a `cppLayer` field pointing to the field name in `result.coveragePathPlan`; debug layers carry a `debugLayer` field matching the `source` value in `result.debug.layers`. Consumers should use the `style` as the initial rendering config but may override it locally.
 
 ---
 
 ## Types
 
-### `DebugLayerMetadata`
+### `LayerMetadata`
 
 | Field | Type | Notes |
 |---|---|---|
-| `id` | `number` | Sequential identifier for this debug layer |
-| `layerKey` | `string` | Matches the field name under `result.debug` in the compute response |
+| `id` | `number` | Sequential identifier for this layer |
+| `cppLayer` | `string?` | Present on coverage path plan layers. Names the field in `result.coveragePathPlan` that holds the data (e.g. `"segments"`) |
+| `debugLayer` | `string?` | Present on debug layers. Matches the `source` value on the corresponding entry in `result.debug.layers` |
 | `name` | `string` | Human-readable display name |
-| `type` | `DebugLayerType` | Geometry primitive type of the objects produced by this layer |
+| `type` | `LayerType` | Geometry primitive type of the objects produced by this layer |
 | `style` | `DebugLayerStyleAttribute[]` | Default rendering attributes — see [Debug Layer Styles](./api-debug-layer-styles.md) |
 | `label` | `DebugLayerLabel \| null` | Data binding and per-value text color overrides — `null` for layers with no text label |
 
-### `DebugLayerType`
+Exactly one of `cppLayer` or `debugLayer` is present on any given layer entry.
+
+### `LayerType`
 
 | Value | Description |
 |---|---|
