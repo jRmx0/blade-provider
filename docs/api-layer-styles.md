@@ -1,6 +1,6 @@
-# blade-provider Debug Layer Styles
+# blade-provider Layer Styles
 
-Style attributes are the **visual layer** of the debug layer metadata returned by `GET /metadata`. They are separate from the algorithm data — they tell consumers how to render each debug layer by default.
+Style attributes are the **visual layer** of the layer metadata returned by `GET /metadata`. They are separate from the algorithm data — they tell consumers how to render each layer by default.
 
 Consumers should use these as the initial rendering configuration but may override individual attributes locally.
 

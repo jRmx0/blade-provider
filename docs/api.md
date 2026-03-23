@@ -29,7 +29,7 @@ All responses carry open CORS headers (`Access-Control-Allow-Origin: *`). Prefli
 | `GET` | `/compute/:jobId` | Poll a compute job | [api-endpoint-compute.md](./api-endpoint-compute.md) |
 
 For error response shape and all error codes see [api-errors.md](./api-errors.md).  
-For debug layer style attributes see [api-debug-layer-styles.md](./api-debug-layer-styles.md).
+For layer style attributes see [api-layer-styles.md](./api-layer-styles.md).
 
 ---
 
