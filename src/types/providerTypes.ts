@@ -17,44 +17,55 @@ export interface MetadataParamResponse {
     id: number;
     name: string;
     paramType: AlgoParamType;
-    enumValues?: string[];
+    enumValues: string[];
     defaultValue?: string;
     section?: MetadataParamSection;
-    appHandler?: string;
+    appHandler: string | null;
 }
 
-export interface DebugLayerStyleAttribute {
+export interface LayerStyleAttribute {
     id: number;
     name: string;
     value: string | null;
 }
 
-export type DebugLayerType = "Point" | "Line" | "Polygon";
+export type LayerType = "Point" | "Line" | "Polygon";
 
-export interface DebugLayerLabelEnumValue {
+export interface LayerLabelEnumValue {
     value: string;
     color: string | null;
 }
 
-export interface DebugLayerLabel {
+export interface LayerLabel {
     key: string;
-    enumValues: DebugLayerLabelEnumValue[];
+    enumValues: LayerLabelEnumValue[];
+}
+
+export interface MetadataCppLayerResponse {
+    id: number;
+    cppLayer: string;
+    name: string;
+    type: LayerType;
+    style: LayerStyleAttribute[];
+    label: LayerLabel | null;
 }
 
 export interface MetadataDebugLayerResponse {
     id: number;
-    debugKey: string;
+    debugLayer: string;
     name: string;
-    type: DebugLayerType;
-    style: DebugLayerStyleAttribute[];
-    label: DebugLayerLabel | null;
+    type: LayerType;
+    style: LayerStyleAttribute[];
+    label: LayerLabel | null;
 }
+
+export type MetadataLayerResponse = MetadataCppLayerResponse | MetadataDebugLayerResponse;
 
 export interface MetadataAlgorithmResponse {
     id: number;
     name: string;
     parameters: MetadataParamResponse[];
-    debugLayers?: MetadataDebugLayerResponse[];
+    layers: MetadataLayerResponse[];
 }
 
 export interface MetadataResponse {

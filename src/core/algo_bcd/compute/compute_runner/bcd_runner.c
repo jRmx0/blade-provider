@@ -96,7 +96,7 @@ static char *serialize_result_json(const bcd_event_list_t *event_list,
 			cJSON_AddNumberToObject(jv, "x", ev->polygon_vertex.x);
 			cJSON_AddNumberToObject(jv, "y", ev->polygon_vertex.y);
 			cJSON_AddItemToObject(jev, "point", jv);
-			cJSON_AddStringToObject(jev, "eventType", event_type_to_string(ev->bcd_event_type));
+			cJSON_AddStringToObject(jev, "pointLabel", event_type_to_string(ev->bcd_event_type));
 
 			cJSON_AddItemToArray(event_data_arr, jev);
 		}

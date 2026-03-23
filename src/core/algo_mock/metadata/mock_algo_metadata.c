@@ -75,6 +75,14 @@ char *mock_algo_build_metadata_json(void)
 	metadata_add_parameter(parameters, 15, "Coordinate System (Locked)", BCD_METADATA_PARAM_TYPE_ENUM, coordsystem_locked_values, 1, metadata_coordsystem_to_string(BCD_METADATA_COORDSYSTEM_DECIMAL), BCD_METADATA_PARAM_SECTION_ENVIRONMENT, BCD_METADATA_APP_HANDLER_ENVIRONMENT_COORDSYSTEM);
 	metadata_add_parameter(parameters, 16, "Coordinate System Choices", BCD_METADATA_PARAM_TYPE_ENUM, coordsystem_multi_values, 2, NULL, BCD_METADATA_PARAM_SECTION_ENVIRONMENT, BCD_METADATA_APP_HANDLER_ENVIRONMENT_COORDSYSTEM);
 
+	cJSON *layers = cJSON_CreateArray();
+	if (layers == NULL)
+	{
+		cJSON_Delete(algorithm);
+		return NULL;
+	}
+	cJSON_AddItemToObject(algorithm, "layers", layers);
+
 	char *json = cJSON_PrintUnformatted(algorithm);
 	cJSON_Delete(algorithm);
 	return json;

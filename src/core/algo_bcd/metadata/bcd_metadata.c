@@ -48,24 +48,67 @@ char *bcd_build_metadata_json(void)
 	metadata_add_parameter(parameters, 4, "Type", BCD_METADATA_PARAM_TYPE_ENUM, type_values, 1, metadata_type_to_string(BCD_METADATA_TYPE_OFFLINE), BCD_METADATA_PARAM_SECTION_ENVIRONMENT, BCD_METADATA_APP_HANDLER_ENVIRONMENT_TYPE);
 	metadata_add_parameter(parameters, 5, "Coordinate System", BCD_METADATA_PARAM_TYPE_ENUM, coordsystem_values, 1, metadata_coordsystem_to_string(BCD_METADATA_COORDSYSTEM_DECIMAL), BCD_METADATA_PARAM_SECTION_ENVIRONMENT, BCD_METADATA_APP_HANDLER_ENVIRONMENT_COORDSYSTEM);
 
-	cJSON *debug_layers = cJSON_CreateArray();
-	if (debug_layers == NULL)
+	cJSON *layers = cJSON_CreateArray();
+	if (layers == NULL)
 	{
 		cJSON_Delete(algorithm);
 		return NULL;
 	}
-	cJSON_AddItemToObject(algorithm, "debugLayers", debug_layers);
+	cJSON_AddItemToObject(algorithm, "layers", layers);
 
-	/* ---- eventList (Point, zIndex = 1) -------------------------------- */
+	/* ---- Coverage Path (Line, cppLayer = "segments", zIndex = 100) ---- */
 	{
 		cJSON *layer = cJSON_CreateObject();
-		cJSON_AddNumberToObject(layer, "id",     1);
-		cJSON_AddStringToObject(layer, "debugKey", "eventList");
-		cJSON_AddStringToObject(layer, "name",   "Event List");
-		cJSON_AddStringToObject(layer, "type",   "Point");
+		cJSON_AddNumberToObject(layer, "id",       1);
+		cJSON_AddStringToObject(layer, "cppLayer", "segments");
+		cJSON_AddStringToObject(layer, "name",     "Coverage Path");
+		cJSON_AddStringToObject(layer, "type",     "Line");
 
 		cJSON *style = cJSON_CreateArray();
-		metadata_add_style_attr(style, 5,  "Z-Index",             "100");
+		metadata_add_style_attr(style, 5,  "Z-Index",                "100");
+		metadata_add_style_attr(style, 10, "Point Shape",             NULL);
+		metadata_add_style_attr(style, 11, "Point Radius",            NULL);
+		metadata_add_style_attr(style, 12, "Point Overlap Spacing",   NULL);
+		metadata_add_style_attr(style, 13, "Point Overlap Layout",    NULL);
+		metadata_add_style_attr(style, 20, "Point Border Color",      NULL);
+		metadata_add_style_attr(style, 21, "Point Border Width",      NULL);
+		metadata_add_style_attr(style, 22, "Point Border Style",      NULL);
+		metadata_add_style_attr(style, 30, "Point Fill Color",        NULL);
+		metadata_add_style_attr(style, 40, "Point ID Color",          NULL);
+		metadata_add_style_attr(style, 41, "Point ID Font Size",      NULL);
+		metadata_add_style_attr(style, 42, "Point ID Font Weight",    NULL);
+		metadata_add_style_attr(style, 43, "Point ID Placement",      NULL);
+		metadata_add_style_attr(style, 44, "Point ID Offset",         NULL);
+		metadata_add_style_attr(style, 50, "Point Label Placement",   NULL);
+		metadata_add_style_attr(style, 51, "Point Label Color",       NULL);
+		metadata_add_style_attr(style, 52, "Point Label Font Size",   NULL);
+		metadata_add_style_attr(style, 53, "Point Label Font Weight", NULL);
+		metadata_add_style_attr(style, 54, "Point Label Offset",      NULL);
+		metadata_add_style_attr(style, 60, "Line Edge Color",         "#60a5fa");
+		metadata_add_style_attr(style, 61, "Line Edge Width",         "1");
+		metadata_add_style_attr(style, 62, "Line Edge Style",         "solid");
+		metadata_add_style_attr(style, 70, "Line Arrow Start",        NULL);
+		metadata_add_style_attr(style, 71, "Line Arrow End",          NULL);
+		metadata_add_style_attr(style, 72, "Line Arrow Mid",          "line_end_arrow");
+		metadata_add_style_attr(style, 73, "Line Arrow Mid Spacing",  "12");
+		metadata_add_style_attr(style, 74, "Line Arrow Size",         "3");
+		cJSON_AddItemToObject(layer, "style", style);
+
+		cJSON_AddNullToObject(layer, "label");
+
+		cJSON_AddItemToArray(layers, layer);
+	}
+
+	/* ---- eventList (Point, debugLayer, zIndex = 110) ------------------ */
+	{
+		cJSON *layer = cJSON_CreateObject();
+		cJSON_AddNumberToObject(layer, "id",         10);
+		cJSON_AddStringToObject(layer, "debugLayer", "eventList");
+		cJSON_AddStringToObject(layer, "name",       "Event List");
+		cJSON_AddStringToObject(layer, "type",       "Point");
+
+		cJSON *style = cJSON_CreateArray();
+		metadata_add_style_attr(style, 5,  "Z-Index",             "110");
 		metadata_add_style_attr(style, 10, "Point Shape",             "circle");
 		metadata_add_style_attr(style, 11, "Point Radius",            "4");
 		metadata_add_style_attr(style, 12, "Point Overlap Spacing",   NULL);
@@ -88,7 +131,7 @@ char *bcd_build_metadata_json(void)
 
 		cJSON *label     = cJSON_CreateObject();
 		cJSON *enum_vals = cJSON_CreateArray();
-		cJSON_AddStringToObject(label, "key", "eventType");
+		cJSON_AddStringToObject(label, "key", "pointLabel");
 		metadata_add_label_enum_value(enum_vals, "B_IN",       "green-600");
 		metadata_add_label_enum_value(enum_vals, "B_SIDE_IN",  "teal-600");
 		metadata_add_label_enum_value(enum_vals, "B_INIT",     "green-200");
@@ -105,19 +148,19 @@ char *bcd_build_metadata_json(void)
 		cJSON_AddItemToObject(label, "enumValues", enum_vals);
 		cJSON_AddItemToObject(layer, "label", label);
 
-		cJSON_AddItemToArray(debug_layers, layer);
+		cJSON_AddItemToArray(layers, layer);
 	}
 
-	/* ---- cellList (Polygon, zIndex = 2) ------------------------------- */
+	/* ---- cellList (Polygon, debugLayer, zIndex = 120) ----------------- */
 	{
 		cJSON *layer = cJSON_CreateObject();
-		cJSON_AddNumberToObject(layer, "id",     2);
-		cJSON_AddStringToObject(layer, "debugKey", "cellList");
-		cJSON_AddStringToObject(layer, "name",   "Cell List");
-		cJSON_AddStringToObject(layer, "type",   "Polygon");
+		cJSON_AddNumberToObject(layer, "id",         11);
+		cJSON_AddStringToObject(layer, "debugLayer", "cellList");
+		cJSON_AddStringToObject(layer, "name",       "Cell List");
+		cJSON_AddStringToObject(layer, "type",       "Polygon");
 
 		cJSON *style = cJSON_CreateArray();
-		metadata_add_style_attr(style, 5,  "Z-Index",             "110");
+		metadata_add_style_attr(style, 5,  "Z-Index",             "120");
 		/* Corner vertex (10-44, excluding overlap 12-13 and text label 50-54) */
 		metadata_add_style_attr(style, 10, "Point Shape",             NULL);
 		metadata_add_style_attr(style, 11, "Point Radius",            NULL);
@@ -153,19 +196,19 @@ char *bcd_build_metadata_json(void)
 
 		cJSON_AddNullToObject(layer, "label");
 
-		cJSON_AddItemToArray(debug_layers, layer);
+		cJSON_AddItemToArray(layers, layer);
 	}
 
-	/* ---- cellVisitOrder (Line, zIndex = 3) ---------------------------- */
+	/* ---- cellVisitOrder (Line, debugLayer, zIndex = 130) -------------- */
 	{
 		cJSON *layer = cJSON_CreateObject();
-		cJSON_AddNumberToObject(layer, "id",     3);
-		cJSON_AddStringToObject(layer, "debugKey", "cellVisitOrder");
-		cJSON_AddStringToObject(layer, "name",   "Cell Visit Order");
-		cJSON_AddStringToObject(layer, "type",   "Line");
+		cJSON_AddNumberToObject(layer, "id",         12);
+		cJSON_AddStringToObject(layer, "debugLayer", "cellVisitOrder");
+		cJSON_AddStringToObject(layer, "name",       "Cell Visit Order");
+		cJSON_AddStringToObject(layer, "type",       "Line");
 
 		cJSON *style = cJSON_CreateArray();
-		metadata_add_style_attr(style, 5,  "Z-Index",             "120");
+		metadata_add_style_attr(style, 5,  "Z-Index",             "130");
 		/* Point vertex (all 18 Point attributes) */
 		metadata_add_style_attr(style, 10, "Point Shape",             "circle");
 		metadata_add_style_attr(style, 11, "Point Radius",            "3");
@@ -199,7 +242,7 @@ char *bcd_build_metadata_json(void)
 
 		cJSON_AddNullToObject(layer, "label");
 
-		cJSON_AddItemToArray(debug_layers, layer);
+		cJSON_AddItemToArray(layers, layer);
 	}
 
 	char *json = cJSON_PrintUnformatted(algorithm);
