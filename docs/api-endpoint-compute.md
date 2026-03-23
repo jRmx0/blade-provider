@@ -256,7 +256,7 @@ Poll `GET /compute/:jobId` until `status` is `"completed"` or `"failed"`.
 | Field | Type | Notes |
 |---|---|---|
 | `coveragePathPlan` | `CoveragePathPlan` | Primary output container |
-| `debug` | `AlgorithmDebug` | Algorithm-specific debug payload; keys match `debugKey` values from `debugLayers` metadata |
+| `debug` | `AlgorithmDebug` | Algorithm-specific debug payload; keys match `layerKey` values from `layers` metadata |
 
 ### `CoveragePathPlan`
 
@@ -283,7 +283,7 @@ Extensible string enum. Providers must emit only defined values. Consumers must 
 
 ### `AlgorithmDebug`
 
-A key-value map `{ [debugKey: string]: object[] }` where each key corresponds to a `debugKey` declared in the algorithm's `debugLayers` metadata. The shape of each entry in the array is algorithm-defined — see the algorithm-specific section below.
+A key-value map `{ [layerKey: string]: object[] }` where each key corresponds to a `layerKey` declared in the algorithm's `layers` metadata. The shape of each entry in the array is algorithm-defined — see the algorithm-specific section below.
 
 ---
 

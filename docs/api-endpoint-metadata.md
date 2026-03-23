@@ -58,10 +58,10 @@ Returns all algorithms the provider exposes, with their parameter schemas. Consu
           "appHandler": "env.coordsystem"
         }
       ],
-      "debugLayers": [
+      "layers": [
         {
           "id": 1,
-          "debugKey": "eventList",
+          "layerKey": "eventList",
           "name": "Event List",
           "type": "Point",
           "style": [
@@ -106,7 +106,7 @@ Returns all algorithms the provider exposes, with their parameter schemas. Consu
         },
         {
           "id": 2,
-          "debugKey": "cellList",
+          "layerKey": "cellList",
           "name": "Cell List",
           "type": "Polygon",
           "style": [
@@ -143,7 +143,7 @@ Returns all algorithms the provider exposes, with their parameter schemas. Consu
         },
         {
           "id": 3,
-          "debugKey": "cellVisitOrder",
+          "layerKey": "cellVisitOrder",
           "name": "Cell Visit Order",
           "type": "Line",
           "style": [
@@ -185,7 +185,7 @@ Returns all algorithms the provider exposes, with their parameter schemas. Consu
 
 `appHandler` values tell the consumer that this parameter is bound to an environment-level property (format, type, coordinate system) rather than being a free-form algorithm input. Consumers should resolve these from the environment state rather than prompting the user separately.
 
-`debugLayers` is present on algorithms that produce debug output as part of their compute result. Each entry declares the default display style for one named debug layer. Consumers should use this style as the initial rendering config but may override it locally.
+`layers` is present on algorithms that produce debug output as part of their compute result. Each entry declares the default display style for one named debug layer. Consumers should use this style as the initial rendering config but may override it locally.
 
 ---
 
@@ -196,7 +196,7 @@ Returns all algorithms the provider exposes, with their parameter schemas. Consu
 | Field | Type | Notes |
 |---|---|---|
 | `id` | `number` | Sequential identifier for this debug layer |
-| `debugKey` | `string` | Matches the field name under `result.debug` in the compute response |
+| `layerKey` | `string` | Matches the field name under `result.debug` in the compute response |
 | `name` | `string` | Human-readable display name |
 | `type` | `DebugLayerType` | Geometry primitive type of the objects produced by this layer |
 | `style` | `DebugLayerStyleAttribute[]` | Default rendering attributes — see [Debug Layer Styles](./api-debug-layer-styles.md) |
