@@ -119,10 +119,10 @@ Renders a data value carried by the point (e.g. an algorithm-specific annotation
 
 | id | name | styleType | Allowed values |
 |----|------|-----------|----------------|
-| 50 | Point Label Placement | `"PlacementEnum"` | `"inside"` \| `"outside-left"` \| `"outside-right"` \| `"outside-top"` \| `"outside-bottom"` \| `null` (hidden) |
-| 51 | Point Label Color | `"Color"` | CSS hex string with optional alpha (e.g. `"#a855f7"`, `"#a855f780"`) \| `null` |
-| 52 | Point Label Font Size | `"FontSizeEnum"` | Tailwind text size class (e.g. `"text-xs"`, `"text-sm"`, `"text-base"`) \| `null` |
-| 53 | Point Label Font Weight | `"FontWeightEnum"` | Tailwind font weight class (e.g. `"font-normal"`, `"font-medium"`, `"font-bold"`) \| `null` |
+| 50 | Point Label Color | `"Color"` | CSS hex string with optional alpha (e.g. `"#a855f7"`, `"#a855f780"`) \| `null` |
+| 51 | Point Label Font Size | `"FontSizeEnum"` | Tailwind text size class (e.g. `"text-xs"`, `"text-sm"`, `"text-base"`) \| `null` |
+| 52 | Point Label Font Weight | `"FontWeightEnum"` | Tailwind font weight class (e.g. `"font-normal"`, `"font-medium"`, `"font-bold"`) \| `null` |
+| 53 | Point Label Placement | `"PlacementEnum"` | `"inside"` \| `"outside-left"` \| `"outside-right"` \| `"outside-top"` \| `"outside-bottom"` \| `null` (hidden) |
 | 54 | Point Label Offset | `"Spacing"` | Tailwind spacing token for the offset from point center when an outside placement is active (e.g. `"2"`) \| `null` (renderer default) |
 
 ---
