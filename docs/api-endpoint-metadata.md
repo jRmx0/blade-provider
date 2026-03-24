@@ -116,7 +116,7 @@ Returns all algorithms the provider exposes, with their parameter schemas. Consu
             { "id": 43, "name": "Point ID Placement",    "value": null         },
             { "id": 44, "name": "Point ID Offset",       "value": null         },
             { "id": 50, "name": "Point Label Placement", "value": "outside-bottom" },
-            { "id": 51, "name": "Point Label Color",     "value": "purple-500" },
+            { "id": 51, "name": "Point Label Color",     "value": "#a855f7"    },
             { "id": 52, "name": "Point Label Font Size", "value": "text-xs"       },
             { "id": 53, "name": "Point Label Font Weight","value": "font-medium"  },
             { "id": 54, "name": "Point Label Offset",    "value": "6"             }
@@ -124,19 +124,19 @@ Returns all algorithms the provider exposes, with their parameter schemas. Consu
           "label": {
             "key": "pointLabel",
             "enumValues": [
-              { "value": "B_IN",       "color": "green-600"  },
-              { "value": "B_SIDE_IN",  "color": "teal-600"   },
-              { "value": "B_INIT",     "color": "green-200"  },
-              { "value": "B_OUT",      "color": "red-600"    },
-              { "value": "B_SIDE_OUT", "color": "pink-600"   },
-              { "value": "B_DEINIT",   "color": "red-200"    },
-              { "value": "IN",         "color": "green-400"  },
-              { "value": "SIDE_IN",    "color": "teal-400"   },
-              { "value": "OUT",        "color": "red-400"    },
-              { "value": "SIDE_OUT",   "color": "pink-400"   },
-              { "value": "FLOOR",      "color": "blue-400"   },
-              { "value": "CEILING",    "color": "orange-400" },
-              { "value": "NONE",       "color": null         }
+              { "value": "B_IN",       "color": "#16a34a"   },
+              { "value": "B_SIDE_IN",  "color": "#0d9488"   },
+              { "value": "B_INIT",     "color": "#bbf7d0"   },
+              { "value": "B_OUT",      "color": "#dc2626"   },
+              { "value": "B_SIDE_OUT", "color": "#db2777"   },
+              { "value": "B_DEINIT",   "color": "#fecaca"   },
+              { "value": "IN",         "color": "#4ade80"   },
+              { "value": "SIDE_IN",    "color": "#2dd4bf"   },
+              { "value": "OUT",        "color": "#f87171"   },
+              { "value": "SIDE_OUT",   "color": "#f472b6"   },
+              { "value": "FLOOR",      "color": "#60a5fa"   },
+              { "value": "CEILING",    "color": "#fb923c"   },
+              { "value": "NONE",       "color": null        }
             ]
           }
         },
@@ -163,7 +163,7 @@ Returns all algorithms the provider exposes, with their parameter schemas. Consu
             { "id": 62, "name": "Polygon Edge Style",     "value": "solid"     },
             { "id": 80, "name": "Polygon Fill Color",     "value": null        },
             { "id": 81, "name": "Polygon Fill Style",     "value": null        },
-            { "id": 82, "name": "Polygon ID Color",       "value": "slate-500" },
+            { "id": 82, "name": "Polygon ID Color",       "value": "#64748b"   },
             { "id": 83, "name": "Polygon ID Font Size",   "value": "text-xs"   },
             { "id": 84, "name": "Polygon ID Font Weight", "value": "font-medium"},
             { "id": 85, "name": "Polygon ID Shape",       "value": null        },
@@ -192,7 +192,7 @@ Returns all algorithms the provider exposes, with their parameter schemas. Consu
             { "id": 21, "name": "Point Border Width",        "value": null              },
             { "id": 22, "name": "Point Border Style",        "value": null              },
             { "id": 30, "name": "Point Fill Color",          "value": "#60a5fa"         },
-            { "id": 40, "name": "Point ID Color",            "value": "blue-400"        },
+            { "id": 40, "name": "Point ID Color",            "value": "#60a5fa"         },
             { "id": 41, "name": "Point ID Font Size",        "value": "text-xs"         },
             { "id": 42, "name": "Point ID Font Weight",      "value": "font-medium"     },
             { "id": 43, "name": "Point ID Placement",        "value": "inside"          },
@@ -306,4 +306,4 @@ Declares the data field to use as the text label and provides per-value color ov
 | Field | Type | Notes |
 |---|---|---|
 | `value` | `string` | The data value — matches what the algorithm emits in the compute result |
-| `color` | `string \| null` | Tailwind color token that overrides **Point Label Color** for points with this label value; `null` falls back to **Point Label Color** |
+| `color` | `string \| null` | CSS hex string with optional alpha (e.g. `"#16a34a"`, `"#16a34acc"`) that overrides **Point Label Color** for points with this label value; `null` falls back to **Point Label Color** |

@@ -36,7 +36,7 @@ Applies to all layer types. Always emitted as the first element in the `style` a
 
 Applies to layers with `type: "Point"`. All 18 attributes are always emitted.
 
-Geometric color values (border, fill) are CSS hex strings with optional 8-digit alpha (e.g. `"#a855f7"`, `"#a855f7cc"`). Text color values (ID, label) are Tailwind color tokens. Font size values are Tailwind text size classes (e.g. `"text-xs"`, `"text-sm"`, `"text-base"`). Spatial values (radius, width, offset) are Tailwind spacing tokens (e.g. `"1"`, `"2"`, `"4"`).
+All color values (border, fill, text ID, text label) are CSS hex strings with optional 8-digit alpha (e.g. `"#a855f7"`, `"#a855f7cc"`). Font size values are Tailwind text size classes (e.g. `"text-xs"`, `"text-sm"`, `"text-base"`). Spatial values (radius, width, offset) are Tailwind spacing tokens (e.g. `"1"`, `"2"`, `"4"`).
 
 ### Marker Shape
 
@@ -74,7 +74,7 @@ Renders the point's own index within the layer array (e.g. `1`, `2`, `3`…).
 
 | id | name | Allowed values |
 |----|------|----------------|
-| 40 | Point ID Color | Tailwind color token \| `null` |
+| 40 | Point ID Color | CSS hex string with optional alpha (e.g. `"#60a5fa"`, `"#60a5fa80"`) \| `null` |
 | 41 | Point ID Font Size | Tailwind text size class (e.g. `"text-xs"`, `"text-sm"`, `"text-base"`) \| `null` |
 | 42 | Point ID Font Weight | Tailwind font weight class (e.g. `"font-normal"`, `"font-medium"`, `"font-bold"`) \| `null` |
 | 43 | Point ID Placement | `"inside"` \| `"outside-left"` \| `"outside-right"` \| `"outside-top"` \| `"outside-bottom"` \| `null` (hidden) |
@@ -89,7 +89,7 @@ Renders a data value carried by the point (e.g. an algorithm-specific annotation
 | id | name | Allowed values |
 |----|------|----------------|
 | 50 | Point Label Placement | `"inside"` \| `"outside-left"` \| `"outside-right"` \| `"outside-top"` \| `"outside-bottom"` \| `null` (hidden) |
-| 51 | Point Label Color | Tailwind color token \| `null` |
+| 51 | Point Label Color | CSS hex string with optional alpha (e.g. `"#a855f7"`, `"#a855f780"`) \| `null` |
 | 52 | Point Label Font Size | Tailwind text size class (e.g. `"text-xs"`, `"text-sm"`, `"text-base"`) \| `null` |
 | 53 | Point Label Font Weight | Tailwind font weight class (e.g. `"font-normal"`, `"font-medium"`, `"font-bold"`) \| `null` |
 | 54 | Point Label Offset | Tailwind spacing token for the offset from point center when an outside placement is active (e.g. `"2"`) \| `null` (renderer default) |
@@ -171,7 +171,7 @@ Renders the polygon's own index within the layer array (e.g. `1`, `2`, `3`…) a
 
 | id | name | Allowed values |
 |----|------|----------------|
-| 82 | Polygon ID Color | Tailwind color token \| `null` |
+| 82 | Polygon ID Color | CSS hex string with optional alpha (e.g. `"#64748b"`, `"#64748b80"`) \| `null` |
 | 83 | Polygon ID Font Size | Tailwind text size class (e.g. `"text-xs"`, `"text-sm"`, `"text-base"`) \| `null` |
 | 84 | Polygon ID Font Weight | Tailwind font weight class (e.g. `"font-normal"`, `"font-medium"`, `"font-bold"`) \| `null` |
 | 85 | Polygon ID Shape | `"circle"` \| `"square"` \| `null` (no marker background) |

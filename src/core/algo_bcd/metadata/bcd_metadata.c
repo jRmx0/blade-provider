@@ -123,7 +123,7 @@ char *bcd_build_metadata_json(void)
 		metadata_add_style_attr(style, 43, "Point ID Placement",      NULL);
 		metadata_add_style_attr(style, 44, "Point ID Offset",         NULL);
 		metadata_add_style_attr(style, 50, "Point Label Placement",   "outside-bottom");
-		metadata_add_style_attr(style, 51, "Point Label Color",       "purple-500");
+		metadata_add_style_attr(style, 51, "Point Label Color",       "#a855f7");
 		metadata_add_style_attr(style, 52, "Point Label Font Size",   "text-xs");
 		metadata_add_style_attr(style, 53, "Point Label Font Weight", "font-medium");
 		metadata_add_style_attr(style, 54, "Point Label Offset",      "6");
@@ -132,18 +132,18 @@ char *bcd_build_metadata_json(void)
 		cJSON *label     = cJSON_CreateObject();
 		cJSON *enum_vals = cJSON_CreateArray();
 		cJSON_AddStringToObject(label, "key", "pointLabel");
-		metadata_add_label_enum_value(enum_vals, "B_IN",       "green-600");
-		metadata_add_label_enum_value(enum_vals, "B_SIDE_IN",  "teal-600");
-		metadata_add_label_enum_value(enum_vals, "B_INIT",     "green-200");
-		metadata_add_label_enum_value(enum_vals, "B_OUT",      "red-600");
-		metadata_add_label_enum_value(enum_vals, "B_SIDE_OUT", "pink-600");
-		metadata_add_label_enum_value(enum_vals, "B_DEINIT",   "red-200");
-		metadata_add_label_enum_value(enum_vals, "IN",         "green-400");
-		metadata_add_label_enum_value(enum_vals, "SIDE_IN",    "teal-400");
-		metadata_add_label_enum_value(enum_vals, "OUT",        "red-400");
-		metadata_add_label_enum_value(enum_vals, "SIDE_OUT",   "pink-400");
-		metadata_add_label_enum_value(enum_vals, "FLOOR",      "blue-400");
-		metadata_add_label_enum_value(enum_vals, "CEILING",    "orange-400");
+		metadata_add_label_enum_value(enum_vals, "B_IN",       "#16a34a");
+		metadata_add_label_enum_value(enum_vals, "B_SIDE_IN",  "#0d9488");
+		metadata_add_label_enum_value(enum_vals, "B_INIT",     "#bbf7d0");
+		metadata_add_label_enum_value(enum_vals, "B_OUT",      "#dc2626");
+		metadata_add_label_enum_value(enum_vals, "B_SIDE_OUT", "#db2777");
+		metadata_add_label_enum_value(enum_vals, "B_DEINIT",   "#fecaca");
+		metadata_add_label_enum_value(enum_vals, "IN",         "#4ade80");
+		metadata_add_label_enum_value(enum_vals, "SIDE_IN",    "#2dd4bf");
+		metadata_add_label_enum_value(enum_vals, "OUT",        "#f87171");
+		metadata_add_label_enum_value(enum_vals, "SIDE_OUT",   "#f472b6");
+		metadata_add_label_enum_value(enum_vals, "FLOOR",      "#60a5fa");
+		metadata_add_label_enum_value(enum_vals, "CEILING",    "#fb923c");
 		metadata_add_label_enum_value(enum_vals, "NONE",       NULL);
 		cJSON_AddItemToObject(label, "enumValues", enum_vals);
 		cJSON_AddItemToObject(layer, "label", label);
@@ -181,7 +181,7 @@ char *bcd_build_metadata_json(void)
 		metadata_add_style_attr(style, 80, "Polygon Fill Color",      NULL);
 		metadata_add_style_attr(style, 81, "Polygon Fill Style",      NULL);
 		/* Polygon ID */
-		metadata_add_style_attr(style, 82, "Polygon ID Color",        "slate-500");
+		metadata_add_style_attr(style, 82, "Polygon ID Color",        "#64748b");
 		metadata_add_style_attr(style, 83, "Polygon ID Font Size",    "text-xs");
 		metadata_add_style_attr(style, 84, "Polygon ID Font Weight",  "font-medium");
 		metadata_add_style_attr(style, 85, "Polygon ID Shape",        NULL);
@@ -218,7 +218,7 @@ char *bcd_build_metadata_json(void)
 		metadata_add_style_attr(style, 21, "Point Border Width",      NULL);
 		metadata_add_style_attr(style, 22, "Point Border Style",      NULL);
 		metadata_add_style_attr(style, 30, "Point Fill Color",        "#60a5fa");
-		metadata_add_style_attr(style, 40, "Point ID Color",          "blue-400");
+		metadata_add_style_attr(style, 40, "Point ID Color",          "#60a5fa");
 		metadata_add_style_attr(style, 41, "Point ID Font Size",      "text-xs");
 		metadata_add_style_attr(style, 42, "Point ID Font Weight",    "font-medium");
 		metadata_add_style_attr(style, 43, "Point ID Placement",      "inside");
