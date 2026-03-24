@@ -61,9 +61,9 @@ Returns all algorithms the provider exposes, with their parameter schemas. Consu
       "layers": [
         {
           "id": 1,
-          "cppLayer": "segments",
+          "computeLayer": "coveragePathPlan",
           "name": "Coverage Path",
-          "type": "Line",
+          "layerType": "Line",
           "style": [
             { "id": 5,  "name": "Z-Index",                  "value": "100"        },
             { "id": 10, "name": "Point Shape",              "value":  null              },
@@ -97,9 +97,9 @@ Returns all algorithms the provider exposes, with their parameter schemas. Consu
         },
         {
           "id": 10,
-          "debugLayer": "eventList",
+          "computeLayer": "eventList",
           "name": "Event List",
-          "type": "Point",
+          "layerType": "Point",
           "style": [
             { "id": 5,  "name": "Z-Index",                "value": "110"        },
             { "id": 10, "name": "Point Shape",              "value": "circle"     },
@@ -142,9 +142,9 @@ Returns all algorithms the provider exposes, with their parameter schemas. Consu
         },
         {
           "id": 11,
-          "debugLayer": "cellList",
+          "computeLayer": "cellList",
           "name": "Cell List",
-          "type": "Polygon",
+          "layerType": "Polygon",
           "style": [
             { "id": 5,  "name": "Z-Index",                "value": "120"        },
             { "id": 10, "name": "Point Shape",              "value": null        },
@@ -179,9 +179,9 @@ Returns all algorithms the provider exposes, with their parameter schemas. Consu
         },
         {
           "id": 12,
-          "debugLayer": "cellVisitOrder",
+          "computeLayer": "cellVisitOrder",
           "name": "Cell Visit Order",
-          "type": "Line",
+          "layerType": "Line",
           "style": [
             { "id": 5,  "name": "Z-Index",                "value": "130"        },
             { "id": 10, "name": "Point Shape",              "value": "circle"           },
@@ -221,7 +221,7 @@ Returns all algorithms the provider exposes, with their parameter schemas. Consu
 
 `appHandler` values tell the consumer that this parameter is bound to an environment-level property (format, type, coordinate system) rather than being a free-form algorithm input. Consumers should resolve these from the environment state rather than prompting the user separately.
 
-`layers` declares all renderable output layers for an algorithm. Coverage layers carry a `cppLayer` field pointing to the field name in `result.coveragePathPlan`; debug layers carry a `debugLayer` field matching the `source` value in `result.debug.layers`. Consumers should use the `style` as the initial rendering config but may override it locally.
+`layers` declares all renderable output layers for an algorithm. All layers carry a `computeLayer` field: coverage layers point to the field name in `result.coveragePathPlan`; debug layers match the `source` value in `result.debug.layers`. Consumers should use the `style` as the initial rendering config but may override it locally.
 
 ---
 
@@ -263,14 +263,11 @@ Returns all algorithms the provider exposes, with their parameter schemas. Consu
 | Field | Type | Notes |
 |---|---|---|
 | `id` | `number` | Unique numeric identifier for this layer |
-| `cppLayer` | `string?` | Present on coverage path plan layers. Names the field in `result.coveragePathPlan` that holds the data (e.g. `"segments"`) |
-| `debugLayer` | `string?` | Present on debug layers. Matches the `source` value on the corresponding entry in `result.debug.layers` |
+| `computeLayer` | `string` | Names the result field this layer binds to. On coverage path plan layers, names the field in `result.coveragePathPlan`. On debug layers, matches the `source` value on the corresponding entry in `result.debug.layers` |
 | `name` | `string` | Human-readable display name |
-| `type` | `LayerType` | Geometry primitive type of the objects produced by this layer |
+| `layerType` | `LayerType` | Geometry primitive type of the objects produced by this layer |
 | `style` | `LayerStyleAttribute[]` | Default rendering attributes — see [Layer Styles](./api-layer-styles.md) |
 | `label` | `LayerLabel \| null` | Data binding and per-value text color overrides — `null` for layers with no text label |
-
-Exactly one of `cppLayer` or `debugLayer` is present on any given layer entry.
 
 ### `LayerType`
 
@@ -282,7 +279,7 @@ Exactly one of `cppLayer` or `debugLayer` is present on any given layer entry.
 
 ### `LayerStyleAttribute`
 
-`style` is an ordered array of `LayerStyleAttribute` objects. The attribute set depends on the layer's `type`. See [Layer Styles](./api-layer-styles.md) for the full per-type attribute registry.
+`style` is an ordered array of `LayerStyleAttribute` objects. The attribute set depends on the layer's `layerType`. See [Layer Styles](./api-layer-styles.md) for the full per-type attribute registry.
 
 | Field | Type | Notes |
 |---|---|---|

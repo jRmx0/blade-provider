@@ -313,7 +313,7 @@ Base shape shared by every debug layer. Algorithm-specific layers may carry addi
 | Field | Type | Notes |
 |---|---|---|
 | `id` | `number` | Matches `layer.id` from `GET /metadata` — use to look up style and display config |
-| `source` | `string` | Identifies the layer kind (e.g. `"eventList"`, `"cellList"`) — matches `layer.debugLayer` in metadata |
+| `source` | `string` | Identifies the layer kind (e.g. `"eventList"`, `"cellList"`) — matches `layer.computeLayer` in metadata |
 | `list` | `object[]` | Data items for this layer; shape is algorithm and layer-kind specific |
 
 ---

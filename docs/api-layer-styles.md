@@ -34,7 +34,7 @@ Applies to all layer types. Always emitted as the first element in the `style` a
 
 ## Point Style Attributes
 
-Applies to layers with `type: "Point"`. All 18 attributes are always emitted.
+Applies to layers with `layerType: "Point"`. All 18 attributes are always emitted.
 
 All color values (border, fill, text ID, text label) are CSS hex strings with optional 8-digit alpha (e.g. `"#a855f7"`, `"#a855f7cc"`). Font size values are Tailwind text size classes (e.g. `"text-xs"`, `"text-sm"`, `"text-base"`). Spatial values (radius, width, offset) are Tailwind spacing tokens (e.g. `"1"`, `"2"`, `"4"`).
 
@@ -98,7 +98,7 @@ Renders a data value carried by the point (e.g. an algorithm-specific annotation
 
 ## Line Style Attributes
 
-Applies to layers with `type: "Line"`. All 26 attributes are always emitted.
+Applies to layers with `layerType: "Line"`. All 26 attributes are always emitted.
 
 A Line is composed of **point-vertices** (the dots at each waypoint) and **edges** (the segments connecting them). The point-vertex attribute group reuses the same IDs and names as the [Point Style Attributes](#point-style-attributes) section above — the allowed values and semantics are identical.
 
@@ -140,7 +140,7 @@ The group is always centered on the edge midpoint. When `n ≥ 2` the minimum-di
 
 ## Polygon Style Attributes
 
-Applies to layers with `type: "Polygon"`. All 27 attributes are always emitted.
+Applies to layers with `layerType: "Polygon"`. All 27 attributes are always emitted.
 
 A Polygon is composed of **corner vertices** (the points at each boundary corner), a **boundary edge** (the closed stroke outline), and an optional **fill**. The corner-vertex attribute group reuses the same IDs and names as the [Point Style Attributes](#point-style-attributes) section above, **excluding the Overlap group (IDs 12–13) and the Text Label group (IDs 50–54)** which polygons do not carry.
 
