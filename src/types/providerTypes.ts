@@ -2,16 +2,16 @@
  * Provider-defined metadata section label.
  * `General` is reserved as the consumer-side fallback when the provider leaves the section undefined.
  */
-export type MetadataParamSection =
-    | "General"
-    | (string & {});
-
 export type AlgoParamType =
     | "Integer"
     | "Decimal"
     | "Boolean"
     | "String"
     | "Enum";
+
+export type MetadataParamSection =
+    | "General"
+    | (string & {});
 
 export type AppHandler =
     | "env.format"
