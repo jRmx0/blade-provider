@@ -24,42 +24,34 @@ export interface MetadataParamResponse {
 }
 
 export interface LayerStyleAttribute {
-    id: number;
     name: string;
-    value: string | null;
+    styleType: string;
+    defaultValue: string | null;
 }
 
 export type LayerType = "Point" | "Line" | "Polygon";
 
-export interface LayerLabelEnumValue {
+export interface PointLabelColorEntry {
     value: string;
     color: string | null;
 }
 
-export interface LayerLabel {
-    key: string;
-    enumValues: LayerLabelEnumValue[];
+export interface LayerStyle {
+    universalStyleAttributes: LayerStyleAttribute[];
+    pointStyleAttributes?: LayerStyleAttribute[];
+    lineStyleAttributes?: LayerStyleAttribute[];
+    polygonStyleAttributes?: LayerStyleAttribute[];
+    pointLabelColorMapping?: PointLabelColorEntry[];
 }
 
-export interface MetadataCppLayerResponse {
+export interface MetadataLayerResponse {
     id: number;
-    cppLayer: string;
+    computeLayer: string;
     name: string;
-    type: LayerType;
-    style: LayerStyleAttribute[];
-    label: LayerLabel | null;
+    layerType: LayerType;
+    style: LayerStyle;
+    pointLabelEnumValues?: string[];
 }
-
-export interface MetadataDebugLayerResponse {
-    id: number;
-    debugLayer: string;
-    name: string;
-    type: LayerType;
-    style: LayerStyleAttribute[];
-    label: LayerLabel | null;
-}
-
-export type MetadataLayerResponse = MetadataCppLayerResponse | MetadataDebugLayerResponse;
 
 export interface MetadataAlgorithmResponse {
     id: number;

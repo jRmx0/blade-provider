@@ -56,192 +56,206 @@ char *bcd_build_metadata_json(void)
 	}
 	cJSON_AddItemToObject(algorithm, "layers", layers);
 
-	/* ---- Coverage Path (Line, cppLayer = "segments", zIndex = 100) ---- */
+	/* ---- Coverage Path (Line, computeLayer = "coveragePathPlan", zIndex = 100) ---- */
 	{
 		cJSON *layer = cJSON_CreateObject();
-		cJSON_AddNumberToObject(layer, "id",       1);
-		cJSON_AddStringToObject(layer, "cppLayer", "segments");
-		cJSON_AddStringToObject(layer, "name",     "Coverage Path");
-		cJSON_AddStringToObject(layer, "type",     "Line");
+		cJSON_AddNumberToObject(layer, "id",           1);
+		cJSON_AddStringToObject(layer, "computeLayer", "coveragePathPlan");
+		cJSON_AddStringToObject(layer, "name",         "Coverage Path");
+		cJSON_AddStringToObject(layer, "layerType",    "Line");
 
-		cJSON *style = cJSON_CreateArray();
-		metadata_add_style_attr(style, 5,  "Z-Index",                "100");
-		metadata_add_style_attr(style, 10, "Point Shape",             NULL);
-		metadata_add_style_attr(style, 11, "Point Radius",            NULL);
-		metadata_add_style_attr(style, 12, "Point Overlap Spacing",   NULL);
-		metadata_add_style_attr(style, 13, "Point Overlap Layout",    NULL);
-		metadata_add_style_attr(style, 20, "Point Border Color",      NULL);
-		metadata_add_style_attr(style, 21, "Point Border Width",      NULL);
-		metadata_add_style_attr(style, 22, "Point Border Style",      NULL);
-		metadata_add_style_attr(style, 30, "Point Fill Color",        NULL);
-		metadata_add_style_attr(style, 40, "Point ID Color",          NULL);
-		metadata_add_style_attr(style, 41, "Point ID Font Size",      NULL);
-		metadata_add_style_attr(style, 42, "Point ID Font Weight",    NULL);
-		metadata_add_style_attr(style, 43, "Point ID Placement",      NULL);
-		metadata_add_style_attr(style, 44, "Point ID Offset",         NULL);
-		metadata_add_style_attr(style, 50, "Point Label Placement",   NULL);
-		metadata_add_style_attr(style, 51, "Point Label Color",       NULL);
-		metadata_add_style_attr(style, 52, "Point Label Font Size",   NULL);
-		metadata_add_style_attr(style, 53, "Point Label Font Weight", NULL);
-		metadata_add_style_attr(style, 54, "Point Label Offset",      NULL);
-		metadata_add_style_attr(style, 60, "Line Edge Color",         "#60a5fa");
-		metadata_add_style_attr(style, 61, "Line Edge Width",         "1");
-		metadata_add_style_attr(style, 62, "Line Edge Style",         "solid");
-		metadata_add_style_attr(style, 70, "Line Arrow Start",        NULL);
-		metadata_add_style_attr(style, 71, "Line Arrow End",          NULL);
-		metadata_add_style_attr(style, 72, "Line Arrow Mid",          "line_end_arrow");
-		metadata_add_style_attr(style, 73, "Line Arrow Mid Spacing",  "12");
-		metadata_add_style_attr(style, 74, "Line Arrow Size",         "3");
+		cJSON *universal = NULL, *point = NULL, *line = NULL;
+		cJSON *style = metadata_create_style_object(&universal, &point, &line, NULL, NULL);
+
+		metadata_add_style_attr(universal, "Z-Index", "Integer", "100");
+
+		metadata_add_style_attr(point, "Point Shape",             "PointShapeEnum",    NULL);
+		metadata_add_style_attr(point, "Point Radius",            "Spacing",           NULL);
+		metadata_add_style_attr(point, "Point Overlap Spacing",   "Spacing",           NULL);
+		metadata_add_style_attr(point, "Point Overlap Layout",    "OverlapLayoutEnum", NULL);
+		metadata_add_style_attr(point, "Point Border Color",      "Color",             NULL);
+		metadata_add_style_attr(point, "Point Border Width",      "Spacing",           NULL);
+		metadata_add_style_attr(point, "Point Border Style",      "StrokeStyleEnum",   NULL);
+		metadata_add_style_attr(point, "Point Fill Color",        "Color",             NULL);
+		metadata_add_style_attr(point, "Point ID Color",          "Color",             NULL);
+		metadata_add_style_attr(point, "Point ID Font Size",      "FontSizeEnum",      NULL);
+		metadata_add_style_attr(point, "Point ID Font Weight",    "FontWeightEnum",    NULL);
+		metadata_add_style_attr(point, "Point ID Placement",      "PlacementEnum",     NULL);
+		metadata_add_style_attr(point, "Point ID Offset",         "Spacing",           NULL);
+		metadata_add_style_attr(point, "Point Label Color",       "Color",             NULL);
+		metadata_add_style_attr(point, "Point Label Font Size",   "FontSizeEnum",      NULL);
+		metadata_add_style_attr(point, "Point Label Font Weight", "FontWeightEnum",    NULL);
+		metadata_add_style_attr(point, "Point Label Placement",   "PlacementEnum",     NULL);
+		metadata_add_style_attr(point, "Point Label Offset",      "Spacing",           NULL);
+
+		metadata_add_style_attr(line, "Line Edge Color",         "Color",             "#60a5fa");
+		metadata_add_style_attr(line, "Line Edge Width",         "Spacing",           "1");
+		metadata_add_style_attr(line, "Line Edge Style",         "StrokeStyleEnum",   "solid");
+		metadata_add_style_attr(line, "Line Arrow Start",        "LineArrowStartEnum", NULL);
+		metadata_add_style_attr(line, "Line Arrow End",          "LineArrowEndEnum",   NULL);
+		metadata_add_style_attr(line, "Line Arrow Mid",          "LineArrowMidEnum",  "line_end_arrow");
+		metadata_add_style_attr(line, "Line Arrow Mid Spacing",  "Spacing",           "12");
+		metadata_add_style_attr(line, "Line Arrow Size",         "Spacing",           "3");
+
 		cJSON_AddItemToObject(layer, "style", style);
-
-		cJSON_AddNullToObject(layer, "label");
-
 		cJSON_AddItemToArray(layers, layer);
 	}
 
-	/* ---- eventList (Point, debugLayer, zIndex = 110) ------------------ */
+	/* ---- eventList (Point, computeLayer = "eventList", zIndex = 110) --- */
 	{
 		cJSON *layer = cJSON_CreateObject();
-		cJSON_AddNumberToObject(layer, "id",         10);
-		cJSON_AddStringToObject(layer, "debugLayer", "eventList");
-		cJSON_AddStringToObject(layer, "name",       "Event List");
-		cJSON_AddStringToObject(layer, "type",       "Point");
+		cJSON_AddNumberToObject(layer, "id",           10);
+		cJSON_AddStringToObject(layer, "computeLayer", "eventList");
+		cJSON_AddStringToObject(layer, "name",         "Event List");
+		cJSON_AddStringToObject(layer, "layerType",    "Point");
 
-		cJSON *style = cJSON_CreateArray();
-		metadata_add_style_attr(style, 5,  "Z-Index",             "110");
-		metadata_add_style_attr(style, 10, "Point Shape",             "circle");
-		metadata_add_style_attr(style, 11, "Point Radius",            "4");
-		metadata_add_style_attr(style, 12, "Point Overlap Spacing",   NULL);
-		metadata_add_style_attr(style, 13, "Point Overlap Layout",    NULL);
-		metadata_add_style_attr(style, 20, "Point Border Color",      "#a855f7");
-		metadata_add_style_attr(style, 21, "Point Border Width",      "1");
-		metadata_add_style_attr(style, 22, "Point Border Style",      "solid");
-		metadata_add_style_attr(style, 30, "Point Fill Color",        "#a855f7");
-		metadata_add_style_attr(style, 40, "Point ID Color",          NULL);
-		metadata_add_style_attr(style, 41, "Point ID Font Size",      NULL);
-		metadata_add_style_attr(style, 42, "Point ID Font Weight",    NULL);
-		metadata_add_style_attr(style, 43, "Point ID Placement",      NULL);
-		metadata_add_style_attr(style, 44, "Point ID Offset",         NULL);
-		metadata_add_style_attr(style, 50, "Point Label Placement",   "outside-bottom");
-		metadata_add_style_attr(style, 51, "Point Label Color",       "#a855f7");
-		metadata_add_style_attr(style, 52, "Point Label Font Size",   "text-xs");
-		metadata_add_style_attr(style, 53, "Point Label Font Weight", "font-medium");
-		metadata_add_style_attr(style, 54, "Point Label Offset",      "6");
+		cJSON *point_label_enum_values = cJSON_CreateArray();
+		cJSON_AddItemToArray(point_label_enum_values, cJSON_CreateString("B_IN"));
+		cJSON_AddItemToArray(point_label_enum_values, cJSON_CreateString("B_SIDE_IN"));
+		cJSON_AddItemToArray(point_label_enum_values, cJSON_CreateString("B_INIT"));
+		cJSON_AddItemToArray(point_label_enum_values, cJSON_CreateString("B_OUT"));
+		cJSON_AddItemToArray(point_label_enum_values, cJSON_CreateString("B_SIDE_OUT"));
+		cJSON_AddItemToArray(point_label_enum_values, cJSON_CreateString("B_DEINIT"));
+		cJSON_AddItemToArray(point_label_enum_values, cJSON_CreateString("IN"));
+		cJSON_AddItemToArray(point_label_enum_values, cJSON_CreateString("SIDE_IN"));
+		cJSON_AddItemToArray(point_label_enum_values, cJSON_CreateString("OUT"));
+		cJSON_AddItemToArray(point_label_enum_values, cJSON_CreateString("SIDE_OUT"));
+		cJSON_AddItemToArray(point_label_enum_values, cJSON_CreateString("FLOOR"));
+		cJSON_AddItemToArray(point_label_enum_values, cJSON_CreateString("CEILING"));
+		cJSON_AddItemToArray(point_label_enum_values, cJSON_CreateString("NONE"));
+		cJSON_AddItemToObject(layer, "pointLabelEnumValues", point_label_enum_values);
+
+		cJSON *universal = NULL, *point = NULL, *color_mapping = NULL;
+		cJSON *style = metadata_create_style_object(&universal, &point, NULL, NULL, &color_mapping);
+
+		metadata_add_style_attr(universal, "Z-Index", "Integer", "110");
+
+		metadata_add_style_attr(point, "Point Shape",             "PointShapeEnum",    "circle");
+		metadata_add_style_attr(point, "Point Radius",            "Spacing",           "4");
+		metadata_add_style_attr(point, "Point Overlap Spacing",   "Spacing",           NULL);
+		metadata_add_style_attr(point, "Point Overlap Layout",    "OverlapLayoutEnum", NULL);
+		metadata_add_style_attr(point, "Point Border Color",      "Color",             "#a855f7");
+		metadata_add_style_attr(point, "Point Border Width",      "Spacing",           "1");
+		metadata_add_style_attr(point, "Point Border Style",      "StrokeStyleEnum",   "solid");
+		metadata_add_style_attr(point, "Point Fill Color",        "Color",             "#a855f7");
+		metadata_add_style_attr(point, "Point ID Color",          "Color",             NULL);
+		metadata_add_style_attr(point, "Point ID Font Size",      "FontSizeEnum",      NULL);
+		metadata_add_style_attr(point, "Point ID Font Weight",    "FontWeightEnum",    NULL);
+		metadata_add_style_attr(point, "Point ID Placement",      "PlacementEnum",     NULL);
+		metadata_add_style_attr(point, "Point ID Offset",         "Spacing",           NULL);
+		metadata_add_style_attr(point, "Point Label Color",       "Color",             "#a855f7");
+		metadata_add_style_attr(point, "Point Label Font Size",   "FontSizeEnum",      "text-xs");
+		metadata_add_style_attr(point, "Point Label Font Weight", "FontWeightEnum",    "font-medium");
+		metadata_add_style_attr(point, "Point Label Placement",   "PlacementEnum",     "outside-bottom");
+		metadata_add_style_attr(point, "Point Label Offset",      "Spacing",           "6");
+
+		metadata_add_point_label_color_entry(color_mapping, "B_IN",       "#16a34a");
+		metadata_add_point_label_color_entry(color_mapping, "B_SIDE_IN",  "#0d9488");
+		metadata_add_point_label_color_entry(color_mapping, "B_INIT",     "#bbf7d0");
+		metadata_add_point_label_color_entry(color_mapping, "B_OUT",      "#dc2626");
+		metadata_add_point_label_color_entry(color_mapping, "B_SIDE_OUT", "#db2777");
+		metadata_add_point_label_color_entry(color_mapping, "B_DEINIT",   "#fecaca");
+		metadata_add_point_label_color_entry(color_mapping, "IN",         "#4ade80");
+		metadata_add_point_label_color_entry(color_mapping, "SIDE_IN",    "#2dd4bf");
+		metadata_add_point_label_color_entry(color_mapping, "OUT",        "#f87171");
+		metadata_add_point_label_color_entry(color_mapping, "SIDE_OUT",   "#f472b6");
+		metadata_add_point_label_color_entry(color_mapping, "FLOOR",      "#60a5fa");
+		metadata_add_point_label_color_entry(color_mapping, "CEILING",    "#fb923c");
+		metadata_add_point_label_color_entry(color_mapping, "NONE",       NULL);
+
 		cJSON_AddItemToObject(layer, "style", style);
-
-		cJSON *label     = cJSON_CreateObject();
-		cJSON *enum_vals = cJSON_CreateArray();
-		cJSON_AddStringToObject(label, "key", "pointLabel");
-		metadata_add_label_enum_value(enum_vals, "B_IN",       "#16a34a");
-		metadata_add_label_enum_value(enum_vals, "B_SIDE_IN",  "#0d9488");
-		metadata_add_label_enum_value(enum_vals, "B_INIT",     "#bbf7d0");
-		metadata_add_label_enum_value(enum_vals, "B_OUT",      "#dc2626");
-		metadata_add_label_enum_value(enum_vals, "B_SIDE_OUT", "#db2777");
-		metadata_add_label_enum_value(enum_vals, "B_DEINIT",   "#fecaca");
-		metadata_add_label_enum_value(enum_vals, "IN",         "#4ade80");
-		metadata_add_label_enum_value(enum_vals, "SIDE_IN",    "#2dd4bf");
-		metadata_add_label_enum_value(enum_vals, "OUT",        "#f87171");
-		metadata_add_label_enum_value(enum_vals, "SIDE_OUT",   "#f472b6");
-		metadata_add_label_enum_value(enum_vals, "FLOOR",      "#60a5fa");
-		metadata_add_label_enum_value(enum_vals, "CEILING",    "#fb923c");
-		metadata_add_label_enum_value(enum_vals, "NONE",       NULL);
-		cJSON_AddItemToObject(label, "enumValues", enum_vals);
-		cJSON_AddItemToObject(layer, "label", label);
-
 		cJSON_AddItemToArray(layers, layer);
 	}
 
-	/* ---- cellList (Polygon, debugLayer, zIndex = 120) ----------------- */
+	/* ---- cellList (Polygon, computeLayer = "cellList", zIndex = 120) --- */
 	{
 		cJSON *layer = cJSON_CreateObject();
-		cJSON_AddNumberToObject(layer, "id",         11);
-		cJSON_AddStringToObject(layer, "debugLayer", "cellList");
-		cJSON_AddStringToObject(layer, "name",       "Cell List");
-		cJSON_AddStringToObject(layer, "type",       "Polygon");
+		cJSON_AddNumberToObject(layer, "id",           11);
+		cJSON_AddStringToObject(layer, "computeLayer", "cellList");
+		cJSON_AddStringToObject(layer, "name",         "Cell List");
+		cJSON_AddStringToObject(layer, "layerType",    "Polygon");
 
-		cJSON *style = cJSON_CreateArray();
-		metadata_add_style_attr(style, 5,  "Z-Index",             "120");
-		/* Corner vertex (10-44, excluding overlap 12-13 and text label 50-54) */
-		metadata_add_style_attr(style, 10, "Point Shape",             NULL);
-		metadata_add_style_attr(style, 11, "Point Radius",            NULL);
-		metadata_add_style_attr(style, 20, "Point Border Color",      NULL);
-		metadata_add_style_attr(style, 21, "Point Border Width",      NULL);
-		metadata_add_style_attr(style, 22, "Point Border Style",      NULL);
-		metadata_add_style_attr(style, 30, "Point Fill Color",        NULL);
-		metadata_add_style_attr(style, 40, "Point ID Color",          NULL);
-		metadata_add_style_attr(style, 41, "Point ID Font Size",      NULL);
-		metadata_add_style_attr(style, 42, "Point ID Font Weight",    NULL);
-		metadata_add_style_attr(style, 43, "Point ID Placement",      NULL);
-		metadata_add_style_attr(style, 44, "Point ID Offset",         NULL);
-		/* Polygon Edge */
-		metadata_add_style_attr(style, 60, "Polygon Edge Color",      "#94a3b8");
-		metadata_add_style_attr(style, 61, "Polygon Edge Width",      "1");
-		metadata_add_style_attr(style, 62, "Polygon Edge Style",      "solid");
-		/* Polygon Fill */
-		metadata_add_style_attr(style, 80, "Polygon Fill Color",      NULL);
-		metadata_add_style_attr(style, 81, "Polygon Fill Style",      NULL);
-		/* Polygon ID */
-		metadata_add_style_attr(style, 82, "Polygon ID Color",        "#64748b");
-		metadata_add_style_attr(style, 83, "Polygon ID Font Size",    "text-xs");
-		metadata_add_style_attr(style, 84, "Polygon ID Font Weight",  "font-medium");
-		metadata_add_style_attr(style, 85, "Polygon ID Shape",        NULL);
-		metadata_add_style_attr(style, 86, "Polygon ID Radius",       NULL);
-		metadata_add_style_attr(style, 87, "Polygon ID Border Color", NULL);
-		metadata_add_style_attr(style, 88, "Polygon ID Border Width", NULL);
-		metadata_add_style_attr(style, 89, "Polygon ID Border Style", NULL);
-		metadata_add_style_attr(style, 90, "Polygon ID Fill Color",   NULL);
-		metadata_add_style_attr(style, 91, "Polygon ID Placement",    "inside");
-		metadata_add_style_attr(style, 92, "Polygon ID Offset",       NULL);
+		cJSON *universal = NULL, *point = NULL, *polygon = NULL;
+		cJSON *style = metadata_create_style_object(&universal, &point, NULL, &polygon, NULL);
+
+		metadata_add_style_attr(universal, "Z-Index", "Integer", "120");
+
+		/* Corner vertex (Point group, Overlap and Text Label excluded) */
+		metadata_add_style_attr(point, "Point Shape",          "PointShapeEnum",  NULL);
+		metadata_add_style_attr(point, "Point Radius",         "Spacing",         NULL);
+		metadata_add_style_attr(point, "Point Border Color",   "Color",           NULL);
+		metadata_add_style_attr(point, "Point Border Width",   "Spacing",         NULL);
+		metadata_add_style_attr(point, "Point Border Style",   "StrokeStyleEnum", NULL);
+		metadata_add_style_attr(point, "Point Fill Color",     "Color",           NULL);
+		metadata_add_style_attr(point, "Point ID Color",       "Color",           NULL);
+		metadata_add_style_attr(point, "Point ID Font Size",   "FontSizeEnum",    NULL);
+		metadata_add_style_attr(point, "Point ID Font Weight", "FontWeightEnum",  NULL);
+		metadata_add_style_attr(point, "Point ID Placement",   "PlacementEnum",   NULL);
+		metadata_add_style_attr(point, "Point ID Offset",      "Spacing",         NULL);
+
+		metadata_add_style_attr(polygon, "Polygon Edge Color",      "Color",             "#94a3b8");
+		metadata_add_style_attr(polygon, "Polygon Edge Width",      "Spacing",           "1");
+		metadata_add_style_attr(polygon, "Polygon Edge Style",      "StrokeStyleEnum",   "solid");
+		metadata_add_style_attr(polygon, "Polygon Fill Color",      "Color",             NULL);
+		metadata_add_style_attr(polygon, "Polygon Fill Style",      "FillStyleEnum",     NULL);
+		metadata_add_style_attr(polygon, "Polygon ID Color",        "Color",             "#64748b");
+		metadata_add_style_attr(polygon, "Polygon ID Font Size",    "FontSizeEnum",      "text-xs");
+		metadata_add_style_attr(polygon, "Polygon ID Font Weight",  "FontWeightEnum",    "font-medium");
+		metadata_add_style_attr(polygon, "Polygon ID Shape",        "PolygonIDShapeEnum", NULL);
+		metadata_add_style_attr(polygon, "Polygon ID Radius",       "Spacing",           NULL);
+		metadata_add_style_attr(polygon, "Polygon ID Border Color", "Color",             NULL);
+		metadata_add_style_attr(polygon, "Polygon ID Border Width", "Spacing",           NULL);
+		metadata_add_style_attr(polygon, "Polygon ID Border Style", "StrokeStyleEnum",   NULL);
+		metadata_add_style_attr(polygon, "Polygon ID Fill Color",   "Color",             NULL);
+		metadata_add_style_attr(polygon, "Polygon ID Placement",    "PlacementEnum",     "inside");
+		metadata_add_style_attr(polygon, "Polygon ID Offset",       "Spacing",           NULL);
+
 		cJSON_AddItemToObject(layer, "style", style);
-
-		cJSON_AddNullToObject(layer, "label");
-
 		cJSON_AddItemToArray(layers, layer);
 	}
 
-	/* ---- cellVisitOrder (Line, debugLayer, zIndex = 130) -------------- */
+	/* ---- Cell Visit Order (Line, computeLayer = "cellVisitOrder", zIndex = 130) --- */
 	{
 		cJSON *layer = cJSON_CreateObject();
-		cJSON_AddNumberToObject(layer, "id",         12);
-		cJSON_AddStringToObject(layer, "debugLayer", "cellVisitOrder");
-		cJSON_AddStringToObject(layer, "name",       "Cell Visit Order");
-		cJSON_AddStringToObject(layer, "type",       "Line");
+		cJSON_AddNumberToObject(layer, "id",           12);
+		cJSON_AddStringToObject(layer, "computeLayer", "cellVisitOrder");
+		cJSON_AddStringToObject(layer, "name",         "Cell Visit Order");
+		cJSON_AddStringToObject(layer, "layerType",    "Line");
 
-		cJSON *style = cJSON_CreateArray();
-		metadata_add_style_attr(style, 5,  "Z-Index",             "130");
-		/* Point vertex (all 18 Point attributes) */
-		metadata_add_style_attr(style, 10, "Point Shape",             "circle");
-		metadata_add_style_attr(style, 11, "Point Radius",            "3");
-		metadata_add_style_attr(style, 12, "Point Overlap Spacing",   "8");
-		metadata_add_style_attr(style, 13, "Point Overlap Layout",    "grid");
-		metadata_add_style_attr(style, 20, "Point Border Color",      NULL);
-		metadata_add_style_attr(style, 21, "Point Border Width",      NULL);
-		metadata_add_style_attr(style, 22, "Point Border Style",      NULL);
-		metadata_add_style_attr(style, 30, "Point Fill Color",        "#60a5fa");
-		metadata_add_style_attr(style, 40, "Point ID Color",          "#60a5fa");
-		metadata_add_style_attr(style, 41, "Point ID Font Size",      "text-xs");
-		metadata_add_style_attr(style, 42, "Point ID Font Weight",    "font-medium");
-		metadata_add_style_attr(style, 43, "Point ID Placement",      "inside");
-		metadata_add_style_attr(style, 44, "Point ID Offset",         NULL);
-		metadata_add_style_attr(style, 50, "Point Label Placement",   NULL);
-		metadata_add_style_attr(style, 51, "Point Label Color",       NULL);
-		metadata_add_style_attr(style, 52, "Point Label Font Size",   NULL);
-		metadata_add_style_attr(style, 53, "Point Label Font Weight", NULL);
-		metadata_add_style_attr(style, 54, "Point Label Offset",      NULL);
-		/* Line Edge */
-		metadata_add_style_attr(style, 60, "Line Edge Color",         "#60a5fa");
-		metadata_add_style_attr(style, 61, "Line Edge Width",         "1");
-		metadata_add_style_attr(style, 62, "Line Edge Style",         "solid");
-		/* Arrow */
-		metadata_add_style_attr(style, 70, "Line Arrow Start",        NULL);
-		metadata_add_style_attr(style, 71, "Line Arrow End",          NULL);
-		metadata_add_style_attr(style, 72, "Line Arrow Mid",          "line_end_arrow");
-		metadata_add_style_attr(style, 73, "Line Arrow Mid Spacing",  "12");
-		metadata_add_style_attr(style, 74, "Line Arrow Size",         "3");
+		cJSON *universal = NULL, *point = NULL, *line = NULL;
+		cJSON *style = metadata_create_style_object(&universal, &point, &line, NULL, NULL);
+
+		metadata_add_style_attr(universal, "Z-Index", "Integer", "130");
+
+		metadata_add_style_attr(point, "Point Shape",             "PointShapeEnum",    "circle");
+		metadata_add_style_attr(point, "Point Radius",            "Spacing",           "3");
+		metadata_add_style_attr(point, "Point Overlap Spacing",   "Spacing",           "8");
+		metadata_add_style_attr(point, "Point Overlap Layout",    "OverlapLayoutEnum", "grid");
+		metadata_add_style_attr(point, "Point Border Color",      "Color",             NULL);
+		metadata_add_style_attr(point, "Point Border Width",      "Spacing",           NULL);
+		metadata_add_style_attr(point, "Point Border Style",      "StrokeStyleEnum",   NULL);
+		metadata_add_style_attr(point, "Point Fill Color",        "Color",             "#60a5fa");
+		metadata_add_style_attr(point, "Point ID Color",          "Color",             "#60a5fa");
+		metadata_add_style_attr(point, "Point ID Font Size",      "FontSizeEnum",      "text-xs");
+		metadata_add_style_attr(point, "Point ID Font Weight",    "FontWeightEnum",    "font-medium");
+		metadata_add_style_attr(point, "Point ID Placement",      "PlacementEnum",     "inside");
+		metadata_add_style_attr(point, "Point ID Offset",         "Spacing",           NULL);
+		metadata_add_style_attr(point, "Point Label Color",       "Color",             NULL);
+		metadata_add_style_attr(point, "Point Label Font Size",   "FontSizeEnum",      NULL);
+		metadata_add_style_attr(point, "Point Label Font Weight", "FontWeightEnum",    NULL);
+		metadata_add_style_attr(point, "Point Label Placement",   "PlacementEnum",     NULL);
+		metadata_add_style_attr(point, "Point Label Offset",      "Spacing",           NULL);
+
+		metadata_add_style_attr(line, "Line Edge Color",         "Color",              "#60a5fa");
+		metadata_add_style_attr(line, "Line Edge Width",         "Spacing",            "1");
+		metadata_add_style_attr(line, "Line Edge Style",         "StrokeStyleEnum",    "solid");
+		metadata_add_style_attr(line, "Line Arrow Start",        "LineArrowStartEnum", NULL);
+		metadata_add_style_attr(line, "Line Arrow End",          "LineArrowEndEnum",   NULL);
+		metadata_add_style_attr(line, "Line Arrow Mid",          "LineArrowMidEnum",   "line_end_arrow");
+		metadata_add_style_attr(line, "Line Arrow Mid Spacing",  "Spacing",            "12");
+		metadata_add_style_attr(line, "Line Arrow Size",         "Spacing",            "3");
+
 		cJSON_AddItemToObject(layer, "style", style);
-
-		cJSON_AddNullToObject(layer, "label");
-
 		cJSON_AddItemToArray(layers, layer);
 	}
 

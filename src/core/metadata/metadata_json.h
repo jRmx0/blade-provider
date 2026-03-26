@@ -57,35 +57,77 @@ static inline void metadata_add_parameter(
 }
 
 /*
- * Appends one style attribute entry { "id": id, "name": name, "value": value|null }
- * to the given style array.  Pass NULL for value to emit a JSON null.
+ * Appends one style attribute entry { "name": name, "styleType": style_type, "defaultValue": value|null }
+ * to the given style sub-array.  Pass NULL for value to emit a JSON null.
  */
 static inline void metadata_add_style_attr(
     cJSON *style_arr,
-    int id,
     const char *name,
+    const char *style_type,
     const char *value)
 {
     cJSON *attr = cJSON_CreateObject();
-    cJSON_AddNumberToObject(attr, "id", id);
     cJSON_AddStringToObject(attr, "name", name);
+    cJSON_AddStringToObject(attr, "styleType", style_type);
     if (value != NULL)
     {
-        cJSON_AddStringToObject(attr, "value", value);
+        cJSON_AddStringToObject(attr, "defaultValue", value);
     }
     else
     {
-        cJSON_AddNullToObject(attr, "value");
+        cJSON_AddNullToObject(attr, "defaultValue");
     }
     cJSON_AddItemToArray(style_arr, attr);
 }
 
 /*
- * Appends one label enum entry { "value": val, "color": color|null }
- * to the given enumValues array.  Pass NULL for color to emit a JSON null.
+ * Creates and returns a LayerStyle object pre-populated with empty sub-arrays.
+ * Callers must add the appropriate sub-arrays using metadata_style_universal(),
+ * metadata_style_point(), metadata_style_line(), and metadata_style_polygon().
+ *
+ * For Point layers:   universalStyleAttributes + pointStyleAttributes
+ * For Line layers:    universalStyleAttributes + pointStyleAttributes + lineStyleAttributes
+ * For Polygon layers: universalStyleAttributes + pointStyleAttributes + polygonStyleAttributes
  */
-static inline void metadata_add_label_enum_value(
-    cJSON *enum_values,
+static inline cJSON *metadata_create_style_object(
+    cJSON **out_universal,
+    cJSON **out_point,
+    cJSON **out_line,
+    cJSON **out_polygon,
+    cJSON **out_point_label_color_mapping)
+{
+    cJSON *style = cJSON_CreateObject();
+    *out_universal = cJSON_CreateArray();
+    cJSON_AddItemToObject(style, "universalStyleAttributes", *out_universal);
+    if (out_point != NULL)
+    {
+        *out_point = cJSON_CreateArray();
+        cJSON_AddItemToObject(style, "pointStyleAttributes", *out_point);
+    }
+    if (out_line != NULL)
+    {
+        *out_line = cJSON_CreateArray();
+        cJSON_AddItemToObject(style, "lineStyleAttributes", *out_line);
+    }
+    if (out_polygon != NULL)
+    {
+        *out_polygon = cJSON_CreateArray();
+        cJSON_AddItemToObject(style, "polygonStyleAttributes", *out_polygon);
+    }
+    if (out_point_label_color_mapping != NULL)
+    {
+        *out_point_label_color_mapping = cJSON_CreateArray();
+        cJSON_AddItemToObject(style, "pointLabelColorMapping", *out_point_label_color_mapping);
+    }
+    return style;
+}
+
+/*
+ * Appends one point-label color entry { "value": val, "color": color|null }
+ * to the given pointLabelColorMapping array.  Pass NULL for color to emit JSON null.
+ */
+static inline void metadata_add_point_label_color_entry(
+    cJSON *mapping_arr,
     const char *value,
     const char *color)
 {
@@ -99,7 +141,7 @@ static inline void metadata_add_label_enum_value(
     {
         cJSON_AddNullToObject(entry, "color");
     }
-    cJSON_AddItemToArray(enum_values, entry);
+    cJSON_AddItemToArray(mapping_arr, entry);
 }
 
 #endif // METADATA_JSON_H
