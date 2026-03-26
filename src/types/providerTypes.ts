@@ -100,13 +100,13 @@ export type StyleType =
     | "LineArrowEndEnum"
     | "LineArrowMidEnum";
 
+export type LayerType = "Point" | "Line" | "Polygon";
+
 export interface LayerStyleAttribute {
     key: StyleAttributeKey;
     styleType: StyleType;
     defaultValue: string | null;
 }
-
-export type LayerType = "Point" | "Line" | "Polygon";
 
 export interface PointLabelColorEntry {
     value: string;
