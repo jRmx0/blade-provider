@@ -125,18 +125,18 @@ Returns all algorithms the provider exposes, with their parameter schemas. Consu
             "key": "pointLabel",
             "enumValues": [
               { "value": "B_IN",       "color": "#16a34a"   },
-              { "value": "B_SIDE_IN",  "color": "#0d9488"   },
-              { "value": "B_INIT",     "color": "#bbf7d0"   },
+              { "value": "B_SIDE_IN",  "color": "#16a34a"   },
+              { "value": "B_INIT",     "color": "#16a34a"   },
               { "value": "B_OUT",      "color": "#dc2626"   },
-              { "value": "B_SIDE_OUT", "color": "#db2777"   },
-              { "value": "B_DEINIT",   "color": "#fecaca"   },
-              { "value": "IN",         "color": "#4ade80"   },
-              { "value": "SIDE_IN",    "color": "#2dd4bf"   },
-              { "value": "OUT",        "color": "#f87171"   },
-              { "value": "SIDE_OUT",   "color": "#f472b6"   },
+              { "value": "B_SIDE_OUT", "color": "#dc2626"   },
+              { "value": "B_DEINIT",   "color": "#dc2626"   },
+              { "value": "IN",         "color": "#16a34a"   },
+              { "value": "SIDE_IN",    "color": "#16a34a"   },
+              { "value": "OUT",        "color": "#dc2626"   },
+              { "value": "SIDE_OUT",   "color": "#dc2626"   },
               { "value": "FLOOR",      "color": "#60a5fa"   },
               { "value": "CEILING",    "color": "#fb923c"   },
-              { "value": "NONE",       "color": null        }
+              { "value": "NONE",       "color": "#FF00FF"   }
             ]
           }
         },
