@@ -84,12 +84,6 @@ export type StyleAttributeKey =
     | "Polygon ID Placement"
     | "Polygon ID Offset";
 
-export interface LayerStyleAttribute {
-    key: StyleAttributeKey;
-    styleType: StyleType;
-    defaultValue: string | null;
-}
-
 export type StyleType =
     | "Integer"
     | "Color"
@@ -105,6 +99,12 @@ export type StyleType =
     | "LineArrowStartEnum"
     | "LineArrowEndEnum"
     | "LineArrowMidEnum";
+
+export interface LayerStyleAttribute {
+    key: StyleAttributeKey;
+    styleType: StyleType;
+    defaultValue: string | null;
+}
 
 export type LayerType = "Point" | "Line" | "Polygon";
 
