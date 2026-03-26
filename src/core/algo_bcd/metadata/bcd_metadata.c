@@ -150,18 +150,18 @@ char *bcd_build_metadata_json(void)
 		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_LABEL_OFFSET,      METADATA_STYLE_TYPE_SPACING,             "6");
 
 		metadata_add_point_label_color_entry(color_mapping, "B_IN",       "#16a34a");
-		metadata_add_point_label_color_entry(color_mapping, "B_SIDE_IN",  "#0d9488");
-		metadata_add_point_label_color_entry(color_mapping, "B_INIT",     "#bbf7d0");
+		metadata_add_point_label_color_entry(color_mapping, "B_SIDE_IN",  "#16a34a");
+		metadata_add_point_label_color_entry(color_mapping, "B_INIT",     "#16a34a");
 		metadata_add_point_label_color_entry(color_mapping, "B_OUT",      "#dc2626");
-		metadata_add_point_label_color_entry(color_mapping, "B_SIDE_OUT", "#db2777");
-		metadata_add_point_label_color_entry(color_mapping, "B_DEINIT",   "#fecaca");
-		metadata_add_point_label_color_entry(color_mapping, "IN",         "#4ade80");
-		metadata_add_point_label_color_entry(color_mapping, "SIDE_IN",    "#2dd4bf");
-		metadata_add_point_label_color_entry(color_mapping, "OUT",        "#f87171");
-		metadata_add_point_label_color_entry(color_mapping, "SIDE_OUT",   "#f472b6");
+		metadata_add_point_label_color_entry(color_mapping, "B_SIDE_OUT", "#dc2626");
+		metadata_add_point_label_color_entry(color_mapping, "B_DEINIT",   "#dc2626");
+		metadata_add_point_label_color_entry(color_mapping, "IN",         "#16a34a");
+		metadata_add_point_label_color_entry(color_mapping, "SIDE_IN",    "#16a34a");
+		metadata_add_point_label_color_entry(color_mapping, "OUT",        "#dc2626");
+		metadata_add_point_label_color_entry(color_mapping, "SIDE_OUT",   "#dc2626");
 		metadata_add_point_label_color_entry(color_mapping, "FLOOR",      "#60a5fa");
 		metadata_add_point_label_color_entry(color_mapping, "CEILING",    "#fb923c");
-		metadata_add_point_label_color_entry(color_mapping, "NONE",       NULL);
+		metadata_add_point_label_color_entry(color_mapping, "NONE",       "#FF00FF");
 
 		cJSON_AddItemToObject(layer, "style", style);
 		cJSON_AddItemToArray(layers, layer);
