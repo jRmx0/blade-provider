@@ -286,8 +286,8 @@ Returns all algorithms the provider exposes, with their parameter schemas. Consu
 | `computeLayer` | `string` | Names the result field this layer binds to. On coverage path plan layers, names the field in `result.coveragePathPlan`. On debug layers, matches the `source` value on the corresponding entry in `result.debug.layers` |
 | `name` | `string` | Human-readable display name |
 | `layerType` | `LayerType` | Geometry primitive type of the objects produced by this layer |
-| `style` | `LayerStyleAttribute[]` | Default rendering attributes — see [Layer Styles](./api-layer-styles.md) |
-| `label` | `LayerLabel \| null` | Data binding and per-value text color overrides — `null` for layers with no text label |
+| `style` | `LayerStyle` | Default rendering attributes grouped by attribute family — see [`LayerStyle`](#layerstyle) |
+| `pointLabelEnumValues` | `string[]?` | All valid `pointLabel` values for this layer, in definition order. Present only on Point layers whose compute items carry a `pointLabel` field |
 
 ### `LayerType`
 
@@ -297,31 +297,31 @@ Returns all algorithms the provider exposes, with their parameter schemas. Consu
 | `"Line"` | Layer items are rendered as line segments or polylines |
 | `"Polygon"` | Layer items are rendered as filled or stroked polygon shapes |
 
+### `LayerStyle`
+
+Style attributes are grouped into sub-arrays by attribute family. All families applicable to the layer's `layerType` are always included in the object.
+
+| Field | Type | Notes |
+|---|---|---|
+| `universalStyleAttributes` | `LayerStyleAttribute[]` | Attributes that apply to all layer types (e.g. Z-Index) |
+| `pointStyleAttributes` | `LayerStyleAttribute[]?` | Point marker attributes — present on `Point`, `Line`, and `Polygon` layers. On `Line` layers these are the point-vertex attributes; on `Polygon` layers these are the corner-vertex attributes (Overlap and Text Label groups excluded) |
+| `lineStyleAttributes` | `LayerStyleAttribute[]?` | Line stroke and arrow attributes — present on `Line` layers |
+| `polygonStyleAttributes` | `LayerStyleAttribute[]?` | Polygon fill and stroke attributes — present on `Polygon` layers |
+| `pointLabelColorMapping` | `PointLabelColorEntry[]?` | Per-value color overrides for the `pointLabel` field. Present only on layers that carry `pointLabelEnumValues`. Always targets the `pointLabel` field on each compute item |
+
 ### `LayerStyleAttribute`
 
-`style` is an ordered array of `LayerStyleAttribute` objects. The attribute set depends on the layer's `layerType`. See [Layer Styles](./api-layer-styles.md) for the full per-type attribute registry.
+Each entry in an attribute family array.
 
 | Field | Type | Notes |
 |---|---|---|
-| `id` | `number` | Attribute identifier, unique within the layer type's attribute family |
-| `name` | `string` | Human-readable display name for the attribute; use `id` for programmatic identification |
+| `name` | `string` | Human-readable display name for the attribute — see [Layer Styles](./api-layer-styles.md) for the full registry |
 | `styleType` | `StyleType` | The value category of this attribute — see [Layer Styles StyleType](./api-layer-styles.md#styletype) |
-| `value` | `string \| null` | Attribute value serialised as a string, or `null` when inactive |
+| `defaultValue` | `string \| null` | Default attribute value serialised as a string, or `null` when inactive. `null` means the attribute produces no output — the renderer should skip it |
 
-All attributes in a type's registry are always present in the array. `null` means the attribute produces no output — the renderer should skip it.
-
-### `LayerLabel`
-
-Declares the data field to use as the text label and provides per-value color overrides. Present on layers that carry a text label; `null` on all others.
+### `PointLabelColorEntry`
 
 | Field | Type | Notes |
 |---|---|---|
-| `key` | `string` | Name of the field on each data item to use as the rendered text value |
-| `enumValues` | `LayerLabelValue[]` | All possible values the field can take, in definition order |
-
-### `LayerLabelValue`
-
-| Field | Type | Notes |
-|---|---|---|
-| `value` | `string` | The data value — matches what the algorithm emits in the compute result |
-| `color` | `string \| null` | CSS hex string with optional alpha (e.g. `"#16a34a"`, `"#16a34acc"`) that overrides **Point Label Color** for points with this label value; `null` falls back to **Point Label Color** |
+| `value` | `string` | A `pointLabel` value — matches what the algorithm emits in the compute result |
+| `color` | `string \| null` | CSS hex string (e.g. `"#16a34a"`) that overrides **Point Label Color** for points with this label value; `null` falls back to **Point Label Color** |
