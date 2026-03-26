@@ -13,6 +13,11 @@ export type AlgoParamType =
     | "String"
     | "Enum";
 
+export type AppHandler =
+    | "env.format"
+    | "env.type"
+    | "env.coordsystem";
+
 export interface MetadataParamResponse {
     id: number;
     name: string;
@@ -20,7 +25,7 @@ export interface MetadataParamResponse {
     enumValues: string[];
     defaultValue?: string;
     section?: MetadataParamSection;
-    appHandler: string | null;
+    appHandler: AppHandler | null;
 }
 
 export type StyleAttributeKey =
