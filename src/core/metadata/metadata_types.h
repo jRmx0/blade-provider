@@ -137,6 +137,45 @@ static inline const char *metadata_coordsystem_to_string(bcd_metadata_coordsyste
 }
 
 typedef enum {
+    METADATA_STYLE_TYPE_INTEGER = 0,
+    METADATA_STYLE_TYPE_COLOR,
+    METADATA_STYLE_TYPE_SPACING,
+    METADATA_STYLE_TYPE_POINT_SHAPE_ENUM,
+    METADATA_STYLE_TYPE_POLYGON_ID_SHAPE_ENUM,
+    METADATA_STYLE_TYPE_STROKE_STYLE_ENUM,
+    METADATA_STYLE_TYPE_FILL_STYLE_ENUM,
+    METADATA_STYLE_TYPE_OVERLAP_LAYOUT_ENUM,
+    METADATA_STYLE_TYPE_PLACEMENT_ENUM,
+    METADATA_STYLE_TYPE_FONT_SIZE_ENUM,
+    METADATA_STYLE_TYPE_FONT_WEIGHT_ENUM,
+    METADATA_STYLE_TYPE_LINE_ARROW_START_ENUM,
+    METADATA_STYLE_TYPE_LINE_ARROW_END_ENUM,
+    METADATA_STYLE_TYPE_LINE_ARROW_MID_ENUM
+} metadata_style_type_t;
+
+static inline const char *metadata_style_type_to_string(metadata_style_type_t style_type)
+{
+    switch (style_type)
+    {
+    case METADATA_STYLE_TYPE_INTEGER:               return "Integer";
+    case METADATA_STYLE_TYPE_COLOR:                 return "Color";
+    case METADATA_STYLE_TYPE_SPACING:               return "Spacing";
+    case METADATA_STYLE_TYPE_POINT_SHAPE_ENUM:      return "PointShapeEnum";
+    case METADATA_STYLE_TYPE_POLYGON_ID_SHAPE_ENUM: return "PolygonIDShapeEnum";
+    case METADATA_STYLE_TYPE_STROKE_STYLE_ENUM:     return "StrokeStyleEnum";
+    case METADATA_STYLE_TYPE_FILL_STYLE_ENUM:       return "FillStyleEnum";
+    case METADATA_STYLE_TYPE_OVERLAP_LAYOUT_ENUM:   return "OverlapLayoutEnum";
+    case METADATA_STYLE_TYPE_PLACEMENT_ENUM:        return "PlacementEnum";
+    case METADATA_STYLE_TYPE_FONT_SIZE_ENUM:        return "FontSizeEnum";
+    case METADATA_STYLE_TYPE_FONT_WEIGHT_ENUM:      return "FontWeightEnum";
+    case METADATA_STYLE_TYPE_LINE_ARROW_START_ENUM: return "LineArrowStartEnum";
+    case METADATA_STYLE_TYPE_LINE_ARROW_END_ENUM:   return "LineArrowEndEnum";
+    case METADATA_STYLE_TYPE_LINE_ARROW_MID_ENUM:   return "LineArrowMidEnum";
+    default:                                        return "Integer";
+    }
+}
+
+typedef enum {
     BCD_METADATA_DEBUG_LAYER_TYPE_POINT = 0,
     BCD_METADATA_DEBUG_LAYER_TYPE_LINE,
     BCD_METADATA_DEBUG_LAYER_TYPE_POLYGON

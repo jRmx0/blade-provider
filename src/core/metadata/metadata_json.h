@@ -63,12 +63,12 @@ static inline void metadata_add_parameter(
 static inline void metadata_add_style_attr(
     cJSON *style_arr,
     const char *name,
-    const char *style_type,
+    metadata_style_type_t style_type,
     const char *value)
 {
     cJSON *attr = cJSON_CreateObject();
     cJSON_AddStringToObject(attr, "name", name);
-    cJSON_AddStringToObject(attr, "styleType", style_type);
+    cJSON_AddStringToObject(attr, "styleType", metadata_style_type_to_string(style_type));
     if (value != NULL)
     {
         cJSON_AddStringToObject(attr, "defaultValue", value);

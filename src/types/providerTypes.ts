@@ -25,9 +25,25 @@ export interface MetadataParamResponse {
 
 export interface LayerStyleAttribute {
     name: string;
-    styleType: string;
+    styleType: StyleType;
     defaultValue: string | null;
 }
+
+export type StyleType =
+    | "Integer"
+    | "Color"
+    | "Spacing"
+    | "PointShapeEnum"
+    | "PolygonIDShapeEnum"
+    | "StrokeStyleEnum"
+    | "FillStyleEnum"
+    | "OverlapLayoutEnum"
+    | "PlacementEnum"
+    | "FontSizeEnum"
+    | "FontWeightEnum"
+    | "LineArrowStartEnum"
+    | "LineArrowEndEnum"
+    | "LineArrowMidEnum";
 
 export type LayerType = "Point" | "Line" | "Polygon";
 
