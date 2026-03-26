@@ -12,7 +12,7 @@ Each element of an attribute family sub-array within a [`LayerStyle`](./api-endp
 
 | Field | Type | Notes |
 |---|---|---|
-| `name` | `string` | Attribute key — matches the entries in the family's attribute registry below |
+| `key` | `string` | Attribute key — matches the entries in the family's attribute registry below |
 | `styleType` | `StyleType` | The value category of this attribute — see [`StyleType`](#styletype) below |
 | `defaultValue` | `string \| null` | Default attribute value serialised as a string, or `null` when the attribute is inactive |
 

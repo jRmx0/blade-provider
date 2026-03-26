@@ -315,7 +315,7 @@ Each entry in an attribute family array.
 
 | Field | Type | Notes |
 |---|---|---|
-| `name` | `string` | Human-readable display name for the attribute — see [Layer Styles](./api-layer-styles.md) for the full registry |
+| `key` | `string` | Attribute key — matches the entries in the attribute registry in [Layer Styles](./api-layer-styles.md) |
 | `styleType` | `StyleType` | The value category of this attribute — see [Layer Styles StyleType](./api-layer-styles.md#styletype) |
 | `defaultValue` | `string \| null` | Default attribute value serialised as a string, or `null` when inactive. `null` means the attribute produces no output — the renderer should skip it |
 

@@ -57,17 +57,17 @@ static inline void metadata_add_parameter(
 }
 
 /*
- * Appends one style attribute entry { "name": name, "styleType": style_type, "defaultValue": value|null }
+ * Appends one style attribute entry { "key": key, "styleType": style_type, "defaultValue": value|null }
  * to the given style sub-array.  Pass NULL for value to emit a JSON null.
  */
 static inline void metadata_add_style_attr(
     cJSON *style_arr,
-    const char *name,
+    metadata_style_attr_key_t key,
     metadata_style_type_t style_type,
     const char *value)
 {
     cJSON *attr = cJSON_CreateObject();
-    cJSON_AddStringToObject(attr, "name", name);
+    cJSON_AddStringToObject(attr, "key", metadata_style_attr_key_to_string(key));
     cJSON_AddStringToObject(attr, "styleType", metadata_style_type_to_string(style_type));
     if (value != NULL)
     {
