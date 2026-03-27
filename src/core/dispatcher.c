@@ -100,14 +100,16 @@ char *dispatch_metadata_json(void)
 
 	cJSON_AddItemToArray(algorithms, bcd_algorithm);
 
-	mock_algorithm = parse_algorithm_metadata_json(mock_algo_get_metadata_json());
-	if (mock_algorithm == NULL)
-	{
-		cJSON_Delete(response);
-		return NULL;
-	}
+	// Disable mock algorithm 
 
-	cJSON_AddItemToArray(algorithms, mock_algorithm);
+	// mock_algorithm = parse_algorithm_metadata_json(mock_algo_get_metadata_json());
+	// if (mock_algorithm == NULL)
+	// {
+	// 	cJSON_Delete(response);
+	// 	return NULL;
+	// }
+
+	// cJSON_AddItemToArray(algorithms, mock_algorithm);
 
 	char *json = cJSON_PrintUnformatted(response);
 	cJSON_Delete(response);
