@@ -66,7 +66,8 @@ Returns all algorithms the provider exposes, with their parameter schemas. Consu
           "layerType": "Line",
           "style": {
             "universalStyleAttributes": [
-              { "name": "Z-Index",                "styleType": "Integer",           "defaultValue": "100"            },
+              { "key": "Visible",               "styleType": "Boolean",           "defaultValue": "true"           },
+              { "key": "Z-Index",               "styleType": "Integer",           "defaultValue": "100"            },
             ], 
             "pointStyleAttributes": [ 
               { "name": "Point Shape",            "styleType": "PointShapeEnum",    "defaultValue": null             },
@@ -109,7 +110,8 @@ Returns all algorithms the provider exposes, with their parameter schemas. Consu
           "style": 
           {
             "universalStyleAttributes": [
-              { "name": "Z-Index",                "styleType": "Integer",          "defaultValue": "110"            },
+              { "key": "Visible",               "styleType": "Boolean",          "defaultValue": "false"           },
+              { "key": "Z-Index",               "styleType": "Integer",          "defaultValue": "110"            },
             ],
             "pointStyleAttributes": [
               { "name": "Point Shape",            "styleType": "PointShapeEnum",   "defaultValue": "circle"         },
@@ -156,7 +158,8 @@ Returns all algorithms the provider exposes, with their parameter schemas. Consu
           "style":  
           {
             "universalStyleAttributes": [
-              { "name": "Z-Index",                "styleType": "Integer",           "defaultValue": "120"        },
+              { "key": "Visible",               "styleType": "Boolean",           "defaultValue": "false"       },
+              { "key": "Z-Index",               "styleType": "Integer",           "defaultValue": "120"        },
             ],
             "pointStyleAttributes": [
               { "name": "Point Shape",            "styleType": "PointShapeEnum",    "defaultValue": null         },
@@ -199,7 +202,8 @@ Returns all algorithms the provider exposes, with their parameter schemas. Consu
           "style": 
           {
             "universalStyleAttributes": [
-              { "name": "Z-Index",                "styleType": "Integer",           "defaultValue": "130"             },
+              { "key": "Visible",               "styleType": "Boolean",           "defaultValue": "false"            },
+              { "key": "Z-Index",               "styleType": "Integer",           "defaultValue": "130"             },
             ],
             "pointStyleAttributes": [
               { "name": "Point Shape",            "styleType": "PointShapeEnum",    "defaultValue": "circle"          },

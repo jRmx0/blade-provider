@@ -2,7 +2,8 @@
 #define METADATA_TYPES_H
 
 typedef enum {
-    METADATA_STYLE_ATTR_KEY_Z_INDEX = 0,
+    METADATA_STYLE_ATTR_KEY_VISIBLE = 0,
+    METADATA_STYLE_ATTR_KEY_Z_INDEX,
     /* Point — Marker Shape */
     METADATA_STYLE_ATTR_KEY_POINT_SHAPE,
     METADATA_STYLE_ATTR_KEY_POINT_RADIUS,
@@ -62,6 +63,7 @@ static inline const char *metadata_style_attr_key_to_string(metadata_style_attr_
 {
     switch (key)
     {
+    case METADATA_STYLE_ATTR_KEY_VISIBLE:                  return "Visible";
     case METADATA_STYLE_ATTR_KEY_Z_INDEX:                  return "Z-Index";
     case METADATA_STYLE_ATTR_KEY_POINT_SHAPE:              return "Point Shape";
     case METADATA_STYLE_ATTR_KEY_POINT_RADIUS:             return "Point Radius";
@@ -105,7 +107,7 @@ static inline const char *metadata_style_attr_key_to_string(metadata_style_attr_
     case METADATA_STYLE_ATTR_KEY_POLYGON_ID_FILL_COLOR:    return "Polygon ID Fill Color";
     case METADATA_STYLE_ATTR_KEY_POLYGON_ID_PLACEMENT:     return "Polygon ID Placement";
     case METADATA_STYLE_ATTR_KEY_POLYGON_ID_OFFSET:        return "Polygon ID Offset";
-    default:                                               return "Z-Index";
+    default:                                               return "Visible";
     }
 }
 
@@ -245,7 +247,8 @@ static inline const char *metadata_coordsystem_to_string(bcd_metadata_coordsyste
 }
 
 typedef enum {
-    METADATA_STYLE_TYPE_INTEGER = 0,
+    METADATA_STYLE_TYPE_BOOLEAN = 0,
+    METADATA_STYLE_TYPE_INTEGER,
     METADATA_STYLE_TYPE_COLOR,
     METADATA_STYLE_TYPE_SPACING,
     METADATA_STYLE_TYPE_POINT_SHAPE_ENUM,
@@ -265,6 +268,7 @@ static inline const char *metadata_style_type_to_string(metadata_style_type_t st
 {
     switch (style_type)
     {
+    case METADATA_STYLE_TYPE_BOOLEAN:               return "Boolean";
     case METADATA_STYLE_TYPE_INTEGER:               return "Integer";
     case METADATA_STYLE_TYPE_COLOR:                 return "Color";
     case METADATA_STYLE_TYPE_SPACING:               return "Spacing";

@@ -67,6 +67,7 @@ char *bcd_build_metadata_json(void)
 		cJSON *universal = NULL, *point = NULL, *line = NULL;
 		cJSON *style = metadata_create_style_object(&universal, &point, &line, NULL, NULL);
 
+		metadata_add_style_attr(universal, METADATA_STYLE_ATTR_KEY_VISIBLE,               METADATA_STYLE_TYPE_BOOLEAN,            "true");
 		metadata_add_style_attr(universal, METADATA_STYLE_ATTR_KEY_Z_INDEX,               METADATA_STYLE_TYPE_INTEGER,            "100");
 
 		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_SHAPE,             METADATA_STYLE_TYPE_POINT_SHAPE_ENUM,    NULL);
@@ -128,6 +129,7 @@ char *bcd_build_metadata_json(void)
 		cJSON *universal = NULL, *point = NULL, *color_mapping = NULL;
 		cJSON *style = metadata_create_style_object(&universal, &point, NULL, NULL, &color_mapping);
 
+		metadata_add_style_attr(universal, METADATA_STYLE_ATTR_KEY_VISIBLE,               METADATA_STYLE_TYPE_BOOLEAN,            "false");
 		metadata_add_style_attr(universal, METADATA_STYLE_ATTR_KEY_Z_INDEX,               METADATA_STYLE_TYPE_INTEGER,            "110");
 
 		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_SHAPE,             METADATA_STYLE_TYPE_POINT_SHAPE_ENUM,    "circle");
@@ -178,6 +180,7 @@ char *bcd_build_metadata_json(void)
 		cJSON *universal = NULL, *point = NULL, *polygon = NULL;
 		cJSON *style = metadata_create_style_object(&universal, &point, NULL, &polygon, NULL);
 
+		metadata_add_style_attr(universal, METADATA_STYLE_ATTR_KEY_VISIBLE,               METADATA_STYLE_TYPE_BOOLEAN,            "false");
 		metadata_add_style_attr(universal, METADATA_STYLE_ATTR_KEY_Z_INDEX,               METADATA_STYLE_TYPE_INTEGER,            "120");
 
 		/* Corner vertex (Point group, Overlap and Text Label excluded) */
@@ -225,6 +228,7 @@ char *bcd_build_metadata_json(void)
 		cJSON *universal = NULL, *point = NULL, *line = NULL;
 		cJSON *style = metadata_create_style_object(&universal, &point, &line, NULL, NULL);
 
+		metadata_add_style_attr(universal, METADATA_STYLE_ATTR_KEY_VISIBLE,               METADATA_STYLE_TYPE_BOOLEAN,            "false");
 		metadata_add_style_attr(universal, METADATA_STYLE_ATTR_KEY_Z_INDEX,               METADATA_STYLE_TYPE_INTEGER,            "130");
 
 		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_SHAPE,             METADATA_STYLE_TYPE_POINT_SHAPE_ENUM,    "circle");

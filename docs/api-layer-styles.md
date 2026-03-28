@@ -58,6 +58,7 @@ Applies to all layer types. Always the first sub-array in the `LayerStyle` objec
 
 | name | styleType | Allowed values |
 |------|-----------|----------------|
+| Visible | `"Boolean"` | `"true"` \| `"false"` — whether the layer is visible |
 | Z-Index | `"Integer"` | Positive integer serialised as a string (e.g. `"100"`, `"110"`) — lower values are drawn first (bottom) |
 
 ---
