@@ -114,7 +114,7 @@ export interface PointLabelColorEntry {
 }
 
 export interface LayerStyle {
-    universalStyleAttributes: LayerStyleAttribute[];
+    generalStyleAttributes: LayerStyleAttribute[];
     pointStyleAttributes?: LayerStyleAttribute[];
     lineStyleAttributes?: LayerStyleAttribute[];
     polygonStyleAttributes?: LayerStyleAttribute[];

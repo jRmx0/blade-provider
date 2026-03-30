@@ -65,7 +65,7 @@ Returns all algorithms the provider exposes, with their parameter schemas. Consu
           "name": "Coverage Path",
           "layerType": "Line",
           "style": {
-            "universalStyleAttributes": [
+            "generalStyleAttributes": [
               { "key": "Visible",               "styleType": "Boolean",           "defaultValue": "true"           },
               { "key": "Z-Index",               "styleType": "Integer",           "defaultValue": "100"            },
             ], 
@@ -109,7 +109,7 @@ Returns all algorithms the provider exposes, with their parameter schemas. Consu
           "pointLabelEnumValues": ["B_IN", "B_SIDE_IN", "B_INIT", "B_OUT", "B_SIDE_OUT", "B_DEINIT", "IN", "SIDE_IN", "OUT", "SIDE_OUT", "FLOOR", "CEILING", "NONE"],
           "style": 
           {
-            "universalStyleAttributes": [
+            "generalStyleAttributes": [
               { "key": "Visible",               "styleType": "Boolean",          "defaultValue": "false"           },
               { "key": "Z-Index",               "styleType": "Integer",          "defaultValue": "110"            },
             ],
@@ -157,7 +157,7 @@ Returns all algorithms the provider exposes, with their parameter schemas. Consu
           "layerType": "Polygon",
           "style":  
           {
-            "universalStyleAttributes": [
+            "generalStyleAttributes": [
               { "key": "Visible",               "styleType": "Boolean",           "defaultValue": "false"       },
               { "key": "Z-Index",               "styleType": "Integer",           "defaultValue": "120"        },
             ],
@@ -201,7 +201,7 @@ Returns all algorithms the provider exposes, with their parameter schemas. Consu
           "layerType": "Line",
           "style": 
           {
-            "universalStyleAttributes": [
+            "generalStyleAttributes": [
               { "key": "Visible",               "styleType": "Boolean",           "defaultValue": "false"            },
               { "key": "Z-Index",               "styleType": "Integer",           "defaultValue": "130"             },
             ],
@@ -307,7 +307,7 @@ Style attributes are grouped into sub-arrays by attribute family. All families a
 
 | Field | Type | Notes |
 |---|---|---|
-| `universalStyleAttributes` | `LayerStyleAttribute[]` | Attributes that apply to all layer types (e.g. Z-Index) |
+| `generalStyleAttributes` | `LayerStyleAttribute[]` | Attributes that apply to all layer types (e.g. Z-Index) |
 | `pointStyleAttributes` | `LayerStyleAttribute[]?` | Point marker attributes — present on `Point`, `Line`, and `Polygon` layers. On `Line` layers these are the point-vertex attributes; on `Polygon` layers these are the corner-vertex attributes (Overlap and Text Label groups excluded) |
 | `lineStyleAttributes` | `LayerStyleAttribute[]?` | Line stroke and arrow attributes — present on `Line` layers |
 | `polygonStyleAttributes` | `LayerStyleAttribute[]?` | Polygon fill and stroke attributes — present on `Polygon` layers |

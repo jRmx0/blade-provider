@@ -52,7 +52,7 @@ The `styleType` field identifies the value category of a `LayerStyleAttribute`. 
 
 ---
 
-## Universal Style Attributes
+## General Style Attributes
 
 Applies to all layer types. Always the first sub-array in the `LayerStyle` object.
 

@@ -82,23 +82,23 @@ static inline void metadata_add_style_attr(
 
 /*
  * Creates and returns a LayerStyle object pre-populated with empty sub-arrays.
- * Callers must add the appropriate sub-arrays using metadata_style_universal(),
+ * Callers must add the appropriate sub-arrays using metadata_style_general(),
  * metadata_style_point(), metadata_style_line(), and metadata_style_polygon().
  *
- * For Point layers:   universalStyleAttributes + pointStyleAttributes
- * For Line layers:    universalStyleAttributes + pointStyleAttributes + lineStyleAttributes
- * For Polygon layers: universalStyleAttributes + pointStyleAttributes + polygonStyleAttributes
+ * For Point layers:   generalStyleAttributes + pointStyleAttributes
+ * For Line layers:    generalStyleAttributes + pointStyleAttributes + lineStyleAttributes
+ * For Polygon layers: generalStyleAttributes + pointStyleAttributes + polygonStyleAttributes
  */
 static inline cJSON *metadata_create_style_object(
-    cJSON **out_universal,
+    cJSON **out_general,
     cJSON **out_point,
     cJSON **out_line,
     cJSON **out_polygon,
     cJSON **out_point_label_color_mapping)
 {
     cJSON *style = cJSON_CreateObject();
-    *out_universal = cJSON_CreateArray();
-    cJSON_AddItemToObject(style, "universalStyleAttributes", *out_universal);
+    *out_general = cJSON_CreateArray();
+    cJSON_AddItemToObject(style, "generalStyleAttributes", *out_general);
     if (out_point != NULL)
     {
         *out_point = cJSON_CreateArray();

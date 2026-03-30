@@ -64,11 +64,11 @@ char *bcd_build_metadata_json(void)
 		cJSON_AddStringToObject(layer, "name",         "Coverage Path");
 		cJSON_AddStringToObject(layer, "layerType",    "Line");
 
-		cJSON *universal = NULL, *point = NULL, *line = NULL;
-		cJSON *style = metadata_create_style_object(&universal, &point, &line, NULL, NULL);
+		cJSON *general = NULL, *point = NULL, *line = NULL;
+		cJSON *style = metadata_create_style_object(&general, &point, &line, NULL, NULL);
 
-		metadata_add_style_attr(universal, METADATA_STYLE_ATTR_KEY_VISIBLE,               METADATA_STYLE_TYPE_BOOLEAN,            "true");
-		metadata_add_style_attr(universal, METADATA_STYLE_ATTR_KEY_Z_INDEX,               METADATA_STYLE_TYPE_INTEGER,            "100");
+		metadata_add_style_attr(general, METADATA_STYLE_ATTR_KEY_VISIBLE,               METADATA_STYLE_TYPE_BOOLEAN,            "true");
+		metadata_add_style_attr(general, METADATA_STYLE_ATTR_KEY_Z_INDEX,               METADATA_STYLE_TYPE_INTEGER,            "100");
 
 		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_SHAPE,             METADATA_STYLE_TYPE_POINT_SHAPE_ENUM,    NULL);
 		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_RADIUS,            METADATA_STYLE_TYPE_SPACING,             NULL);
@@ -126,11 +126,11 @@ char *bcd_build_metadata_json(void)
 		cJSON_AddItemToArray(point_label_enum_values, cJSON_CreateString("NONE"));
 		cJSON_AddItemToObject(layer, "pointLabelEnumValues", point_label_enum_values);
 
-		cJSON *universal = NULL, *point = NULL, *color_mapping = NULL;
-		cJSON *style = metadata_create_style_object(&universal, &point, NULL, NULL, &color_mapping);
+		cJSON *general = NULL, *point = NULL, *color_mapping = NULL;
+		cJSON *style = metadata_create_style_object(&general, &point, NULL, NULL, &color_mapping);
 
-		metadata_add_style_attr(universal, METADATA_STYLE_ATTR_KEY_VISIBLE,               METADATA_STYLE_TYPE_BOOLEAN,            "false");
-		metadata_add_style_attr(universal, METADATA_STYLE_ATTR_KEY_Z_INDEX,               METADATA_STYLE_TYPE_INTEGER,            "110");
+		metadata_add_style_attr(general, METADATA_STYLE_ATTR_KEY_VISIBLE,               METADATA_STYLE_TYPE_BOOLEAN,            "false");
+		metadata_add_style_attr(general, METADATA_STYLE_ATTR_KEY_Z_INDEX,               METADATA_STYLE_TYPE_INTEGER,            "110");
 
 		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_SHAPE,             METADATA_STYLE_TYPE_POINT_SHAPE_ENUM,    "circle");
 		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_RADIUS,            METADATA_STYLE_TYPE_SPACING,             "4");
@@ -177,11 +177,11 @@ char *bcd_build_metadata_json(void)
 		cJSON_AddStringToObject(layer, "name",         "Cell List");
 		cJSON_AddStringToObject(layer, "layerType",    "Polygon");
 
-		cJSON *universal = NULL, *point = NULL, *polygon = NULL;
-		cJSON *style = metadata_create_style_object(&universal, &point, NULL, &polygon, NULL);
+		cJSON *general = NULL, *point = NULL, *polygon = NULL;
+		cJSON *style = metadata_create_style_object(&general, &point, NULL, &polygon, NULL);
 
-		metadata_add_style_attr(universal, METADATA_STYLE_ATTR_KEY_VISIBLE,               METADATA_STYLE_TYPE_BOOLEAN,            "false");
-		metadata_add_style_attr(universal, METADATA_STYLE_ATTR_KEY_Z_INDEX,               METADATA_STYLE_TYPE_INTEGER,            "120");
+		metadata_add_style_attr(general, METADATA_STYLE_ATTR_KEY_VISIBLE,               METADATA_STYLE_TYPE_BOOLEAN,            "false");
+		metadata_add_style_attr(general, METADATA_STYLE_ATTR_KEY_Z_INDEX,               METADATA_STYLE_TYPE_INTEGER,            "120");
 
 		/* Corner vertex (Point group, Overlap and Text Label excluded) */
 		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_SHAPE,          METADATA_STYLE_TYPE_POINT_SHAPE_ENUM,  NULL);
@@ -225,11 +225,11 @@ char *bcd_build_metadata_json(void)
 		cJSON_AddStringToObject(layer, "name",         "Cell Visit Order");
 		cJSON_AddStringToObject(layer, "layerType",    "Line");
 
-		cJSON *universal = NULL, *point = NULL, *line = NULL;
-		cJSON *style = metadata_create_style_object(&universal, &point, &line, NULL, NULL);
+		cJSON *general = NULL, *point = NULL, *line = NULL;
+		cJSON *style = metadata_create_style_object(&general, &point, &line, NULL, NULL);
 
-		metadata_add_style_attr(universal, METADATA_STYLE_ATTR_KEY_VISIBLE,               METADATA_STYLE_TYPE_BOOLEAN,            "false");
-		metadata_add_style_attr(universal, METADATA_STYLE_ATTR_KEY_Z_INDEX,               METADATA_STYLE_TYPE_INTEGER,            "130");
+		metadata_add_style_attr(general, METADATA_STYLE_ATTR_KEY_VISIBLE,               METADATA_STYLE_TYPE_BOOLEAN,            "false");
+		metadata_add_style_attr(general, METADATA_STYLE_ATTR_KEY_Z_INDEX,               METADATA_STYLE_TYPE_INTEGER,            "130");
 
 		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_SHAPE,             METADATA_STYLE_TYPE_POINT_SHAPE_ENUM,    "circle");
 		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_RADIUS,            METADATA_STYLE_TYPE_SPACING,             "3");
