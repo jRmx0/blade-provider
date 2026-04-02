@@ -363,5 +363,5 @@ The following types describe the `debug.layers` entries when `algorithmName` is 
 | Field | Type | Notes |
 |---|---|---|
 | `id` | `number` | Sequential index of the cell (1-based) |
-| `vertices` | `Point[]` | The four span corners in order: `ceilingBegin`, `ceilingEnd`, `floorEnd`, `floorBegin` |
-| `centroidPoint` | `Point` | Centroid of the four span corners — average of `ceilingBegin`, `ceilingEnd`, `floorBegin`, `floorEnd`. Useful for label placement and hit-testing |
+| `vertices` | `Point[]` | Polygon boundary vertices in clockwise order. **≥ 3 points.** Ceiling boundary vertices run left-to-right, floor boundary vertices run right-to-left. Simple trapezoidal cells (no obstacle deflections) produce exactly 4 vertices. SIDE_IN/SIDE_OUT tip cells produce exactly 3 vertices (triangle). Cells adjacent to obstacles may produce more vertices where obstacle edges deflect the ceiling or floor boundary. Consecutive duplicate vertices are never emitted. |
+| `centroidPoint` | `Point` | Centroid of the four span corners (`ceilingBegin`, `ceilingEnd`, `floorBegin`, `floorEnd`) — useful for label placement and hit-testing. Approximation; may fall outside the cell for highly non-trapezoidal shapes. |

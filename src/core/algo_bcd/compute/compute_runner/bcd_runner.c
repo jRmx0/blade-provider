@@ -130,16 +130,68 @@ static char *serialize_result_json(const bcd_event_list_t *event_list,
 
 				cJSON_AddNumberToObject(jcell, "id", i + 1);
 
-				/* vertices: c_begin -> c_end -> f_end -> f_begin (clockwise) */
+				/*
+				 * Build the full CW polygon boundary.
+				 *
+				 * Ceiling (top boundary, left → right):
+				 *   c_begin (top-left), edge[j].end for j=0..n-2 (CEILING event
+				 *   deflection vertices), c_end (top-right).
+				 *
+				 * Floor (bottom boundary, right → left, staying CW):
+				 *   f_begin (bottom-right; shares the right side with c_end),
+				 *   edge[j].end for j=0..n-2 (FLOOR event deflection vertices),
+				 *   f_end (bottom-left; shares the left side with c_begin).
+				 *
+				 * Simple trapezoids (1 edge per list) produce exactly 4 points.
+				 * SIDE_IN/SIDE_OUT tip cells have c_begin==f_end and c_end==f_begin,
+				 * so consecutive-duplicate removal collapses them to 3 vertices.
+				 *
+				 * Capacity: 2 + (ceil_n-1) + 2 + (floor_n-1) = ceil_n + floor_n + 2
+				 */
+				int ceil_n  = (int)cvector_size(cell->ceiling_edge_list);
+				int floor_n = (int)cvector_size(cell->floor_edge_list);
+				int raw_cap = ceil_n + floor_n + 2;
+
+				cvector_vector_type(point_t) raw_pts = NULL;
+				cvector_reserve(raw_pts, (size_t)raw_cap);
+
+				/* ceiling: c_begin (top-left) */
+				cvector_push_back(raw_pts, cell->c_begin);
+				/* ceiling: intermediate deflection vertices (left → right) */
+				for (int j = 0; j < ceil_n - 1; ++j)
+					cvector_push_back(raw_pts, cell->ceiling_edge_list[j].end);
+				/* ceiling: c_end (top-right) */
+				cvector_push_back(raw_pts, cell->c_end);
+				/* floor: f_begin (bottom-right; c_end and f_begin share the right side) */
+				cvector_push_back(raw_pts, cell->f_begin);
+				/* floor: intermediate deflection vertices (right → left, CW) */
+				for (int j = 0; j < floor_n - 1; ++j)
+					cvector_push_back(raw_pts, cell->floor_edge_list[j].end);
+				/* floor: f_end (bottom-left; f_end and c_begin share the left side) */
+				cvector_push_back(raw_pts, cell->f_end);
+
+				/* Remove consecutive duplicate points (handles triangle/degenerate cells).
+				 * Also check wrap-around: if last == first, drop the last point. */
+				cvector_vector_type(point_t) pts = NULL;
+				int raw_cnt = (int)cvector_size(raw_pts);
+				for (int j = 0; j < raw_cnt; ++j)
+				{
+					int prev = (j == 0) ? raw_cnt - 1 : j - 1;
+					if (raw_pts[j].x != raw_pts[prev].x || raw_pts[j].y != raw_pts[prev].y)
+						cvector_push_back(pts, raw_pts[j]);
+				}
+				cvector_free(raw_pts);
+
 				cJSON *vertices = cJSON_CreateArray();
-				const point_t corners[4] = { cell->c_begin, cell->c_end, cell->f_end, cell->f_begin };
-				for (int j = 0; j < 4; ++j)
+				int pt_count = (int)cvector_size(pts);
+				for (int j = 0; j < pt_count; ++j)
 				{
 					cJSON *jpt = cJSON_CreateObject();
-					cJSON_AddNumberToObject(jpt, "x", corners[j].x);
-					cJSON_AddNumberToObject(jpt, "y", corners[j].y);
+					cJSON_AddNumberToObject(jpt, "x", pts[j].x);
+					cJSON_AddNumberToObject(jpt, "y", pts[j].y);
 					cJSON_AddItemToArray(vertices, jpt);
 				}
+				cvector_free(pts);
 				cJSON_AddItemToObject(jcell, "vertices", vertices);
 
 				point_t cp = bcd_cell_interior_point(cell);
