@@ -4,10 +4,10 @@
 #include "bcd_cell_computation.h"
 
 /**
- * Returns the interior point of a BCD cell that is furthest from all cell
- * boundaries. Computed as the centroid of the four span corners
- * (c_begin, c_end, f_begin, f_end), which is an accurate approximation of the
- * Chebyshev center for the trapezoid shapes BCD produces.
+ * Returns the centroid of a BCD cell. Computed as the average of all polygon
+ * vertices: c_begin, ceiling intermediate deflection vertices, c_end, f_begin,
+ * floor intermediate deflection vertices, f_end. For simple trapezoids this
+ * reduces to the average of the four corner fields.
  */
 point_t bcd_cell_interior_point(const bcd_cell_t *cell);
 
