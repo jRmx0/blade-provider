@@ -195,28 +195,28 @@ Poll `GET /compute/:jobId` until `status` is `"completed"` or `"failed"`.
         "id": 1,
         "type": "coverage",
         "path": [
-          { "x": 5, "y": 5 },
-          { "x": 95, "y": 5 },
-          { "x": 95, "y": 20 },
-          { "x": 5, "y": 20 }
+          { "id": 1, "point": { "x": 5, "y": 5 } },
+          { "id": 2, "point": { "x": 95, "y": 5 } },
+          { "id": 3, "point": { "x": 95, "y": 20 } },
+          { "id": 4, "point": { "x": 5, "y": 20 } }
         ]
       },
       {
         "id": 2,
         "type": "transit",
         "path": [
-          { "x": 5, "y": 20 },
-          { "x": 5, "y": 5 }
+          { "id": 1, "point": { "x": 5, "y": 20 } },
+          { "id": 2, "point": { "x": 5, "y": 5 } }
         ]
       },
       {
         "id": 3,
         "type": "coverage",
         "path": [
-          { "x": 5, "y": 5 },
-          { "x": 95, "y": 5 },
-          { "x": 95, "y": 20 },
-          { "x": 5, "y": 20 }
+          { "id": 1, "point": { "x": 5, "y": 5 } },
+          { "id": 2, "point": { "x": 95, "y": 5 } },
+          { "id": 3, "point": { "x": 95, "y": 20 } },
+          { "id": 4, "point": { "x": 5, "y": 20 } }
         ]
       }
     ]
@@ -285,7 +285,14 @@ Poll `GET /compute/:jobId` until `status` is `"completed"` or `"failed"`.
 |---|---|---|
 | `id` | `number` | Sequential index (1-based) |
 | `type` | `CoveragePathPlanSegmentType` | Segment role — see [`CoveragePathPlanSegmentType`](#coveragepathplansegmenttype) |
-| `path` | `Point[]` | Ordered waypoints, in execution order |
+| `path` | `PathPoint[]` | Ordered waypoints, in execution order |
+
+### `PathPoint`
+
+| Field | Type | Notes |
+|---|---|---|
+| `id` | `number` | Sequential index (1-based) within the segment |
+| `point` | `Point` | Waypoint coordinates |
 
 ### `CoveragePathPlanSegmentType`
 
