@@ -197,7 +197,7 @@ static char *serialize_result_json(const bcd_event_list_t *event_list,
 				cvector_free(pts);
 				cJSON_AddItemToObject(jcell, "vertices", vertices);
 
-				point_t cp = bcd_cell_interior_point(cell);
+				point_t cp = bcd_cell_farthest_interior_point(cell);
 				cJSON *jpoint = cJSON_CreateObject();
 				cJSON_AddNumberToObject(jpoint, "x", cp.x);
 				cJSON_AddNumberToObject(jpoint, "y", cp.y);
@@ -225,7 +225,7 @@ static char *serialize_result_json(const bcd_event_list_t *event_list,
 			for (int i = 0; i < path_count; ++i)
 			{
 				int cell_id = (*path_list)[i];
-				point_t p = bcd_cell_interior_point(&(*cell_list)[cell_id]);
+				point_t p = bcd_cell_farthest_interior_point(&(*cell_list)[cell_id]);
 
 				cJSON *entry = cJSON_CreateObject();
 				cJSON_AddNumberToObject(entry, "id", i + 1);
