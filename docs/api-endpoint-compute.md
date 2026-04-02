@@ -238,7 +238,6 @@ Poll `GET /compute/:jobId` until `status` is `"completed"` or `"failed"`.
       {
         "id": 11,
         "source": "cellList",
-        "winding": "clockwise",
         "list": [
           { 
             /*cell*/
@@ -257,12 +256,9 @@ Poll `GET /compute/:jobId` until `status` is `"completed"` or `"failed"`.
         "id": 12,
         "source": "cellVisitOrder",
         "list": [
-          { 
-            /*sequence entry*/
-            "id": 1, 
-            "pointLabel": 1, /* cellId */
-            "point": { "x": 50, "y": 50 } 
-          }
+          { "id": 1, "pointLabel": 1, "point": { "x": 50, "y": 50 } },
+          { "id": 2, "pointLabel": 3, "point": { "x": 50, "y": 70 } },
+          { "id": 3, "pointLabel": 2, "point": { "x": 50, "y": 90 } }
         ]
       }
     ]
@@ -336,7 +332,6 @@ The following types describe the `debug.layers` entries when `algorithmName` is 
 |---|---|---|
 | `id` | `number` | Matches `layer.id` from metadata |
 | `source` | `"cellList"` | — |
-| `winding` | `"clockwise"` \| `"counter-clockwise"` | Winding direction shared by all cells in this run — currently always `"clockwise"` |
 | `list` | `BcdCell[]` | Decomposed cells in discovery order |
 
 ### `source: "cellVisitOrder"` layer

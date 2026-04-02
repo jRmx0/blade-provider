@@ -81,87 +81,111 @@ static char *serialize_result_json(const bcd_event_list_t *event_list,
 	cJSON *debug_obj = cJSON_CreateObject();
 	cJSON_AddItemToObject(root, "debug", debug_obj);
 
-	// debug.eventList
-	cJSON *event_data_arr = cJSON_CreateArray();
-	cJSON_AddItemToObject(debug_obj, "eventList", event_data_arr);
+	cJSON *layers_arr = cJSON_CreateArray();
+	cJSON_AddItemToObject(debug_obj, "layers", layers_arr);
 
-	if (event_list && event_list->bcd_events && event_list->length > 0)
+	/* ---- Event List (id=10, source="eventList") ---- */
 	{
-		for (int i = 0; i < event_list->length; ++i)
+		cJSON *event_layer = cJSON_CreateObject();
+		cJSON_AddNumberToObject(event_layer, "id", 10);
+		cJSON_AddStringToObject(event_layer, "source", "eventList");
+		cJSON *event_data_arr = cJSON_CreateArray();
+		cJSON_AddItemToObject(event_layer, "list", event_data_arr);
+
+		if (event_list && event_list->bcd_events && event_list->length > 0)
 		{
-			const bcd_event_t *ev = &event_list->bcd_events[i];
-			cJSON *jev = cJSON_CreateObject();
-			cJSON_AddNumberToObject(jev, "id", i);
-			cJSON *jv = cJSON_CreateObject();
-			cJSON_AddNumberToObject(jv, "x", ev->polygon_vertex.x);
-			cJSON_AddNumberToObject(jv, "y", ev->polygon_vertex.y);
-			cJSON_AddItemToObject(jev, "point", jv);
-			cJSON_AddStringToObject(jev, "pointLabel", event_type_to_string(ev->bcd_event_type));
-
-			cJSON_AddItemToArray(event_data_arr, jev);
-		}
-	}
-
-	// debug.cellList
-	cJSON *cell_data_arr = cJSON_CreateArray();
-	cJSON_AddItemToObject(debug_obj, "cellList", cell_data_arr);
-
-	if (cell_list && *cell_list)
-	{
-		int cell_count = cvector_size(*cell_list);
-		for (int i = 0; i < cell_count; ++i)
-		{
-			const bcd_cell_t *cell = &(*cell_list)[i];
-			cJSON *jcell = cJSON_CreateObject();
-
-			cJSON_AddNumberToObject(jcell, "id", i);
-
-			/* vertices: c_begin -> c_end -> f_end -> f_begin (clockwise) */
-			cJSON *vertices = cJSON_CreateArray();
-			const point_t corners[4] = { cell->c_begin, cell->c_end, cell->f_end, cell->f_begin };
-			for (int j = 0; j < 4; ++j)
+			for (int i = 0; i < event_list->length; ++i)
 			{
-				cJSON *jpt = cJSON_CreateObject();
-				cJSON_AddNumberToObject(jpt, "x", corners[j].x);
-				cJSON_AddNumberToObject(jpt, "y", corners[j].y);
-				cJSON_AddItemToArray(vertices, jpt);
+				const bcd_event_t *ev = &event_list->bcd_events[i];
+				cJSON *jev = cJSON_CreateObject();
+				cJSON_AddNumberToObject(jev, "id", i + 1);
+				cJSON *jv = cJSON_CreateObject();
+				cJSON_AddNumberToObject(jv, "x", ev->polygon_vertex.x);
+				cJSON_AddNumberToObject(jv, "y", ev->polygon_vertex.y);
+				cJSON_AddItemToObject(jev, "point", jv);
+				cJSON_AddStringToObject(jev, "pointLabel", event_type_to_string(ev->bcd_event_type));
+
+				cJSON_AddItemToArray(event_data_arr, jev);
 			}
-			cJSON_AddItemToObject(jcell, "vertices", vertices);
-			cJSON_AddStringToObject(jcell, "winding", "clockwise");
-
-			point_t cp = bcd_cell_interior_point(cell);
-			cJSON *jpoint = cJSON_CreateObject();
-			cJSON_AddNumberToObject(jpoint, "x", cp.x);
-			cJSON_AddNumberToObject(jpoint, "y", cp.y);
-			cJSON_AddItemToObject(jcell, "centroidPoint", jpoint);
-
-			cJSON_AddItemToArray(cell_data_arr, jcell);
 		}
+
+		cJSON_AddItemToArray(layers_arr, event_layer);
 	}
 
-	// debug.cellVisitOrder
-	cJSON *visit_data_arr = cJSON_CreateArray();
-	cJSON_AddItemToObject(debug_obj, "cellVisitOrder", visit_data_arr);
-
-	if (path_list && *path_list)
+	/* ---- Cell List (id=11, source="cellList") ---- */
 	{
-		int path_count = cvector_size(*path_list);
-		for (int i = 0; i < path_count; ++i)
+		cJSON *cell_layer = cJSON_CreateObject();
+		cJSON_AddNumberToObject(cell_layer, "id", 11);
+		cJSON_AddStringToObject(cell_layer, "source", "cellList");
+		cJSON *cell_data_arr = cJSON_CreateArray();
+		cJSON_AddItemToObject(cell_layer, "list", cell_data_arr);
+
+		if (cell_list && *cell_list)
 		{
-			int cell_id = (*path_list)[i];
-			point_t p = bcd_cell_interior_point(&(*cell_list)[cell_id]);
+			int cell_count = cvector_size(*cell_list);
+			for (int i = 0; i < cell_count; ++i)
+			{
+				const bcd_cell_t *cell = &(*cell_list)[i];
+				cJSON *jcell = cJSON_CreateObject();
 
-			cJSON *entry = cJSON_CreateObject();
-			cJSON_AddNumberToObject(entry, "id", i);
-			cJSON_AddNumberToObject(entry, "cellId", cell_id);
+				cJSON_AddNumberToObject(jcell, "id", i + 1);
 
-		cJSON *jpoint = cJSON_CreateObject();
-		cJSON_AddNumberToObject(jpoint, "x", p.x);
-		cJSON_AddNumberToObject(jpoint, "y", p.y);
-		cJSON_AddItemToObject(entry, "point", jpoint);
+				/* vertices: c_begin -> c_end -> f_end -> f_begin (clockwise) */
+				cJSON *vertices = cJSON_CreateArray();
+				const point_t corners[4] = { cell->c_begin, cell->c_end, cell->f_end, cell->f_begin };
+				for (int j = 0; j < 4; ++j)
+				{
+					cJSON *jpt = cJSON_CreateObject();
+					cJSON_AddNumberToObject(jpt, "x", corners[j].x);
+					cJSON_AddNumberToObject(jpt, "y", corners[j].y);
+					cJSON_AddItemToArray(vertices, jpt);
+				}
+				cJSON_AddItemToObject(jcell, "vertices", vertices);
 
-			cJSON_AddItemToArray(visit_data_arr, entry);
+				point_t cp = bcd_cell_interior_point(cell);
+				cJSON *jpoint = cJSON_CreateObject();
+				cJSON_AddNumberToObject(jpoint, "x", cp.x);
+				cJSON_AddNumberToObject(jpoint, "y", cp.y);
+				cJSON_AddItemToObject(jcell, "centroidPoint", jpoint);
+
+				cJSON_AddItemToArray(cell_data_arr, jcell);
+			}
 		}
+
+		cJSON_AddItemToArray(layers_arr, cell_layer);
+	}
+
+	/* ---- Cell Visit Order (id=12, source="cellVisitOrder") ---- */
+	/* Emits one CellVisitEntry per visited cell. The renderer connects them in order to form a line. */
+	{
+		cJSON *visit_layer = cJSON_CreateObject();
+		cJSON_AddNumberToObject(visit_layer, "id", 12);
+		cJSON_AddStringToObject(visit_layer, "source", "cellVisitOrder");
+		cJSON *visit_data_arr = cJSON_CreateArray();
+		cJSON_AddItemToObject(visit_layer, "list", visit_data_arr);
+
+		if (path_list && *path_list)
+		{
+			int path_count = cvector_size(*path_list);
+			for (int i = 0; i < path_count; ++i)
+			{
+				int cell_id = (*path_list)[i];
+				point_t p = bcd_cell_interior_point(&(*cell_list)[cell_id]);
+
+				cJSON *entry = cJSON_CreateObject();
+				cJSON_AddNumberToObject(entry, "id", i + 1);
+				cJSON_AddNumberToObject(entry, "pointLabel", cell_id + 1);
+
+				cJSON *jpoint = cJSON_CreateObject();
+				cJSON_AddNumberToObject(jpoint, "x", p.x);
+				cJSON_AddNumberToObject(jpoint, "y", p.y);
+				cJSON_AddItemToObject(entry, "point", jpoint);
+
+				cJSON_AddItemToArray(visit_data_arr, entry);
+			}
+		}
+
+		cJSON_AddItemToArray(layers_arr, visit_layer);
 	}
 
 	char *json = cJSON_PrintUnformatted(root);
