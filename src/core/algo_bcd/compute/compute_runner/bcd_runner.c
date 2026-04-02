@@ -164,8 +164,11 @@ static char *serialize_result_json(const bcd_event_list_t *event_list,
 				cvector_push_back(raw_pts, cell->c_end);
 				/* floor: f_begin (bottom-right; c_end and f_begin share the right side) */
 				cvector_push_back(raw_pts, cell->f_begin);
-				/* floor: intermediate deflection vertices (right → left, CW) */
-				for (int j = 0; j < floor_n - 1; ++j)
+				/* floor: intermediate deflection vertices (right → left, CW).
+				 * Floor chain: edge[j].begin = edge[j+1].end, so reading right→left
+				 * the intermediates are edge[j].end for j = floor_n-1 down to 1.
+				 * (edge[0].end = f_end, already emitted separately below.) */
+				for (int j = floor_n - 1; j >= 1; --j)
 					cvector_push_back(raw_pts, cell->floor_edge_list[j].end);
 				/* floor: f_end (bottom-left; f_end and c_begin share the left side) */
 				cvector_push_back(raw_pts, cell->f_end);
