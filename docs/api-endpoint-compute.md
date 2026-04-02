@@ -285,9 +285,9 @@ Poll `GET /compute/:jobId` until `status` is `"completed"` or `"failed"`.
 |---|---|---|
 | `id` | `number` | Sequential index (1-based) |
 | `type` | `CoveragePathPlanSegmentType` | Segment role — see [`CoveragePathPlanSegmentType`](#coveragepathplansegmenttype) |
-| `path` | `PathPoint[]` | Ordered waypoints, in execution order |
+| `path` | `IndexedPoint[]` | Ordered waypoints, in execution order |
 
-### `PathPoint`
+### `IndexedPoint`
 
 | Field | Type | Notes |
 |---|---|---|

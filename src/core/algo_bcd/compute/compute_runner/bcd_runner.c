@@ -47,10 +47,13 @@ static char *serialize_result_json(const bcd_event_list_t *event_list,
 				for (int j = 0; j < point_count; ++j)
 				{
 					const point_t *point = &section->ox[j];
+					cJSON *jpath_point = cJSON_CreateObject();
+					cJSON_AddNumberToObject(jpath_point, "id", j + 1);
 					cJSON *jpoint = cJSON_CreateObject();
 					cJSON_AddNumberToObject(jpoint, "x", point->x);
 					cJSON_AddNumberToObject(jpoint, "y", point->y);
-					cJSON_AddItemToArray(path_arr, jpoint);
+					cJSON_AddItemToObject(jpath_point, "point", jpoint);
+					cJSON_AddItemToArray(path_arr, jpath_point);
 				}
 				cJSON_AddItemToArray(segments_arr, jsegment);
 			}
@@ -67,10 +70,13 @@ static char *serialize_result_json(const bcd_event_list_t *event_list,
 				for (int j = 0; j < nav_count; ++j)
 				{
 					const point_t *point = &section->nav[j];
+					cJSON *jpath_point = cJSON_CreateObject();
+					cJSON_AddNumberToObject(jpath_point, "id", j + 1);
 					cJSON *jpoint = cJSON_CreateObject();
 					cJSON_AddNumberToObject(jpoint, "x", point->x);
 					cJSON_AddNumberToObject(jpoint, "y", point->y);
-					cJSON_AddItemToArray(path_arr, jpoint);
+					cJSON_AddItemToObject(jpath_point, "point", jpoint);
+					cJSON_AddItemToArray(path_arr, jpath_point);
 				}
 				cJSON_AddItemToArray(segments_arr, jsegment);
 			}

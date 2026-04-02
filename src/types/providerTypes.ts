@@ -152,6 +152,11 @@ export interface Point {
     y: number;
 }
 
+export interface IndexedPoint {
+    id: number;
+    point: Point;
+}
+
 export type ComputeJobStatus = "queued" | "running" | "completed" | "failed";
 
 export interface ComputeJobError {
