@@ -18,6 +18,7 @@ Returns all algorithms the provider exposes, with their parameter schemas. Consu
           "paramType": "Decimal",
           "enumValues": [],
           "defaultValue": "15",
+          "minValue": 0,
           "section": "Coverage Path",
           "appHandler": null
         },
@@ -27,6 +28,7 @@ Returns all algorithms the provider exposes, with their parameter schemas. Consu
           "paramType": "Decimal",
           "enumValues": [],
           "defaultValue": "5",
+          "minValue": 0,
           "section": "Coverage Path",
           "appHandler": null
         },
@@ -269,6 +271,7 @@ Returns all algorithms the provider exposes, with their parameter schemas. Consu
 | `paramType` | `ParameterType` | Value data type — see [`ParameterType`](#parametertype) |
 | `enumValues` | `string[]` | Allowed values when `paramType` is `"Enum"`; empty array for all other types |
 | `defaultValue` | `string` | Default value serialised as a string |
+| `minValue` | `number \| null` | Minimum allowed numeric value. `null` means no lower bound. Only meaningful for `Integer` and `Decimal` parameters; ignored for all other types |
 | `section` | `string` | UI grouping label |
 | `appHandler` | `string \| null` | When non-null, binds this parameter to an environment-level property — see the `appHandler` note above |
 

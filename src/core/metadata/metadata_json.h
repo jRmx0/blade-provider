@@ -13,7 +13,9 @@ static inline void metadata_add_parameter(
     int enum_value_count,
     const char *default_value,
     bcd_metadata_param_section_t section,
-    bcd_metadata_app_handler_t app_handler)
+    bcd_metadata_app_handler_t app_handler,
+    int has_min_value,
+    double min_value)
 {
     cJSON *parameter = cJSON_CreateObject();
     const char *section_value = metadata_param_section_to_string(section);
@@ -37,6 +39,11 @@ static inline void metadata_add_parameter(
     if (default_value != NULL)
     {
         cJSON_AddStringToObject(parameter, "defaultValue", default_value);
+    }
+
+    if (has_min_value)
+    {
+        cJSON_AddNumberToObject(parameter, "minValue", min_value);
     }
 
     if (section_value != NULL)
