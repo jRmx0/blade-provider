@@ -44,7 +44,6 @@ The `styleType` field identifies the value category of a `LayerStyleAttribute`. 
 | `"FillStyleEnum"` | `"solid"` \| `"hatched"` |
 | `"OverlapLayoutEnum"` | `"grid"` |
 | `"PlacementEnum"` | `"inside"` \| `"outside-left"` \| `"outside-right"` \| `"outside-top"` \| `"outside-bottom"` |
-| `"FontSizeEnum"` | `"text-xs"` \| `"text-sm"` \| `"text-base"` \| `"text-lg"` \| `"text-xl"` \| `"text-2xl"` \| `"text-3xl"` \| `"text-4xl"` \| `"text-5xl"` \| `"text-6xl"` \| `"text-7xl"` \| `"text-8xl"` \| `"text-9xl"` |
 | `"FontWeightEnum"` | `"font-thin"` \| `"font-extralight"` \| `"font-light"` \| `"font-normal"` \| `"font-medium"` \| `"font-semibold"` \| `"font-bold"` \| `"font-extrabold"` \| `"font-black"` |
 | `"LineArrowStartEnum"` | `"line_start_arrow"` \| `"line_start_arrow_notch"` |
 | `"LineArrowEndEnum"` | `"line_end_arrow"` \| `"line_end_arrow_notch"` |
@@ -67,7 +66,7 @@ Applies to all layer types. Always the first sub-array in the `LayerStyle` objec
 
 Canonical definition of point marker attributes. All 18 attributes are always present in `pointStyleAttributes`. On `Line` layers the same 18 attributes reappear as point-vertex attributes; on `Polygon` layers 11 of them reappear as corner-vertex attributes (Overlap and Text Label groups excluded) — see the respective sections below.
 
-All color values (border, fill, text ID, text label) are CSS hex strings with optional 8-digit alpha (e.g. `"#a855f7"`, `"#a855f7cc"`). Font size values are Tailwind text size classes (e.g. `"text-xs"`, `"text-sm"`, `"text-base"`). Spatial values (radius, width, offset) are direct pixel values (e.g. `"1"`, `"2"`, `"4"`).
+All color values (border, fill, text ID, text label) are CSS hex strings with optional 8-digit alpha (e.g. `"#a855f7"`, `"#a855f7cc"`). Font size values are direct pixel values serialised as a string (e.g. `"12"`, `"14"`, `"16"`). Spatial values (radius, width, offset) are direct pixel values (e.g. `"1"`, `"2"`, `"4"`).
 
 ### Marker Shape
 

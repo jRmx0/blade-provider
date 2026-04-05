@@ -257,7 +257,6 @@ typedef enum {
     METADATA_STYLE_TYPE_FILL_STYLE_ENUM,
     METADATA_STYLE_TYPE_OVERLAP_LAYOUT_ENUM,
     METADATA_STYLE_TYPE_PLACEMENT_ENUM,
-    METADATA_STYLE_TYPE_FONT_SIZE_ENUM,
     METADATA_STYLE_TYPE_FONT_WEIGHT_ENUM,
     METADATA_STYLE_TYPE_LINE_ARROW_START_ENUM,
     METADATA_STYLE_TYPE_LINE_ARROW_END_ENUM,
@@ -278,7 +277,6 @@ static inline const char *metadata_style_type_to_string(metadata_style_type_t st
     case METADATA_STYLE_TYPE_FILL_STYLE_ENUM:       return "FillStyleEnum";
     case METADATA_STYLE_TYPE_OVERLAP_LAYOUT_ENUM:   return "OverlapLayoutEnum";
     case METADATA_STYLE_TYPE_PLACEMENT_ENUM:        return "PlacementEnum";
-    case METADATA_STYLE_TYPE_FONT_SIZE_ENUM:        return "FontSizeEnum";
     case METADATA_STYLE_TYPE_FONT_WEIGHT_ENUM:      return "FontWeightEnum";
     case METADATA_STYLE_TYPE_LINE_ARROW_START_ENUM: return "LineArrowStartEnum";
     case METADATA_STYLE_TYPE_LINE_ARROW_END_ENUM:   return "LineArrowEndEnum";
