@@ -4,241 +4,66 @@
 
 Returns all algorithms the provider exposes, with their parameter schemas. Consumers should fetch this once on connection and use it to build parameter input forms.
 
-**Response `200`**
+**Response `200`** *(abbreviated — actual algorithms, parameters, and style values depend on the provider)*
 ```json
 {
   "algorithms": [
     {
       "id": 1,
-      "name": "Boustrophedon Cellular Decomposition",
+      "name": "<algorithm name>",
       "parameters": [
         {
           "id": 1,
-          "name": "Path Width",
+          "name": "<parameter name>",
           "paramType": "Decimal",
           "enumValues": [],
           "defaultValue": "15",
           "minValue": 0,
-          "section": "Coverage Path",
+          "section": "<section label>",
           "appHandler": null
         },
         {
           "id": 2,
-          "name": "Path Overlap",
-          "paramType": "Decimal",
-          "enumValues": [],
-          "defaultValue": "5",
-          "minValue": 0,
-          "section": "Coverage Path",
-          "appHandler": null
-        },
-        {
-          "id": 3,
-          "name": "Format",
+          "name": "<env-bound parameter>",
           "paramType": "Enum",
-          "enumValues": ["Polygon"],
-          "defaultValue": "Polygon",
-          "section": "Environment",
-          "appHandler": "env.format"
+          "enumValues": ["<value>"],
+          "defaultValue": "<value>",
+          "section": "<section label>",
+          "appHandler": "env.<property>"
         },
-        {
-          "id": 4,
-          "name": "Type",
-          "paramType": "Enum",
-          "enumValues": ["Off-Line"],
-          "defaultValue": "Off-Line",
-          "section": "Environment",
-          "appHandler": "env.type"
-        },
-        {
-          "id": 5,
-          "name": "Coordinate System",
-          "paramType": "Enum",
-          "enumValues": ["Decimal"],
-          "defaultValue": "Decimal",
-          "section": "Environment",
-          "appHandler": "env.coordsystem"
-        }
+        "..."
       ],
       "layers": [
         {
           "id": 1,
-          "computeLayer": "coveragePathPlan",
-          "name": "Coverage Path",
+          "computeLayer": "<resultFieldName>",
+          "name": "<layer display name>",
           "layerType": "Line",
           "style": {
             "generalStyleAttributes": [
-              { "key": "Visible",               "styleType": "Boolean",           "defaultValue": "true"           },
-              { "key": "Z-Index",               "styleType": "Integer",           "defaultValue": "100"            },
-            ], 
-            "pointStyleAttributes": [ 
-              { "name": "Point Shape",            "styleType": "PointShapeEnum",    "defaultValue": null             },
-              { "name": "Point Radius",           "styleType": "Spacing",           "defaultValue": null             },
-              { "name": "Point Overlap Spacing",  "styleType": "Spacing",           "defaultValue": null             },
-              { "name": "Point Overlap Layout",   "styleType": "OverlapLayoutEnum", "defaultValue": null             },
-              { "name": "Point Border Color",     "styleType": "Color",             "defaultValue": null             },
-              { "name": "Point Border Width",     "styleType": "Spacing",           "defaultValue": null             },
-              { "name": "Point Border Style",     "styleType": "StrokeStyleEnum",   "defaultValue": null             },
-              { "name": "Point Fill Color",       "styleType": "Color",             "defaultValue": null             },
-              { "name": "Point ID Color",         "styleType": "Color",             "defaultValue": null             },
-              { "name": "Point ID Font Size",     "styleType": "FontSizeEnum",      "defaultValue": null             },
-              { "name": "Point ID Font Weight",   "styleType": "FontWeightEnum",    "defaultValue": null             },
-              { "name": "Point ID Placement",     "styleType": "PlacementEnum",     "defaultValue": null             },
-              { "name": "Point ID Offset",        "styleType": "Spacing",           "defaultValue": null             },
-              { "name": "Point Label Color",      "styleType": "Color",             "defaultValue": null             },
-              { "name": "Point Label Font Size",  "styleType": "FontSizeEnum",      "defaultValue": null             },
-              { "name": "Point Label Font Weight","styleType": "FontWeightEnum",    "defaultValue": null             },
-              { "name": "Point Label Placement",  "styleType": "PlacementEnum",     "defaultValue": null             },
-              { "name": "Point Label Offset",     "styleType": "Spacing",           "defaultValue": null             },
+              { "key": "Visible", "styleType": "Boolean", "defaultValue": "true" },
+              { "key": "Z-Index", "styleType": "Integer", "defaultValue": "100" }
             ],
-            "lineStyleAttributes": [
-              { "name": "Line Edge Color",        "styleType": "Color",             "defaultValue": "#60a5fa"        },
-              { "name": "Line Edge Width",        "styleType": "Spacing",           "defaultValue": "1"              },
-              { "name": "Line Edge Style",        "styleType": "StrokeStyleEnum",   "defaultValue": "solid"          },
-              { "name": "Line Arrow Start",       "styleType": "LineArrowStartEnum","defaultValue": null             },
-              { "name": "Line Arrow End",         "styleType": "LineArrowEndEnum",  "defaultValue": null             },
-              { "name": "Line Arrow Mid",         "styleType": "LineArrowMidEnum",  "defaultValue": "line_end_arrow" },
-              { "name": "Line Arrow Mid Spacing", "styleType": "Spacing",           "defaultValue": "12"             },
-              { "name": "Line Arrow Size",        "styleType": "Spacing",           "defaultValue": "3"              }
-            ]
+            "pointStyleAttributes": [ "..." ],
+            "lineStyleAttributes": [ "..." ]
           }
         },
         {
-          "id": 10,
-          "computeLayer": "eventList",
-          "name": "Event List",
+          "id": 2,
+          "computeLayer": "<debugLayerName>",
+          "name": "<debug layer display name>",
           "layerType": "Point",
-          "pointLabelEnumValues": ["B_IN", "B_SIDE_IN", "B_INIT", "B_OUT", "B_SIDE_OUT", "B_DEINIT", "IN", "SIDE_IN", "OUT", "SIDE_OUT", "FLOOR", "CEILING", "NONE"],
-          "style": 
-          {
-            "generalStyleAttributes": [
-              { "key": "Visible",               "styleType": "Boolean",          "defaultValue": "false"           },
-              { "key": "Z-Index",               "styleType": "Integer",          "defaultValue": "110"            },
-            ],
-            "pointStyleAttributes": [
-              { "name": "Point Shape",            "styleType": "PointShapeEnum",   "defaultValue": "circle"         },
-              { "name": "Point Radius",           "styleType": "Spacing",          "defaultValue": "4"              },
-              { "name": "Point Overlap Spacing",  "styleType": "Spacing",          "defaultValue": null             },
-              { "name": "Point Overlap Layout",   "styleType": "OverlapLayoutEnum","defaultValue": null             },
-              { "name": "Point Border Color",     "styleType": "Color",            "defaultValue": "#a855f7"        },
-              { "name": "Point Border Width",     "styleType": "Spacing",          "defaultValue": "1"              },
-              { "name": "Point Border Style",     "styleType": "StrokeStyleEnum",  "defaultValue": "solid"          },
-              { "name": "Point Fill Color",       "styleType": "Color",            "defaultValue": "#a855f7"        },
-              { "name": "Point ID Color",         "styleType": "Color",            "defaultValue": null             },
-              { "name": "Point ID Font Size",     "styleType": "FontSizeEnum",     "defaultValue": null             },
-              { "name": "Point ID Font Weight",   "styleType": "FontWeightEnum",   "defaultValue": null             },
-              { "name": "Point ID Placement",     "styleType": "PlacementEnum",    "defaultValue": null             },
-              { "name": "Point ID Offset",        "styleType": "Spacing",          "defaultValue": null             },
-              { "name": "Point Label Color",      "styleType": "Color",            "defaultValue": "#a855f7"        },
-              { "name": "Point Label Font Size",  "styleType": "FontSizeEnum",     "defaultValue": "text-xs"        },
-              { "name": "Point Label Font Weight","styleType": "FontWeightEnum",   "defaultValue": "500"           },
-              { "name": "Point Label Placement",  "styleType": "PlacementEnum",    "defaultValue": "outside-bottom" },
-              { "name": "Point Label Offset",     "styleType": "Spacing",          "defaultValue": "6"              }
-            ],
+          "pointLabelEnumValues": ["<label>", "..."],
+          "style": {
+            "generalStyleAttributes": [ "..." ],
+            "pointStyleAttributes": [ "..." ],
             "pointLabelColorMapping": [
-              { "value": "B_IN",       "color": "#16a34a"   },
-              { "value": "B_SIDE_IN",  "color": "#16a34a"   },
-              { "value": "B_INIT",     "color": "#16a34a"   },
-              { "value": "B_OUT",      "color": "#dc2626"   },
-              { "value": "B_SIDE_OUT", "color": "#dc2626"   },
-              { "value": "B_DEINIT",   "color": "#dc2626"   },
-              { "value": "IN",         "color": "#16a34a"   },
-              { "value": "SIDE_IN",    "color": "#16a34a"   },
-              { "value": "OUT",        "color": "#dc2626"   },
-              { "value": "SIDE_OUT",   "color": "#dc2626"   },
-              { "value": "FLOOR",      "color": "#60a5fa"   },
-              { "value": "CEILING",    "color": "#fb923c"   },
-              { "value": "NONE",       "color": "#FF00FF"   }
-            ]
-          }          
-        },
-        {
-          "id": 11,
-          "computeLayer": "cellList",
-          "name": "Cell List",
-          "layerType": "Polygon",
-          "style":  
-          {
-            "generalStyleAttributes": [
-              { "key": "Visible",               "styleType": "Boolean",           "defaultValue": "false"       },
-              { "key": "Z-Index",               "styleType": "Integer",           "defaultValue": "120"        },
-            ],
-            "pointStyleAttributes": [
-              { "name": "Point Shape",            "styleType": "PointShapeEnum",    "defaultValue": null         },
-              { "name": "Point Radius",           "styleType": "Spacing",           "defaultValue": null         },
-              { "name": "Point Border Color",     "styleType": "Color",             "defaultValue": null         },
-              { "name": "Point Border Width",     "styleType": "Spacing",           "defaultValue": null         },
-              { "name": "Point Border Style",     "styleType": "StrokeStyleEnum",   "defaultValue": null         },
-              { "name": "Point Fill Color",       "styleType": "Color",             "defaultValue": null         },
-              { "name": "Point ID Color",         "styleType": "Color",             "defaultValue": null         },
-              { "name": "Point ID Font Size",     "styleType": "FontSizeEnum",      "defaultValue": null         },
-              { "name": "Point ID Font Weight",   "styleType": "FontWeightEnum",    "defaultValue": null         },
-              { "name": "Point ID Placement",     "styleType": "PlacementEnum",     "defaultValue": null         },
-              { "name": "Point ID Offset",        "styleType": "Spacing",           "defaultValue": null         },
-            ],
-            "polygonStyleAttributes": [
-              { "name": "Polygon Edge Color",     "styleType": "Color",             "defaultValue": "#94a3b8"    },
-              { "name": "Polygon Edge Width",     "styleType": "Spacing",           "defaultValue": "1"          },
-              { "name": "Polygon Edge Style",     "styleType": "StrokeStyleEnum",   "defaultValue": "solid"      },
-              { "name": "Polygon Fill Color",     "styleType": "Color",             "defaultValue": null         },
-              { "name": "Polygon Fill Style",     "styleType": "FillStyleEnum",     "defaultValue": null         },
-              { "name": "Polygon ID Color",       "styleType": "Color",             "defaultValue": "#64748b"    },
-              { "name": "Polygon ID Font Size",   "styleType": "FontSizeEnum",      "defaultValue": "text-xs"    },
-              { "name": "Polygon ID Font Weight", "styleType": "FontWeightEnum",    "defaultValue": "500"       },
-              { "name": "Polygon ID Shape",       "styleType": "PolygonIDShapeEnum","defaultValue": null         },
-              { "name": "Polygon ID Radius",      "styleType": "Spacing",           "defaultValue": null         },
-              { "name": "Polygon ID Border Color","styleType": "Color",             "defaultValue": null         },
-              { "name": "Polygon ID Border Width","styleType": "Spacing",           "defaultValue": null         },
-              { "name": "Polygon ID Border Style","styleType": "StrokeStyleEnum",   "defaultValue": null         },
-              { "name": "Polygon ID Fill Color",  "styleType": "Color",             "defaultValue": null         },
-              { "name": "Polygon ID Placement",   "styleType": "PlacementEnum",     "defaultValue": "inside"     },
-              { "name": "Polygon ID Offset",      "styleType": "Spacing",           "defaultValue": null         }
+              { "value": "<label>", "color": "#rrggbb" },
+              "..."
             ]
           }
         },
-        {
-          "id": 12,
-          "computeLayer": "cellVisitOrder",
-          "name": "Cell Visit Order",
-          "layerType": "Line",
-          "style": 
-          {
-            "generalStyleAttributes": [
-              { "key": "Visible",               "styleType": "Boolean",           "defaultValue": "false"            },
-              { "key": "Z-Index",               "styleType": "Integer",           "defaultValue": "130"             },
-            ],
-            "pointStyleAttributes": [
-              { "name": "Point Shape",            "styleType": "PointShapeEnum",    "defaultValue": "circle"          },
-              { "name": "Point Radius",           "styleType": "Spacing",           "defaultValue": "3"               },
-              { "name": "Point Overlap Spacing",  "styleType": "Spacing",           "defaultValue": "8"               },
-              { "name": "Point Overlap Layout",   "styleType": "OverlapLayoutEnum", "defaultValue": "grid"            },
-              { "name": "Point Border Color",     "styleType": "Color",             "defaultValue": null              },
-              { "name": "Point Border Width",     "styleType": "Spacing",           "defaultValue": null              },
-              { "name": "Point Border Style",     "styleType": "StrokeStyleEnum",   "defaultValue": null              },
-              { "name": "Point Fill Color",       "styleType": "Color",             "defaultValue": "#60a5fa"         },
-              { "name": "Point ID Color",         "styleType": "Color",             "defaultValue": "#60a5fa"         },
-              { "name": "Point ID Font Size",     "styleType": "FontSizeEnum",      "defaultValue": "text-xs"         },
-              { "name": "Point ID Font Weight",   "styleType": "FontWeightEnum",    "defaultValue": "500"            },
-              { "name": "Point ID Placement",     "styleType": "PlacementEnum",     "defaultValue": "inside"          },
-              { "name": "Point ID Offset",        "styleType": "Spacing",           "defaultValue": null              },
-              { "name": "Point Label Color",      "styleType": "Color",             "defaultValue": null              },
-              { "name": "Point Label Font Size",  "styleType": "FontSizeEnum",      "defaultValue": null              },
-              { "name": "Point Label Font Weight","styleType": "FontWeightEnum",    "defaultValue": null              },
-              { "name": "Point Label Placement",  "styleType": "PlacementEnum",     "defaultValue": null              },
-              { "name": "Point Label Offset",     "styleType": "Spacing",           "defaultValue": null              },
-            ],
-            "lineStyleAttributes": [
-              { "name": "Line Edge Color",        "styleType": "Color",             "defaultValue": "#60a5fa"         },
-              { "name": "Line Edge Width",        "styleType": "Spacing",           "defaultValue": "1"               },
-              { "name": "Line Edge Style",        "styleType": "StrokeStyleEnum",   "defaultValue": "solid"           },
-              { "name": "Line Arrow Start",       "styleType": "LineArrowStartEnum","defaultValue": null              },
-              { "name": "Line Arrow End",         "styleType": "LineArrowEndEnum",  "defaultValue": null              },
-              { "name": "Line Arrow Mid",         "styleType": "LineArrowMidEnum",  "defaultValue": "line_end_arrow"  },
-              { "name": "Line Arrow Mid Spacing", "styleType": "Spacing",           "defaultValue": "12"              },
-              { "name": "Line Arrow Size",        "styleType": "Spacing",           "defaultValue": "3"               }
-            ]
-          }
-        }
+        "..."
       ]
     }
   ]

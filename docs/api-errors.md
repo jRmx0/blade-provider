@@ -44,26 +44,21 @@ All HTTP-layer errors use this structure:
 | `unknown_algorithm` | `algorithmId` does not match any registered algorithm |
 | `internal_error` | Unexpected server-side failure |
 
-#### Boustrophedon Cellular Decomposition
+#### Algorithm-specific errors (example)
+
+Each algorithm validates its own request and emits unique error codes. The following is an example from one algorithm — actual codes depend on which algorithm ran. Check the `algorithmName` field on the failed job to identify the relevant algorithm.
 
 | Code | Description |
 |---|---|
 | `missing_environment` | `environment` field is missing |
 | `missing_parameters` | `parameters` field is missing |
 | `invalid_zones` | `environment.zones` is missing or not an array |
-| `invalid_zone_count` | `environment.zones` must contain exactly one polygon |
+| `invalid_zone_count` | Zone count does not meet algorithm requirements |
 | `invalid_boundary` | Boundary polygon has fewer than 3 valid vertices |
 | `invalid_obstacles` | `environment.obstacles` is not an array |
 | `invalid_obstacle` | One or more obstacle polygons have fewer than 3 valid vertices |
-| `missing_path_width` | `Path Width` parameter is missing |
-| `invalid_path_width` | `Path Width` must be a number greater than 0 |
-| `missing_path_overlap` | `Path Overlap` parameter is missing |
-| `invalid_path_overlap` | `Path Overlap` must be ≥ 0 and < `Path Width` |
-| `missing_format` | `Format` parameter is missing |
-| `unsupported_format` | `Format` value is not supported (only `"Polygon"`) |
-| `missing_type` | `Type` parameter is missing |
-| `unsupported_type` | `Type` value is not supported (only `"Off-Line"`) |
-| `missing_coordinate_system` | `Coordinate System` parameter is missing |
-| `unsupported_coordinate_system` | `Coordinate System` value is not supported (only `"Decimal"`) |
-| `not_implemented` | BCD compute path is not yet wired (validation passed, stub only) |
+| `missing_<paramName>` | A required parameter is absent |
+| `invalid_<paramName>` | A parameter value fails the algorithm's constraint |
+| `unsupported_<paramName>` | A parameter value is not in the allowed set for this algorithm |
+| `not_implemented` | Compute path is not yet wired (validation passed, stub only) |
 | `allocation_failed` | Memory allocation failure in native core |

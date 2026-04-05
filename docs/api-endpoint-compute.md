@@ -60,18 +60,15 @@ Polls the status of a previously submitted job.
     "obstacles": [
       [
         { "x": 20, "y": 20 },
-        { "x": 20, "y": 40 },
+        { "x": 40, "y": 20 },
         { "x": 40, "y": 40 },
-        { "x": 40, "y": 20 }
+        { "x": 20, "y": 40 }
       ]
     ]
   },
   "parameters": {
-    "Path Width": 15,
-    "Path Overlap": 5,
-    "Format": "Polygon",
-    "Type": "Off-Line",
-    "Coordinate System": "Decimal"
+    "<parameter name>": "<value>",
+    "...": "..."
   }
 }
 ```
@@ -83,7 +80,7 @@ Polls the status of a previously submitted job.
 | `algorithmId` | `number` | yes | Must match `algorithm.id` from `GET /metadata`. The native dispatcher routes by integer ID. |
 | `requestId` | `string` | no | Client-supplied trace ID; echoed back in the job state |
 | `environment` | `object` | yes | |
-| `environment.zones` | `Point[][]` | yes | One or more boundary polygons. Each polygon ≥ 3 vertices. **Clockwise winding** in screen coordinates (Y increases downward). BCD currently requires exactly one zone. |
+| `environment.zones` | `Point[][]` | yes | One or more boundary polygons. Each polygon ≥ 3 vertices. **Clockwise winding** in screen coordinates (Y increases downward). Exact zone count constraints are algorithm-specific — check the algorithm's error codes. |
 | `environment.obstacles` | `Point[][]` | no | Zero or more obstacle polygons. Each polygon ≥ 3 vertices. **Counter-clockwise winding** in screen coordinates. |
 | `parameters` | `object` | yes | Key = `parameter.name` from metadata. Values must conform to `paramType` (see below). |
 
@@ -99,15 +96,7 @@ Polls the status of a previously submitted job.
 | `Enum` | `string` | Must be one of `enumValues` from metadata |
 | `String` | `string` | |
 
-### BCD-specific constraints
-
-| Parameter | Constraint |
-|---|---|
-| `Path Width` | Must be `> 0` |
-| `Path Overlap` | Must be `>= 0` and `< Path Width` |
-| `Format` | `"Polygon"` only |
-| `Type` | `"Off-Line"` only |
-| `Coordinate System` | `"Decimal"` only |
+Parameter constraints (allowed ranges, required enum values, etc.) are algorithm-specific. They are validated by the algorithm's native core and reported as job-level error codes when violated — see [api-errors.md](./api-errors.md).
 
 ---
 
@@ -141,7 +130,7 @@ Poll `GET /compute/:jobId` until `status` is `"completed"` or `"failed"`.
 {
   "jobId": "550e8400-e29b-41d4-a716-446655440000",
   "status": "completed",
-  "algorithmName": "Boustrophedon Cellular Decomposition",
+  "algorithmName": "<algorithm name>",
   "createdAt": "2026-03-20T12:00:00.000Z",
   "startedAt": "2026-03-20T12:00:00.050Z",
   "completedAt": "2026-03-20T12:00:01.200Z",
@@ -162,13 +151,13 @@ Poll `GET /compute/:jobId` until `status` is `"completed"` or `"failed"`.
 {
   "jobId": "550e8400-e29b-41d4-a716-446655440000",
   "status": "failed",
-  "algorithmName": "Boustrophedon Cellular Decomposition",
+  "algorithmName": "<algorithm name>",
   "createdAt": "2026-03-20T12:00:00.000Z",
   "startedAt": "2026-03-20T12:00:00.050Z",
   "completedAt": "2026-03-20T12:00:00.060Z",
   "error": {
-    "code": "invalid_path_width",
-    "message": "Path Width must be a number greater than 0."
+    "code": "<algorithm-specific error code>",
+    "message": "<human-readable description>"
   }
 }
 ```
@@ -197,70 +186,25 @@ Poll `GET /compute/:jobId` until `status` is `"completed"` or `"failed"`.
         "path": [
           { "id": 1, "point": { "x": 5, "y": 5 } },
           { "id": 2, "point": { "x": 95, "y": 5 } },
-          { "id": 3, "point": { "x": 95, "y": 20 } },
-          { "id": 4, "point": { "x": 5, "y": 20 } }
+          "..."
         ]
       },
       {
         "id": 2,
         "type": "transit",
-        "path": [
-          { "id": 1, "point": { "x": 5, "y": 20 } },
-          { "id": 2, "point": { "x": 5, "y": 5 } }
-        ]
+        "path": [ "..." ]
       },
-      {
-        "id": 3,
-        "type": "coverage",
-        "path": [
-          { "id": 1, "point": { "x": 5, "y": 5 } },
-          { "id": 2, "point": { "x": 95, "y": 5 } },
-          { "id": 3, "point": { "x": 95, "y": 20 } },
-          { "id": 4, "point": { "x": 5, "y": 20 } }
-        ]
-      }
+      "..."
     ]
   },
   "debug": {
     "layers": [
       {
-        "id": 10,
-        "source": "eventList",
-        "list": [
-          /*event*/
-          {
-            "id": 1,
-            "pointLabel": "SIDE_IN",
-            "point": { "x": 0, "y": 0 }
-          }
-        ]
+        "id": 1,
+        "source": "<debugLayerName>",
+        "list": [ "..." ]
       },
-      {
-        "id": 11,
-        "source": "cellList",
-        "list": [
-          { 
-            /*cell*/
-            "id": 1,
-            "centroidPoint": { "x": 50, "y": 50 },
-            "vertices": [
-              { "x": 0, "y": 0 },
-              { "x": 100, "y": 0 },
-              { "x": 100, "y": 100 },
-              { "x": 0, "y": 100 }
-            ]
-          }
-        ]
-      },
-      {
-        "id": 12,
-        "source": "cellVisitOrder",
-        "list": [
-          { "id": 1, "pointLabel": 1, "point": { "x": 50, "y": 50 } },
-          { "id": 2, "pointLabel": 3, "point": { "x": 50, "y": 70 } },
-          { "id": 3, "pointLabel": 2, "point": { "x": 50, "y": 90 } }
-        ]
-      }
+      "..."
     ]
   }
 }
@@ -316,59 +260,14 @@ Base shape shared by every debug layer. Algorithm-specific layers may carry addi
 | Field | Type | Notes |
 |---|---|---|
 | `id` | `number` | Matches `layer.id` from `GET /metadata` — use to look up style and display config |
-| `source` | `string` | Identifies the layer kind (e.g. `"eventList"`, `"cellList"`) — matches `layer.computeLayer` in metadata |
+| `source` | `string` | Identifies the layer kind — matches `layer.computeLayer` in metadata |
 | `list` | `object[]` | Data items for this layer; shape is algorithm and layer-kind specific |
 
 ---
 
-## BCD-Specific Types
+## Algorithm-Specific Types
 
-The following types describe the `debug.layers` entries when `algorithmName` is `"Boustrophedon Cellular Decomposition"`.
+Each algorithm defines its own `debug.layers` item shapes. The exact fields in each `list` entry depend on which algorithm ran and which debug layer the `source` identifies. Consult the specific algorithm's documentation for details.
 
-### `source: "eventList"` layer
+The generic base fields (`id`, `source`, `list`) are described by [`DebugResultLayer`](#debugresultlayer) above. Algorithm implementations may add further top-level fields alongside these.
 
-| Field | Type | Notes |
-|---|---|---|
-| `id` | `number` | Matches `layer.id` from metadata |
-| `source` | `"eventList"` | — |
-| `list` | `BcdEvent[]` | Sweep-line events produced by the BCD algorithm |
-
-### `source: "cellList"` layer
-
-| Field | Type | Notes |
-|---|---|---|
-| `id` | `number` | Matches `layer.id` from metadata |
-| `source` | `"cellList"` | — |
-| `list` | `BcdCell[]` | Decomposed cells in discovery order |
-
-### `source: "cellVisitOrder"` layer
-
-| Field | Type | Notes |
-|---|---|---|
-| `id` | `number` | Matches `layer.id` from metadata |
-| `source` | `"cellVisitOrder"` | — |
-| `list` | `CellVisitEntry[]` | Planned cell visit sequence, in visit order |
-
-### `CellVisitEntry`
-
-| Field | Type | Notes |
-|---|---|---|
-| `id` | `number` | Sequential visit index (1-based); unique across the array — use as the rendering key |
-| `pointLabel` | `number` | Matches the `id` of the target `BcdCell` in the `cellList` layer. May repeat if the same cell is visited more than once. Used as the canvas point label. Renderers are responsible for offsetting markers when multiple entries share a `pointLabel` |
-| `point` | `Point` | Centroid of the cell's four span corners (`ceilingBegin`, `ceilingEnd`, `floorBegin`, `floorEnd`). Always the same value for a given `pointLabel` |
-
-### `BcdEvent`
-
-| Field | Type | Notes |
-|---|---|---|
-| `id` | `number` | Sequential index of the event (1-based) |
-| `point` | `Point` | The polygon vertex that triggered the event |
-| `pointLabel` | `"B_IN"` \| `"B_SIDE_IN"` \| `"B_INIT"` \| `"B_OUT"` \| `"B_SIDE_OUT"` \| `"B_DEINIT"` \| `"IN"` \| `"SIDE_IN"` \| `"OUT"` \| `"SIDE_OUT"` \| `"FLOOR"` \| `"CEILING"` \| `"NONE"` | BCD sweep-line event classification, used as the canvas point label |
-
-### `BcdCell`
-
-| Field | Type | Notes |
-|---|---|---|
-| `id` | `number` | Sequential index of the cell (1-based) |
-| `vertices` | `Point[]` | Polygon boundary vertices in clockwise order. **≥ 3 points.** Ceiling boundary vertices run left-to-right, floor boundary vertices run right-to-left. Simple trapezoidal cells (no obstacle deflections) produce exactly 4 vertices. SIDE_IN/SIDE_OUT tip cells produce exactly 3 vertices (triangle). Cells adjacent to obstacles may produce more vertices where obstacle edges deflect the ceiling or floor boundary. Consecutive duplicate vertices are never emitted. |
-| `centroidPoint` | `Point` | Centroid of the four span corners (`ceilingBegin`, `ceilingEnd`, `floorBegin`, `floorEnd`) — useful for label placement and hit-testing. Approximation; may fall outside the cell for highly non-trapezoidal shapes. |

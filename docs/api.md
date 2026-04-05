@@ -48,7 +48,8 @@ Service discovery. Returns the list of exposed endpoints and names of available 
     "computeStatus": "/compute/:jobId"
   },
   "algorithms": [
-    { "name": "Boustrophedon Cellular Decomposition" }
+    { "name": "<algorithm name>" },
+    "..."
   ]
 }
 ```
