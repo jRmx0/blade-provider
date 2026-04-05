@@ -32,7 +32,7 @@ The `styleType` field identifies the value category of a `LayerStyleAttribute`. 
 |---|---|
 | `"Integer"` | Positive whole number serialised as a string (e.g. `"100"`) |
 | `"Color"` | CSS hex string with optional 8-digit alpha (e.g. `"#a855f7"`, `"#a855f7cc"`) |
-| `"Spacing"` | Tailwind spacing token (e.g. `"1"`, `"4"`, `"8"`) |
+| `"Pixels"` | Direct pixel value serialised as a string (e.g. `"1"`, `"4"`, `"8"`) |
 
 ### Enum types
 
@@ -67,14 +67,14 @@ Applies to all layer types. Always the first sub-array in the `LayerStyle` objec
 
 Canonical definition of point marker attributes. All 18 attributes are always present in `pointStyleAttributes`. On `Line` layers the same 18 attributes reappear as point-vertex attributes; on `Polygon` layers 11 of them reappear as corner-vertex attributes (Overlap and Text Label groups excluded) — see the respective sections below.
 
-All color values (border, fill, text ID, text label) are CSS hex strings with optional 8-digit alpha (e.g. `"#a855f7"`, `"#a855f7cc"`). Font size values are Tailwind text size classes (e.g. `"text-xs"`, `"text-sm"`, `"text-base"`). Spatial values (radius, width, offset) are Tailwind spacing tokens (e.g. `"1"`, `"2"`, `"4"`).
+All color values (border, fill, text ID, text label) are CSS hex strings with optional 8-digit alpha (e.g. `"#a855f7"`, `"#a855f7cc"`). Font size values are Tailwind text size classes (e.g. `"text-xs"`, `"text-sm"`, `"text-base"`). Spatial values (radius, width, offset) are direct pixel values (e.g. `"1"`, `"2"`, `"4"`).
 
 ### Marker Shape
 
 | name | styleType | Allowed values |
 |------|-----------|----------------|
 | Point Shape | `"PointShapeEnum"` | `"circle"` \| `"square"` \| `"diamond"` \| `"cross"` \| `"triangle"` \| `null` |
-| Point Radius | `"Spacing"` | Tailwind spacing token (e.g. `"4"`) \| `null` |
+| Point Radius | `"Pixels"` | Direct pixel value (e.g. `"4"`) \| `null` |
 
 ### Overlap
 
@@ -82,7 +82,7 @@ Controls how the renderer spreads apart multiple points that share the same canv
 
 | name | styleType | Allowed values |
 |------|-----------|----------------|
-| Point Overlap Spacing | `"Spacing"` | Tailwind spacing token — distance between stacked points (e.g. `"8"`) \| `null` (renderer default) |
+| Point Overlap Spacing | `"Pixels"` | Pixel distance between stacked points (e.g. `"8"`) \| `null` (renderer default) |
 | Point Overlap Layout | `"OverlapLayoutEnum"` | `"grid"` \| `null` (no spread) |
 
 ### Border
@@ -90,7 +90,7 @@ Controls how the renderer spreads apart multiple points that share the same canv
 | name | styleType | Allowed values |
 |------|-----------|----------------|
 | Point Border Color | `"Color"` | CSS hex string with optional alpha (e.g. `"#a855f7"`, `"#a855f7cc"`) \| `null` (no border) |
-| Point Border Width | `"Spacing"` | Tailwind spacing token (e.g. `"1"`) \| `null` |
+| Point Border Width | `"Pixels"` | Direct pixel value (e.g. `"1"`) \| `null` |
 | Point Border Style | `"StrokeStyleEnum"` | `"solid"` \| `"dashed"` \| `"dotted"` \| `null` |
 
 ### Fill
@@ -109,7 +109,7 @@ Renders the point's own index within the layer array (e.g. `1`, `2`, `3`…).
 | Point ID Font Size | `"FontSizeEnum"` | Tailwind text size class (e.g. `"text-xs"`, `"text-sm"`, `"text-base"`) \| `null` |
 | Point ID Font Weight | `"FontWeightEnum"` | Tailwind font weight class (e.g. `"font-normal"`, `"font-medium"`, `"font-bold"`) \| `null` |
 | Point ID Placement | `"PlacementEnum"` | `"inside"` \| `"outside-left"` \| `"outside-right"` \| `"outside-top"` \| `"outside-bottom"` \| `null` (hidden) |
-| Point ID Offset | `"Spacing"` | Tailwind spacing token for the offset from point center when an outside placement is active (e.g. `"2"`) \| `null` (renderer default) |
+| Point ID Offset | `"Pixels"` | Pixel offset from point center when an outside placement is active (e.g. `"2"`) \| `null` (renderer default) |
 
 ### Text Label
 
@@ -123,7 +123,7 @@ Renders a data value carried by the point (e.g. an algorithm-specific annotation
 | Point Label Font Size | `"FontSizeEnum"` | Tailwind text size class (e.g. `"text-xs"`, `"text-sm"`, `"text-base"`) \| `null` |
 | Point Label Font Weight | `"FontWeightEnum"` | Tailwind font weight class (e.g. `"font-normal"`, `"font-medium"`, `"font-bold"`) \| `null` |
 | Point Label Placement | `"PlacementEnum"` | `"inside"` \| `"outside-left"` \| `"outside-right"` \| `"outside-top"` \| `"outside-bottom"` \| `null` (hidden) |
-| Point Label Offset | `"Spacing"` | Tailwind spacing token for the offset from point center when an outside placement is active (e.g. `"2"`) \| `null` (renderer default) |
+| Point Label Offset | `"Pixels"` | Pixel offset from point center when an outside placement is active (e.g. `"2"`) \| `null` (renderer default) |
 
 ---
 
@@ -142,7 +142,7 @@ Point-vertex attributes are identical to the [Point Style Attributes](#point-sty
 | name | styleType | Allowed values |
 |------|-----------|----------------|
 | Line Edge Color | `"Color"` | CSS hex string with optional alpha (e.g. `"#60a5fa"`, `"#60a5fa80"`) \| `null` |
-| Line Edge Width | `"Spacing"` | Tailwind spacing token (e.g. `"1"`) \| `null` |
+| Line Edge Width | `"Pixels"` | Direct pixel value (e.g. `"1"`) \| `null` |
 | Line Edge Style | `"StrokeStyleEnum"` | `"solid"` \| `"dashed"` \| `"dotted"` \| `null` |
 
 ### Arrow
@@ -154,8 +154,8 @@ Arrow shape values are [Google Material Icon](https://fonts.google.com/icons?ico
 | Line Arrow Start | `"LineArrowStartEnum"` | `"line_start_arrow"` \| `"line_start_arrow_notch"` \| `null` (no start arrow) |
 | Line Arrow End | `"LineArrowEndEnum"` | `"line_end_arrow"` \| `"line_end_arrow_notch"` \| `null` (no end arrow) |
 | Line Arrow Mid | `"LineArrowMidEnum"` | `"line_start_arrow"` \| `"line_start_arrow_notch"` \| `"line_end_arrow"` \| `"line_end_arrow_notch"` \| `null` (no mid arrows) |
-| Line Arrow Mid Spacing | `"Spacing"` | Tailwind spacing token — interval between mid-arrows \| `null` |
-| Line Arrow Size | `"Spacing"` | Tailwind spacing token — arrowhead size \| `null` |
+| Line Arrow Mid Spacing | `"Pixels"` | Pixel interval between mid-arrows \| `null` |
+| Line Arrow Size | `"Pixels"` | Pixel arrowhead size \| `null` |
 
 **Mid-arrow count and placement** (applies when `Line Arrow Mid` and `Line Arrow Mid Spacing` are both non-null):
 
@@ -184,7 +184,7 @@ Corner-vertex attributes are identical to the [Point Style Attributes](#point-st
 | name | styleType | Allowed values |
 |------|-----------|----------------|
 | Polygon Edge Color | `"Color"` | CSS hex string with optional alpha (e.g. `"#94a3b8"`, `"#94a3b880"`) \| `null` |
-| Polygon Edge Width | `"Spacing"` | Tailwind spacing token (e.g. `"1"`) \| `null` |
+| Polygon Edge Width | `"Pixels"` | Direct pixel value (e.g. `"1"`) \| `null` |
 | Polygon Edge Style | `"StrokeStyleEnum"` | `"solid"` \| `"dashed"` \| `"dotted"` \| `null` |
 
 ### Polygon Fill
@@ -206,10 +206,10 @@ Renders the polygon's own index within the layer array (e.g. `1`, `2`, `3`…) a
 | Polygon ID Font Size | `"FontSizeEnum"` | Tailwind text size class (e.g. `"text-xs"`, `"text-sm"`, `"text-base"`) \| `null` |
 | Polygon ID Font Weight | `"FontWeightEnum"` | Tailwind font weight class (e.g. `"font-normal"`, `"font-medium"`, `"font-bold"`) \| `null` |
 | Polygon ID Shape | `"PolygonIDShapeEnum"` | `"circle"` \| `"square"` \| `null` (no marker background) |
-| Polygon ID Radius | `"Spacing"` | Tailwind spacing token for marker size (e.g. `"4"`, `"6"`) \| `null` |
+| Polygon ID Radius | `"Pixels"` | Pixel marker size (e.g. `"4"`, `"6"`) \| `null` |
 | Polygon ID Border Color | `"Color"` | CSS hex string with optional alpha (e.g. `"#94a3b8"`, `"#94a3b880"`) \| `null` |
-| Polygon ID Border Width | `"Spacing"` | Tailwind spacing token (e.g. `"1"`) \| `null` |
+| Polygon ID Border Width | `"Pixels"` | Direct pixel value (e.g. `"1"`) \| `null` |
 | Polygon ID Border Style | `"StrokeStyleEnum"` | `"solid"` \| `"dashed"` \| `"dotted"` \| `null` |
 | Polygon ID Fill Color | `"Color"` | CSS hex string with optional alpha (e.g. `"#60a5fa"`, `"#60a5fa33"`) \| `null` |
 | Polygon ID Placement | `"PlacementEnum"` | `"inside"` \| `"outside-left"` \| `"outside-right"` \| `"outside-top"` \| `"outside-bottom"` \| `null` (hidden) |
-| Polygon ID Offset | `"Spacing"` | Tailwind spacing token for offset from centroid when an outside placement is active (e.g. `"2"`) \| `null` (renderer default) |
+| Polygon ID Offset | `"Pixels"` | Pixel offset from centroid when an outside placement is active (e.g. `"2"`) \| `null` (renderer default) |

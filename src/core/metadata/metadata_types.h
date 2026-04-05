@@ -250,7 +250,7 @@ typedef enum {
     METADATA_STYLE_TYPE_BOOLEAN = 0,
     METADATA_STYLE_TYPE_INTEGER,
     METADATA_STYLE_TYPE_COLOR,
-    METADATA_STYLE_TYPE_SPACING,
+    METADATA_STYLE_TYPE_PIXELS,
     METADATA_STYLE_TYPE_POINT_SHAPE_ENUM,
     METADATA_STYLE_TYPE_POLYGON_ID_SHAPE_ENUM,
     METADATA_STYLE_TYPE_STROKE_STYLE_ENUM,
@@ -271,7 +271,7 @@ static inline const char *metadata_style_type_to_string(metadata_style_type_t st
     case METADATA_STYLE_TYPE_BOOLEAN:               return "Boolean";
     case METADATA_STYLE_TYPE_INTEGER:               return "Integer";
     case METADATA_STYLE_TYPE_COLOR:                 return "Color";
-    case METADATA_STYLE_TYPE_SPACING:               return "Spacing";
+    case METADATA_STYLE_TYPE_PIXELS:                return "Pixels";
     case METADATA_STYLE_TYPE_POINT_SHAPE_ENUM:      return "PointShapeEnum";
     case METADATA_STYLE_TYPE_POLYGON_ID_SHAPE_ENUM: return "PolygonIDShapeEnum";
     case METADATA_STYLE_TYPE_STROKE_STYLE_ENUM:     return "StrokeStyleEnum";

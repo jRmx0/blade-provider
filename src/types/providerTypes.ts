@@ -87,7 +87,7 @@ export type StyleAttributeKey =
 export type StyleType =
     | "Integer"
     | "Color"
-    | "Spacing"
+    | "Pixels"
     | "PointShapeEnum"
     | "PolygonIDShapeEnum"
     | "StrokeStyleEnum"

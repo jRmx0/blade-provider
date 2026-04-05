@@ -71,32 +71,32 @@ char *bcd_build_metadata_json(void)
 		metadata_add_style_attr(general, METADATA_STYLE_ATTR_KEY_Z_INDEX,               METADATA_STYLE_TYPE_INTEGER,            "100");
 
 		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_SHAPE,             METADATA_STYLE_TYPE_POINT_SHAPE_ENUM,    NULL);
-		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_RADIUS,            METADATA_STYLE_TYPE_SPACING,             NULL);
-		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_OVERLAP_SPACING,   METADATA_STYLE_TYPE_SPACING,             NULL);
+		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_RADIUS,            METADATA_STYLE_TYPE_PIXELS,             NULL);
+		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_OVERLAP_SPACING,   METADATA_STYLE_TYPE_PIXELS,             NULL);
 		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_OVERLAP_LAYOUT,    METADATA_STYLE_TYPE_OVERLAP_LAYOUT_ENUM, NULL);
 		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_BORDER_COLOR,      METADATA_STYLE_TYPE_COLOR,               NULL);
-		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_BORDER_WIDTH,      METADATA_STYLE_TYPE_SPACING,             NULL);
+		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_BORDER_WIDTH,      METADATA_STYLE_TYPE_PIXELS,             NULL);
 		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_BORDER_STYLE,      METADATA_STYLE_TYPE_STROKE_STYLE_ENUM,   NULL);
 		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_FILL_COLOR,        METADATA_STYLE_TYPE_COLOR,               NULL);
 		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_ID_COLOR,          METADATA_STYLE_TYPE_COLOR,               NULL);
 		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_ID_FONT_SIZE,      METADATA_STYLE_TYPE_FONT_SIZE_ENUM,      NULL);
 		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_ID_FONT_WEIGHT,    METADATA_STYLE_TYPE_FONT_WEIGHT_ENUM,    NULL);
 		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_ID_PLACEMENT,      METADATA_STYLE_TYPE_PLACEMENT_ENUM,      NULL);
-		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_ID_OFFSET,         METADATA_STYLE_TYPE_SPACING,             NULL);
+		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_ID_OFFSET,         METADATA_STYLE_TYPE_PIXELS,             NULL);
 		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_LABEL_COLOR,       METADATA_STYLE_TYPE_COLOR,               NULL);
 		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_LABEL_FONT_SIZE,   METADATA_STYLE_TYPE_FONT_SIZE_ENUM,      NULL);
 		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_LABEL_FONT_WEIGHT, METADATA_STYLE_TYPE_FONT_WEIGHT_ENUM,    NULL);
 		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_LABEL_PLACEMENT,   METADATA_STYLE_TYPE_PLACEMENT_ENUM,      NULL);
-		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_LABEL_OFFSET,      METADATA_STYLE_TYPE_SPACING,             NULL);
+		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_LABEL_OFFSET,      METADATA_STYLE_TYPE_PIXELS,             NULL);
 
 		metadata_add_style_attr(line, METADATA_STYLE_ATTR_KEY_LINE_EDGE_COLOR,         METADATA_STYLE_TYPE_COLOR,                "#60a5fa");
-		metadata_add_style_attr(line, METADATA_STYLE_ATTR_KEY_LINE_EDGE_WIDTH,         METADATA_STYLE_TYPE_SPACING,              "1");
+		metadata_add_style_attr(line, METADATA_STYLE_ATTR_KEY_LINE_EDGE_WIDTH,         METADATA_STYLE_TYPE_PIXELS,              "1");
 		metadata_add_style_attr(line, METADATA_STYLE_ATTR_KEY_LINE_EDGE_STYLE,         METADATA_STYLE_TYPE_STROKE_STYLE_ENUM,    "solid");
 		metadata_add_style_attr(line, METADATA_STYLE_ATTR_KEY_LINE_ARROW_START,        METADATA_STYLE_TYPE_LINE_ARROW_START_ENUM, NULL);
 		metadata_add_style_attr(line, METADATA_STYLE_ATTR_KEY_LINE_ARROW_END,          METADATA_STYLE_TYPE_LINE_ARROW_END_ENUM,   NULL);
 		metadata_add_style_attr(line, METADATA_STYLE_ATTR_KEY_LINE_ARROW_MID,          METADATA_STYLE_TYPE_LINE_ARROW_MID_ENUM,  "line_end_arrow");
-		metadata_add_style_attr(line, METADATA_STYLE_ATTR_KEY_LINE_ARROW_MID_SPACING,  METADATA_STYLE_TYPE_SPACING,              "12");
-		metadata_add_style_attr(line, METADATA_STYLE_ATTR_KEY_LINE_ARROW_SIZE,         METADATA_STYLE_TYPE_SPACING,              "3");
+		metadata_add_style_attr(line, METADATA_STYLE_ATTR_KEY_LINE_ARROW_MID_SPACING,  METADATA_STYLE_TYPE_PIXELS,              "12");
+		metadata_add_style_attr(line, METADATA_STYLE_ATTR_KEY_LINE_ARROW_SIZE,         METADATA_STYLE_TYPE_PIXELS,              "3");
 
 		cJSON_AddItemToObject(layer, "style", style);
 		cJSON_AddItemToArray(layers, layer);
@@ -133,23 +133,23 @@ char *bcd_build_metadata_json(void)
 		metadata_add_style_attr(general, METADATA_STYLE_ATTR_KEY_Z_INDEX,               METADATA_STYLE_TYPE_INTEGER,            "110");
 
 		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_SHAPE,             METADATA_STYLE_TYPE_POINT_SHAPE_ENUM,    "circle");
-		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_RADIUS,            METADATA_STYLE_TYPE_SPACING,             "4");
-		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_OVERLAP_SPACING,   METADATA_STYLE_TYPE_SPACING,             NULL);
+		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_RADIUS,            METADATA_STYLE_TYPE_PIXELS,             "4");
+		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_OVERLAP_SPACING,   METADATA_STYLE_TYPE_PIXELS,             NULL);
 		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_OVERLAP_LAYOUT,    METADATA_STYLE_TYPE_OVERLAP_LAYOUT_ENUM, NULL);
 		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_BORDER_COLOR,      METADATA_STYLE_TYPE_COLOR,               "#a855f7");
-		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_BORDER_WIDTH,      METADATA_STYLE_TYPE_SPACING,             "1");
+		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_BORDER_WIDTH,      METADATA_STYLE_TYPE_PIXELS,             "1");
 		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_BORDER_STYLE,      METADATA_STYLE_TYPE_STROKE_STYLE_ENUM,   "solid");
 		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_FILL_COLOR,        METADATA_STYLE_TYPE_COLOR,               "#a855f7");
 		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_ID_COLOR,          METADATA_STYLE_TYPE_COLOR,               NULL);
 		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_ID_FONT_SIZE,      METADATA_STYLE_TYPE_FONT_SIZE_ENUM,      NULL);
 		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_ID_FONT_WEIGHT,    METADATA_STYLE_TYPE_FONT_WEIGHT_ENUM,    NULL);
 		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_ID_PLACEMENT,      METADATA_STYLE_TYPE_PLACEMENT_ENUM,      NULL);
-		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_ID_OFFSET,         METADATA_STYLE_TYPE_SPACING,             NULL);
+		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_ID_OFFSET,         METADATA_STYLE_TYPE_PIXELS,             NULL);
 		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_LABEL_COLOR,       METADATA_STYLE_TYPE_COLOR,               "#a855f7");
 		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_LABEL_FONT_SIZE,   METADATA_STYLE_TYPE_FONT_SIZE_ENUM,      "text-xs");
 		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_LABEL_FONT_WEIGHT, METADATA_STYLE_TYPE_FONT_WEIGHT_ENUM,    "font-medium");
 		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_LABEL_PLACEMENT,   METADATA_STYLE_TYPE_PLACEMENT_ENUM,      "outside-bottom");
-		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_LABEL_OFFSET,      METADATA_STYLE_TYPE_SPACING,             "6");
+		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_LABEL_OFFSET,      METADATA_STYLE_TYPE_PIXELS,             "6");
 
 		metadata_add_point_label_color_entry(color_mapping, "B_IN",       "#16a34a");
 		metadata_add_point_label_color_entry(color_mapping, "B_SIDE_IN",  "#16a34a");
@@ -185,19 +185,19 @@ char *bcd_build_metadata_json(void)
 
 		/* Corner vertex (Point group, Overlap and Text Label excluded) */
 		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_SHAPE,          METADATA_STYLE_TYPE_POINT_SHAPE_ENUM,  NULL);
-		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_RADIUS,         METADATA_STYLE_TYPE_SPACING,           NULL);
+		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_RADIUS,         METADATA_STYLE_TYPE_PIXELS,           NULL);
 		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_BORDER_COLOR,   METADATA_STYLE_TYPE_COLOR,             NULL);
-		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_BORDER_WIDTH,   METADATA_STYLE_TYPE_SPACING,           NULL);
+		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_BORDER_WIDTH,   METADATA_STYLE_TYPE_PIXELS,           NULL);
 		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_BORDER_STYLE,   METADATA_STYLE_TYPE_STROKE_STYLE_ENUM, NULL);
 		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_FILL_COLOR,     METADATA_STYLE_TYPE_COLOR,             NULL);
 		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_ID_COLOR,       METADATA_STYLE_TYPE_COLOR,             NULL);
 		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_ID_FONT_SIZE,   METADATA_STYLE_TYPE_FONT_SIZE_ENUM,    NULL);
 		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_ID_FONT_WEIGHT, METADATA_STYLE_TYPE_FONT_WEIGHT_ENUM,  NULL);
 		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_ID_PLACEMENT,   METADATA_STYLE_TYPE_PLACEMENT_ENUM,    NULL);
-		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_ID_OFFSET,      METADATA_STYLE_TYPE_SPACING,           NULL);
+		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_ID_OFFSET,      METADATA_STYLE_TYPE_PIXELS,           NULL);
 
 		metadata_add_style_attr(polygon, METADATA_STYLE_ATTR_KEY_POLYGON_EDGE_COLOR,      METADATA_STYLE_TYPE_COLOR,                "#94a3b8");
-		metadata_add_style_attr(polygon, METADATA_STYLE_ATTR_KEY_POLYGON_EDGE_WIDTH,      METADATA_STYLE_TYPE_SPACING,              "1");
+		metadata_add_style_attr(polygon, METADATA_STYLE_ATTR_KEY_POLYGON_EDGE_WIDTH,      METADATA_STYLE_TYPE_PIXELS,              "1");
 		metadata_add_style_attr(polygon, METADATA_STYLE_ATTR_KEY_POLYGON_EDGE_STYLE,      METADATA_STYLE_TYPE_STROKE_STYLE_ENUM,    "solid");
 		metadata_add_style_attr(polygon, METADATA_STYLE_ATTR_KEY_POLYGON_FILL_COLOR,      METADATA_STYLE_TYPE_COLOR,                NULL);
 		metadata_add_style_attr(polygon, METADATA_STYLE_ATTR_KEY_POLYGON_FILL_STYLE,      METADATA_STYLE_TYPE_FILL_STYLE_ENUM,      NULL);
@@ -205,13 +205,13 @@ char *bcd_build_metadata_json(void)
 		metadata_add_style_attr(polygon, METADATA_STYLE_ATTR_KEY_POLYGON_ID_FONT_SIZE,    METADATA_STYLE_TYPE_FONT_SIZE_ENUM,       "text-xs");
 		metadata_add_style_attr(polygon, METADATA_STYLE_ATTR_KEY_POLYGON_ID_FONT_WEIGHT,  METADATA_STYLE_TYPE_FONT_WEIGHT_ENUM,     "font-medium");
 		metadata_add_style_attr(polygon, METADATA_STYLE_ATTR_KEY_POLYGON_ID_SHAPE,        METADATA_STYLE_TYPE_POLYGON_ID_SHAPE_ENUM, NULL);
-		metadata_add_style_attr(polygon, METADATA_STYLE_ATTR_KEY_POLYGON_ID_RADIUS,       METADATA_STYLE_TYPE_SPACING,              NULL);
+		metadata_add_style_attr(polygon, METADATA_STYLE_ATTR_KEY_POLYGON_ID_RADIUS,       METADATA_STYLE_TYPE_PIXELS,              NULL);
 		metadata_add_style_attr(polygon, METADATA_STYLE_ATTR_KEY_POLYGON_ID_BORDER_COLOR, METADATA_STYLE_TYPE_COLOR,                NULL);
-		metadata_add_style_attr(polygon, METADATA_STYLE_ATTR_KEY_POLYGON_ID_BORDER_WIDTH, METADATA_STYLE_TYPE_SPACING,              NULL);
+		metadata_add_style_attr(polygon, METADATA_STYLE_ATTR_KEY_POLYGON_ID_BORDER_WIDTH, METADATA_STYLE_TYPE_PIXELS,              NULL);
 		metadata_add_style_attr(polygon, METADATA_STYLE_ATTR_KEY_POLYGON_ID_BORDER_STYLE, METADATA_STYLE_TYPE_STROKE_STYLE_ENUM,    NULL);
 		metadata_add_style_attr(polygon, METADATA_STYLE_ATTR_KEY_POLYGON_ID_FILL_COLOR,   METADATA_STYLE_TYPE_COLOR,                NULL);
 		metadata_add_style_attr(polygon, METADATA_STYLE_ATTR_KEY_POLYGON_ID_PLACEMENT,    METADATA_STYLE_TYPE_PLACEMENT_ENUM,       "inside");
-		metadata_add_style_attr(polygon, METADATA_STYLE_ATTR_KEY_POLYGON_ID_OFFSET,       METADATA_STYLE_TYPE_SPACING,              NULL);
+		metadata_add_style_attr(polygon, METADATA_STYLE_ATTR_KEY_POLYGON_ID_OFFSET,       METADATA_STYLE_TYPE_PIXELS,              NULL);
 
 		cJSON_AddItemToObject(layer, "style", style);
 		cJSON_AddItemToArray(layers, layer);
@@ -232,32 +232,32 @@ char *bcd_build_metadata_json(void)
 		metadata_add_style_attr(general, METADATA_STYLE_ATTR_KEY_Z_INDEX,               METADATA_STYLE_TYPE_INTEGER,             "130");
 
 		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_SHAPE,             METADATA_STYLE_TYPE_POINT_SHAPE_ENUM,    "circle");
-		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_RADIUS,            METADATA_STYLE_TYPE_SPACING,             "7");
-		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_OVERLAP_SPACING,   METADATA_STYLE_TYPE_SPACING,             "8");
+		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_RADIUS,            METADATA_STYLE_TYPE_PIXELS,             "7");
+		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_OVERLAP_SPACING,   METADATA_STYLE_TYPE_PIXELS,             "8");
 		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_OVERLAP_LAYOUT,    METADATA_STYLE_TYPE_OVERLAP_LAYOUT_ENUM, "grid");
 		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_BORDER_COLOR,      METADATA_STYLE_TYPE_COLOR,               NULL);
-		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_BORDER_WIDTH,      METADATA_STYLE_TYPE_SPACING,             NULL);
+		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_BORDER_WIDTH,      METADATA_STYLE_TYPE_PIXELS,             NULL);
 		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_BORDER_STYLE,      METADATA_STYLE_TYPE_STROKE_STYLE_ENUM,   NULL);
 		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_FILL_COLOR,        METADATA_STYLE_TYPE_COLOR,               "#60a5fa");
 		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_ID_COLOR,          METADATA_STYLE_TYPE_COLOR,               "#ffffff");
 		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_ID_FONT_SIZE,      METADATA_STYLE_TYPE_FONT_SIZE_ENUM,      "text-xs");
 		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_ID_FONT_WEIGHT,    METADATA_STYLE_TYPE_FONT_WEIGHT_ENUM,    "font-medium");
 		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_ID_PLACEMENT,      METADATA_STYLE_TYPE_PLACEMENT_ENUM,      "inside");
-		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_ID_OFFSET,         METADATA_STYLE_TYPE_SPACING,             NULL);
+		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_ID_OFFSET,         METADATA_STYLE_TYPE_PIXELS,             NULL);
 		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_LABEL_COLOR,       METADATA_STYLE_TYPE_COLOR,               NULL);
 		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_LABEL_FONT_SIZE,   METADATA_STYLE_TYPE_FONT_SIZE_ENUM,      NULL);
 		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_LABEL_FONT_WEIGHT, METADATA_STYLE_TYPE_FONT_WEIGHT_ENUM,    NULL);
 		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_LABEL_PLACEMENT,   METADATA_STYLE_TYPE_PLACEMENT_ENUM,      NULL);
-		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_LABEL_OFFSET,      METADATA_STYLE_TYPE_SPACING,             NULL);
+		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_LABEL_OFFSET,      METADATA_STYLE_TYPE_PIXELS,             NULL);
 
 		metadata_add_style_attr(line, METADATA_STYLE_ATTR_KEY_LINE_EDGE_COLOR,         METADATA_STYLE_TYPE_COLOR,               "#60a5fa");
-		metadata_add_style_attr(line, METADATA_STYLE_ATTR_KEY_LINE_EDGE_WIDTH,         METADATA_STYLE_TYPE_SPACING,             "1");
+		metadata_add_style_attr(line, METADATA_STYLE_ATTR_KEY_LINE_EDGE_WIDTH,         METADATA_STYLE_TYPE_PIXELS,             "1");
 		metadata_add_style_attr(line, METADATA_STYLE_ATTR_KEY_LINE_EDGE_STYLE,         METADATA_STYLE_TYPE_STROKE_STYLE_ENUM,   "dashed");
 		metadata_add_style_attr(line, METADATA_STYLE_ATTR_KEY_LINE_ARROW_START,        METADATA_STYLE_TYPE_LINE_ARROW_START_ENUM, NULL);
 		metadata_add_style_attr(line, METADATA_STYLE_ATTR_KEY_LINE_ARROW_END,          METADATA_STYLE_TYPE_LINE_ARROW_END_ENUM,   NULL);
 		metadata_add_style_attr(line, METADATA_STYLE_ATTR_KEY_LINE_ARROW_MID,          METADATA_STYLE_TYPE_LINE_ARROW_MID_ENUM,  "line_end_arrow");
-		metadata_add_style_attr(line, METADATA_STYLE_ATTR_KEY_LINE_ARROW_MID_SPACING,  METADATA_STYLE_TYPE_SPACING,              "20");
-		metadata_add_style_attr(line, METADATA_STYLE_ATTR_KEY_LINE_ARROW_SIZE,         METADATA_STYLE_TYPE_SPACING,              "4");
+		metadata_add_style_attr(line, METADATA_STYLE_ATTR_KEY_LINE_ARROW_MID_SPACING,  METADATA_STYLE_TYPE_PIXELS,              "20");
+		metadata_add_style_attr(line, METADATA_STYLE_ATTR_KEY_LINE_ARROW_SIZE,         METADATA_STYLE_TYPE_PIXELS,              "4");
 
 		cJSON_AddItemToObject(layer, "style", style);
 		cJSON_AddItemToArray(layers, layer);
