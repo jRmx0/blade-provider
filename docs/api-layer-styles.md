@@ -39,7 +39,7 @@ The `styleType` field identifies the value category of a `LayerStyleAttribute`. 
 | StyleType | Allowed values |
 |---|---|
 | `"PointShapeEnum"` | `"circle"` \| `"square"` \| `"diamond"` \| `"cross"` \| `"triangle"` |
-| `"PolygonIDShapeEnum"` | `"circle"` \| `"square"` |
+| `"PolygonIDShapeEnum"` | `"circle"` \| `"square"` \| `"diamond"` \| `"cross"` \| `"triangle"` |
 | `"StrokeStyleEnum"` | `"solid"` \| `"dashed"` \| `"dotted"` |
 | `"FillStyleEnum"` | `"solid"` \| `"hatched"` |
 | `"OverlapLayoutEnum"` | `"grid"` |
@@ -204,7 +204,7 @@ Renders the polygon's own index within the layer array (e.g. `1`, `2`, `3`…) a
 | Polygon ID Color | `"Color"` | CSS hex string with optional alpha (e.g. `"#64748b"`, `"#64748b80"`) \| `null` |
 | Polygon ID Font Size | `"FontSizeEnum"` | Tailwind text size class (e.g. `"text-xs"`, `"text-sm"`, `"text-base"`) \| `null` |
 | Polygon ID Font Weight | `"FontWeightEnum"` | CSS numeric font weight (e.g. `"400"`, `"500"`, `"700"`) \| `null` |
-| Polygon ID Shape | `"PolygonIDShapeEnum"` | `"circle"` \| `"square"` \| `null` (no marker background) |
+| Polygon ID Shape | `"PolygonIDShapeEnum"` | `"circle"` \| `"square"` \| `"diamond"` \| `"cross"` \| `"triangle"` \| `null` (no marker background) |
 | Polygon ID Radius | `"Pixels"` | Pixel marker size (e.g. `"4"`, `"6"`) \| `null` |
 | Polygon ID Border Color | `"Color"` | CSS hex string with optional alpha (e.g. `"#94a3b8"`, `"#94a3b880"`) \| `null` |
 | Polygon ID Border Width | `"Pixels"` | Direct pixel value (e.g. `"1"`) \| `null` |
