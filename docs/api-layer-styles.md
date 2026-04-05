@@ -45,7 +45,6 @@ The `styleType` field identifies the value category of a `LayerStyleAttribute`. 
 | `"OverlapLayoutEnum"` | `"grid"` |
 | `"PlacementEnum"` | `"inside"` \| `"outside-left"` \| `"outside-right"` \| `"outside-top"` \| `"outside-bottom"` |
 | `"FontWeightEnum"` | `"100"` \| `"200"` \| `"300"` \| `"400"` \| `"500"` \| `"600"` \| `"700"` \| `"800"` \| `"900"` |
-| `"FontSizeEnum"` | Consumer-defined named size keys (e.g. `"text-xs"`, `"text-sm"`, `"text-base"`) |
 | `"LineArrowStartEnum"` | `"line_start_arrow"` \| `"line_start_arrow_notch"` |
 | `"LineArrowEndEnum"` | `"line_end_arrow"` \| `"line_end_arrow_notch"` |
 | `"LineArrowMidEnum"` | `"line_start_arrow"` \| `"line_start_arrow_notch"` \| `"line_end_arrow"` \| `"line_end_arrow_notch"` |
@@ -106,7 +105,7 @@ Renders the point's own index within the layer array (e.g. `1`, `2`, `3`…).
 | name | styleType | Allowed values |
 |------|-----------|----------------|
 | Point ID Color | `"Color"` | CSS hex string with optional alpha (e.g. `"#60a5fa"`, `"#60a5fa80"`) \| `null` |
-| Point ID Font Size | `"FontSizeEnum"` | Named font size key (e.g. `"text-xs"`, `"text-sm"`, `"text-base"`) \| `null` |
+| Point ID Font Size | `"Pixels"` | Direct pixel value (e.g. `"12"`, `"14"`) \| `null` |
 | Point ID Font Weight | `"FontWeightEnum"` | CSS numeric font weight (e.g. `"400"`, `"500"`, `"700"`) \| `null` |
 | Point ID Placement | `"PlacementEnum"` | `"inside"` \| `"outside-left"` \| `"outside-right"` \| `"outside-top"` \| `"outside-bottom"` \| `null` (hidden) |
 | Point ID Offset | `"Pixels"` | Pixel offset from point center when an outside placement is active (e.g. `"2"`) \| `null` (renderer default) |
@@ -120,7 +119,7 @@ Renders a data value carried by the point (e.g. an algorithm-specific annotation
 | name | styleType | Allowed values |
 |------|-----------|----------------|
 | Point Label Color | `"Color"` | CSS hex string with optional alpha (e.g. `"#a855f7"`, `"#a855f780"`) \| `null` |
-| Point Label Font Size | `"FontSizeEnum"` | Named font size key (e.g. `"text-xs"`, `"text-sm"`, `"text-base"`) \| `null` |
+| Point Label Font Size | `"Pixels"` | Direct pixel value (e.g. `"12"`, `"14"`) \| `null` |
 | Point Label Font Weight | `"FontWeightEnum"` | CSS numeric font weight (e.g. `"400"`, `"500"`, `"700"`) \| `null` |
 | Point Label Placement | `"PlacementEnum"` | `"inside"` \| `"outside-left"` \| `"outside-right"` \| `"outside-top"` \| `"outside-bottom"` \| `null` (hidden) |
 | Point Label Offset | `"Pixels"` | Pixel offset from point center when an outside placement is active (e.g. `"2"`) \| `null` (renderer default) |
@@ -203,7 +202,7 @@ Renders the polygon's own index within the layer array (e.g. `1`, `2`, `3`…) a
 | name | styleType | Allowed values |
 |------|-----------|----------------|
 | Polygon ID Color | `"Color"` | CSS hex string with optional alpha (e.g. `"#64748b"`, `"#64748b80"`) \| `null` |
-| Polygon ID Font Size | `"FontSizeEnum"` | Named font size key (e.g. `"text-xs"`, `"text-sm"`, `"text-base"`) \| `null` |
+| Polygon ID Font Size | `"Pixels"` | Direct pixel value (e.g. `"12"`, `"14"`) \| `null` |
 | Polygon ID Font Weight | `"FontWeightEnum"` | CSS numeric font weight (e.g. `"400"`, `"500"`, `"700"`) \| `null` |
 | Polygon ID Shape | `"PolygonIDShapeEnum"` | `"circle"` \| `"square"` \| `"diamond"` \| `"cross"` \| `"triangle"` \| `null` (no marker background) |
 | Polygon ID Radius | `"Pixels"` | Pixel marker size (e.g. `"4"`, `"6"`) \| `null` |
