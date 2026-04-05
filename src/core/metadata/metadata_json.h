@@ -8,23 +8,21 @@ static inline void metadata_add_parameter(
     cJSON *parameters,
     int id,
     const char *name,
-    bcd_metadata_param_type_t param_type,
+    const char *param_type,
     const char *const *enum_values,
     int enum_value_count,
     const char *default_value,
-    bcd_metadata_param_section_t section,
-    bcd_metadata_app_handler_t app_handler,
+    const char *section,
+    const char *app_handler,
     int has_min_value,
     double min_value)
 {
     cJSON *parameter = cJSON_CreateObject();
-    const char *section_value = metadata_param_section_to_string(section);
-    const char *app_handler_value = metadata_app_handler_to_string(app_handler);
 
     cJSON_AddNumberToObject(parameter, "id", id);
 
     cJSON_AddStringToObject(parameter, "name", name);
-    cJSON_AddStringToObject(parameter, "paramType", metadata_param_type_to_string(param_type));
+    cJSON_AddStringToObject(parameter, "paramType", param_type);
 
     cJSON *enum_array = cJSON_CreateArray();
     if (enum_values != NULL && enum_value_count > 0)
@@ -46,14 +44,14 @@ static inline void metadata_add_parameter(
         cJSON_AddNumberToObject(parameter, "minValue", min_value);
     }
 
-    if (section_value != NULL)
+    if (section != NULL)
     {
-        cJSON_AddStringToObject(parameter, "section", section_value);
+        cJSON_AddStringToObject(parameter, "section", section);
     }
 
-    if (app_handler_value != NULL)
+    if (app_handler != NULL)
     {
-        cJSON_AddStringToObject(parameter, "appHandler", app_handler_value);
+        cJSON_AddStringToObject(parameter, "appHandler", app_handler);
     }
     else
     {
@@ -69,13 +67,13 @@ static inline void metadata_add_parameter(
  */
 static inline void metadata_add_style_attr(
     cJSON *style_arr,
-    metadata_style_attr_key_t key,
-    metadata_style_type_t style_type,
+    const char *key,
+    const char *style_type,
     const char *value)
 {
     cJSON *attr = cJSON_CreateObject();
-    cJSON_AddStringToObject(attr, "key", metadata_style_attr_key_to_string(key));
-    cJSON_AddStringToObject(attr, "styleType", metadata_style_type_to_string(style_type));
+    cJSON_AddStringToObject(attr, "key", key);
+    cJSON_AddStringToObject(attr, "styleType", style_type);
     if (value != NULL)
     {
         cJSON_AddStringToObject(attr, "defaultValue", value);
