@@ -285,6 +285,20 @@ static inline const char *metadata_style_type_to_string(metadata_style_type_t st
     }
 }
 
+/* Line Arrow Start values (LineArrowStartEnum) */
+#define METADATA_LINE_ARROW_START_ARROW        "line_start_arrow"
+#define METADATA_LINE_ARROW_START_ARROW_NOTCH  "line_start_arrow_notch"
+
+/* Line Arrow End values (LineArrowEndEnum) */
+#define METADATA_LINE_ARROW_END_ARROW          "line_end_arrow"
+#define METADATA_LINE_ARROW_END_ARROW_NOTCH    "line_end_arrow_notch"
+
+/* Line Arrow Mid values (LineArrowMidEnum) */
+#define METADATA_LINE_ARROW_MID_START_ARROW        "line_start_arrow"
+#define METADATA_LINE_ARROW_MID_START_ARROW_NOTCH  "line_start_arrow_notch"
+#define METADATA_LINE_ARROW_MID_END_ARROW          "line_end_arrow"
+#define METADATA_LINE_ARROW_MID_END_ARROW_NOTCH    "line_end_arrow_notch"
+
 typedef enum {
     BCD_METADATA_DEBUG_LAYER_TYPE_POINT = 0,
     BCD_METADATA_DEBUG_LAYER_TYPE_LINE,

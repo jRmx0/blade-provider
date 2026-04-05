@@ -11,6 +11,7 @@
 
 #include "../internal.h"
 #include "../../metadata/metadata_json.h"
+#include "metadata/metadata_types.h"
 
 char *bcd_build_metadata_json(void)
 {
@@ -94,9 +95,9 @@ char *bcd_build_metadata_json(void)
 		metadata_add_style_attr(line, METADATA_STYLE_ATTR_KEY_LINE_EDGE_STYLE,         METADATA_STYLE_TYPE_STROKE_STYLE_ENUM,    "solid");
 		metadata_add_style_attr(line, METADATA_STYLE_ATTR_KEY_LINE_ARROW_START,        METADATA_STYLE_TYPE_LINE_ARROW_START_ENUM, NULL);
 		metadata_add_style_attr(line, METADATA_STYLE_ATTR_KEY_LINE_ARROW_END,          METADATA_STYLE_TYPE_LINE_ARROW_END_ENUM,   NULL);
-		metadata_add_style_attr(line, METADATA_STYLE_ATTR_KEY_LINE_ARROW_MID,          METADATA_STYLE_TYPE_LINE_ARROW_MID_ENUM,  "line_end_arrow");
-		metadata_add_style_attr(line, METADATA_STYLE_ATTR_KEY_LINE_ARROW_MID_SPACING,  METADATA_STYLE_TYPE_PIXELS,              "12");
-		metadata_add_style_attr(line, METADATA_STYLE_ATTR_KEY_LINE_ARROW_SIZE,         METADATA_STYLE_TYPE_PIXELS,              "3");
+		metadata_add_style_attr(line, METADATA_STYLE_ATTR_KEY_LINE_ARROW_MID,          METADATA_STYLE_TYPE_LINE_ARROW_MID_ENUM,  METADATA_LINE_ARROW_MID_END_ARROW_NOTCH);
+		metadata_add_style_attr(line, METADATA_STYLE_ATTR_KEY_LINE_ARROW_MID_SPACING,  METADATA_STYLE_TYPE_PIXELS,              "25");
+		metadata_add_style_attr(line, METADATA_STYLE_ATTR_KEY_LINE_ARROW_SIZE,         METADATA_STYLE_TYPE_PIXELS,              "2");
 
 		cJSON_AddItemToObject(layer, "style", style);
 		cJSON_AddItemToArray(layers, layer);
@@ -255,7 +256,7 @@ char *bcd_build_metadata_json(void)
 		metadata_add_style_attr(line, METADATA_STYLE_ATTR_KEY_LINE_EDGE_STYLE,         METADATA_STYLE_TYPE_STROKE_STYLE_ENUM,   "dashed");
 		metadata_add_style_attr(line, METADATA_STYLE_ATTR_KEY_LINE_ARROW_START,        METADATA_STYLE_TYPE_LINE_ARROW_START_ENUM, NULL);
 		metadata_add_style_attr(line, METADATA_STYLE_ATTR_KEY_LINE_ARROW_END,          METADATA_STYLE_TYPE_LINE_ARROW_END_ENUM,   NULL);
-		metadata_add_style_attr(line, METADATA_STYLE_ATTR_KEY_LINE_ARROW_MID,          METADATA_STYLE_TYPE_LINE_ARROW_MID_ENUM,  "line_end_arrow");
+		metadata_add_style_attr(line, METADATA_STYLE_ATTR_KEY_LINE_ARROW_MID,          METADATA_STYLE_TYPE_LINE_ARROW_MID_ENUM,  METADATA_LINE_ARROW_MID_END_ARROW);
 		metadata_add_style_attr(line, METADATA_STYLE_ATTR_KEY_LINE_ARROW_MID_SPACING,  METADATA_STYLE_TYPE_PIXELS,              "20");
 		metadata_add_style_attr(line, METADATA_STYLE_ATTR_KEY_LINE_ARROW_SIZE,         METADATA_STYLE_TYPE_PIXELS,              "4");
 
