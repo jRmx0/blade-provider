@@ -147,7 +147,7 @@ char *bcd_build_metadata_json(void)
 		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_ID_OFFSET,         METADATA_STYLE_TYPE_PIXELS,             NULL);
 		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_LABEL_COLOR,       METADATA_STYLE_TYPE_COLOR,               "#a855f7");
 		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_LABEL_FONT_SIZE,   METADATA_STYLE_TYPE_PIXELS,      "12");
-		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_LABEL_FONT_WEIGHT, METADATA_STYLE_TYPE_FONT_WEIGHT_ENUM,    "font-medium");
+		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_LABEL_FONT_WEIGHT, METADATA_STYLE_TYPE_FONT_WEIGHT_ENUM,    "500");
 		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_LABEL_PLACEMENT,   METADATA_STYLE_TYPE_PLACEMENT_ENUM,      "outside-bottom");
 		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_LABEL_OFFSET,      METADATA_STYLE_TYPE_PIXELS,             "6");
 
@@ -203,7 +203,7 @@ char *bcd_build_metadata_json(void)
 		metadata_add_style_attr(polygon, METADATA_STYLE_ATTR_KEY_POLYGON_FILL_STYLE,      METADATA_STYLE_TYPE_FILL_STYLE_ENUM,      NULL);
 		metadata_add_style_attr(polygon, METADATA_STYLE_ATTR_KEY_POLYGON_ID_COLOR,        METADATA_STYLE_TYPE_COLOR,                "#64748b");
 		metadata_add_style_attr(polygon, METADATA_STYLE_ATTR_KEY_POLYGON_ID_FONT_SIZE,    METADATA_STYLE_TYPE_PIXELS,       "12");
-		metadata_add_style_attr(polygon, METADATA_STYLE_ATTR_KEY_POLYGON_ID_FONT_WEIGHT,  METADATA_STYLE_TYPE_FONT_WEIGHT_ENUM,     "font-medium");
+		metadata_add_style_attr(polygon, METADATA_STYLE_ATTR_KEY_POLYGON_ID_FONT_WEIGHT,  METADATA_STYLE_TYPE_FONT_WEIGHT_ENUM,     "500");
 		metadata_add_style_attr(polygon, METADATA_STYLE_ATTR_KEY_POLYGON_ID_SHAPE,        METADATA_STYLE_TYPE_POLYGON_ID_SHAPE_ENUM, NULL);
 		metadata_add_style_attr(polygon, METADATA_STYLE_ATTR_KEY_POLYGON_ID_RADIUS,       METADATA_STYLE_TYPE_PIXELS,              NULL);
 		metadata_add_style_attr(polygon, METADATA_STYLE_ATTR_KEY_POLYGON_ID_BORDER_COLOR, METADATA_STYLE_TYPE_COLOR,                NULL);
@@ -241,7 +241,7 @@ char *bcd_build_metadata_json(void)
 		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_FILL_COLOR,        METADATA_STYLE_TYPE_COLOR,               "#60a5fa");
 		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_ID_COLOR,          METADATA_STYLE_TYPE_COLOR,               "#ffffff");
 		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_ID_FONT_SIZE,      METADATA_STYLE_TYPE_PIXELS,      "12");
-		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_ID_FONT_WEIGHT,    METADATA_STYLE_TYPE_FONT_WEIGHT_ENUM,    "font-medium");
+		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_ID_FONT_WEIGHT,    METADATA_STYLE_TYPE_FONT_WEIGHT_ENUM,    "500");
 		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_ID_PLACEMENT,      METADATA_STYLE_TYPE_PLACEMENT_ENUM,      "inside");
 		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_ID_OFFSET,         METADATA_STYLE_TYPE_PIXELS,             NULL);
 		metadata_add_style_attr(point, METADATA_STYLE_ATTR_KEY_POINT_LABEL_COLOR,       METADATA_STYLE_TYPE_COLOR,               NULL);
