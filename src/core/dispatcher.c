@@ -17,7 +17,6 @@
 #include <stdlib.h>
 #include "../../dependencies/cJSON/cJSON.c"
 #include "algo_bcd/bcd.c"
-#include "algo_mock/mock_algo.c"
 
 static cJSON *parse_algorithm_metadata_json(char *algorithm_json)
 {
@@ -81,7 +80,6 @@ char *dispatch_metadata_json(void)
 	cJSON *response = cJSON_CreateObject();
 	cJSON *algorithms = cJSON_CreateArray();
 	cJSON *bcd_algorithm = NULL;
-	cJSON *mock_algorithm = NULL;
 	if (response == NULL || algorithms == NULL)
 	{
 		cJSON_Delete(response);
@@ -100,17 +98,6 @@ char *dispatch_metadata_json(void)
 
 	cJSON_AddItemToArray(algorithms, bcd_algorithm);
 
-	// Disable mock algorithm 
-
-	// mock_algorithm = parse_algorithm_metadata_json(mock_algo_get_metadata_json());
-	// if (mock_algorithm == NULL)
-	// {
-	// 	cJSON_Delete(response);
-	// 	return NULL;
-	// }
-
-	// cJSON_AddItemToArray(algorithms, mock_algorithm);
-
 	char *json = cJSON_PrintUnformatted(response);
 	cJSON_Delete(response);
 	return json;
@@ -128,11 +115,6 @@ char *dispatch_compute_json(const char *request_json)
 	if (algorithm_id == 1)
 	{
 		return bcd_compute(request_json);
-	}
-
-	if (algorithm_id == 2)
-	{
-		return mock_algo_compute(request_json);
 	}
 
 	return create_dispatch_error_json("unknown_algorithm", "Unknown algorithm requested.");
