@@ -1,13 +1,11 @@
 import type { ServerContext } from "../types/apiTypes";
-import {
-    executeCoreCompute,
-    getCoreMetadata,
-    CoreComputeError,
-} from "./coreBridge";
+import { getCoreMetadata } from "./coreBridge";
 import { isRecord, parseRequestJsonBody } from "./jsonUtil";
 import type {
     ComputeAcceptedResponse,
     ComputeJobState,
+    ComputeWorkerRequest,
+    ComputeWorkerResponse,
     ErrorResponse,
     HealthResponse,
 } from "../types/providerTypes";
@@ -109,22 +107,40 @@ async function handleMetadata(request: Request, context: ServerContext) {
     return jsonResponse(getCoreMetadata(), 200);
 }
 
-async function runComputeJob(
+function launchComputeWorker(
     jobId: string,
     rawBody: unknown,
     context: ServerContext,
 ) {
+    if (context.workerHandle.activeWorker !== null) {
+        context.workerHandle.activeWorker.terminate();
+        context.workerHandle.activeWorker = null;
+    }
+
+    const worker = new Worker(new URL("../job/computeWorker.ts", import.meta.url));
+    context.workerHandle.activeWorker = worker;
     context.jobs.markRunning(jobId);
 
-    try {
-        const result = executeCoreCompute(rawBody);
-        context.jobs.markCompleted(jobId, result);
-    } catch (error) {
+    const request: ComputeWorkerRequest = { jobId, payload: rawBody };
+    worker.postMessage(request);
+
+    worker.onmessage = (event: MessageEvent<ComputeWorkerResponse>) => {
+        context.workerHandle.activeWorker = null;
+        const response = event.data;
+        if (response.type === "completed") {
+            context.jobs.markCompleted(response.jobId, response.result);
+        } else {
+            context.jobs.markFailed(response.jobId, response.error);
+        }
+    };
+
+    worker.onerror = (err) => {
+        context.workerHandle.activeWorker = null;
         context.jobs.markFailed(jobId, {
-            code: error instanceof CoreComputeError ? error.code : "internal_error",
-            message: error instanceof Error ? error.message : String(error),
+            code: "internal_error",
+            message: err.message ?? "Worker encountered an unexpected error.",
         });
-    }
+    };
 }
 
 async function handleComputeSubmission(request: Request, context: ServerContext) {
@@ -144,7 +160,7 @@ async function handleComputeSubmission(request: Request, context: ServerContext)
         requestId: getQueuedRequestId(parsedBody.value),
     });
 
-    void runComputeJob(queuedJob.jobId, parsedBody.value, context);
+    launchComputeWorker(queuedJob.jobId, parsedBody.value, context);
 
     const origin = new URL(request.url).origin;
     const responseBody: ComputeAcceptedResponse = {

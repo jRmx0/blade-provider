@@ -5,7 +5,12 @@ export interface ProviderConfig {
     providerName: string;
 }
 
+export interface ComputeWorkerHandle {
+    activeWorker: Worker | null;
+}
+
 export interface ServerContext {
     config: ProviderConfig;
     jobs: InMemoryJobStore;
+    workerHandle: ComputeWorkerHandle;
 }

@@ -189,3 +189,13 @@ export interface ErrorResponse {
         details?: unknown;
     };
 }
+
+export interface ComputeWorkerRequest {
+    jobId: string;
+    payload: unknown;
+}
+
+export type ComputeWorkerResponse = { jobId: string } & (
+    | { type: "completed"; result: Record<string, unknown> }
+    | { type: "failed"; error: ComputeJobError }
+);
