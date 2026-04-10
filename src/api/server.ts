@@ -1,11 +1,12 @@
+import { fileURLToPath } from "url";
 import type { ServerContext } from "../types/apiTypes";
 import { getCoreMetadata } from "./coreBridge";
 import { isRecord, parseRequestJsonBody } from "./jsonUtil";
 import type {
     ComputeAcceptedResponse,
     ComputeJobState,
-    ComputeWorkerRequest,
-    ComputeWorkerResponse,
+    ComputeProcessRequest,
+    ComputeProcessResponse,
     ErrorResponse,
     HealthResponse,
 } from "../types/providerTypes";
@@ -107,40 +108,81 @@ async function handleMetadata(request: Request, context: ServerContext) {
     return jsonResponse(getCoreMetadata(), 200);
 }
 
-function launchComputeWorker(
+async function launchComputeProcess(
     jobId: string,
     rawBody: unknown,
     context: ServerContext,
 ) {
-    if (context.workerHandle.activeWorker !== null) {
-        context.workerHandle.activeWorker.terminate();
-        context.workerHandle.activeWorker = null;
+    if (context.processHandle.activeProcess !== null) {
+        context.processHandle.activeProcess.kill();
+        context.processHandle.activeProcess = null;
     }
 
-    const worker = new Worker(new URL("../job/computeWorker.ts", import.meta.url));
-    context.workerHandle.activeWorker = worker;
+    const processScriptPath = fileURLToPath(new URL("../job/computeProcess.ts", import.meta.url));
+    console.log("[compute] Spawning process:", processScriptPath);
+    const proc = Bun.spawn(["bun", processScriptPath], {
+        stdin: "pipe",
+        stdout: "pipe",
+        stderr: "pipe",
+    });
+
+    context.processHandle.activeProcess = proc;
     context.jobs.markRunning(jobId);
 
-    const request: ComputeWorkerRequest = { jobId, payload: rawBody };
-    worker.postMessage(request);
+    const request: ComputeProcessRequest = { jobId, payload: rawBody };
+    const stdinPayload = JSON.stringify(request) + "\n";
+    console.log("[compute] Writing to child stdin:", stdinPayload.length, "bytes");
+    proc.stdin.write(stdinPayload);
+    await proc.stdin.end();
+    console.log("[compute] stdin closed");
 
-    worker.onmessage = (event: MessageEvent<ComputeWorkerResponse>) => {
-        context.workerHandle.activeWorker = null;
-        const response = event.data;
-        if (response.type === "completed") {
-            context.jobs.markCompleted(response.jobId, response.result);
-        } else {
-            context.jobs.markFailed(response.jobId, response.error);
+    void new Response(proc.stderr).text().then((stderrText) => {
+        if (stderrText.trim()) {
+            console.error("[compute] Process stderr:", stderrText.trim());
         }
-    };
+    });
 
-    worker.onerror = (err) => {
-        context.workerHandle.activeWorker = null;
+    let responded = false;
+    const [stdoutText, exitCode] = await Promise.all([
+        new Response(proc.stdout).text(),
+        proc.exited,
+    ]);
+
+    console.log("[compute] Process exited with code:", exitCode);
+    console.log("[compute] Raw stdout (", stdoutText.length, "bytes):", JSON.stringify(stdoutText.slice(0, 500)));
+
+    context.processHandle.activeProcess = null;
+
+    const lines = stdoutText.split("\n").map((l) => l.trim()).filter(Boolean);
+    let jsonLine: string | undefined;
+    for (let i = lines.length - 1; i >= 0; i--) {
+        const l = lines[i];
+        if (l !== undefined && l.startsWith("{")) {
+            jsonLine = l;
+            break;
+        }
+    }
+
+    if (jsonLine) {
+        try {
+            const response = JSON.parse(jsonLine) as ComputeProcessResponse;
+            responded = true;
+            if (response.type === "completed") {
+                context.jobs.markCompleted(response.jobId, response.result);
+            } else {
+                context.jobs.markFailed(response.jobId, response.error);
+            }
+        } catch {
+            // JSON line found but failed to parse — fall through to crash handler
+        }
+    }
+
+    if (!responded) {
         context.jobs.markFailed(jobId, {
-            code: "internal_error",
-            message: err.message ?? "Worker encountered an unexpected error.",
+            code: "process_crash",
+            message: `Compute process exited with code ${exitCode} without returning a result.`,
         });
-    };
+    }
 }
 
 async function handleComputeSubmission(request: Request, context: ServerContext) {
@@ -160,7 +202,7 @@ async function handleComputeSubmission(request: Request, context: ServerContext)
         requestId: getQueuedRequestId(parsedBody.value),
     });
 
-    launchComputeWorker(queuedJob.jobId, parsedBody.value, context);
+    void launchComputeProcess(queuedJob.jobId, parsedBody.value, context);
 
     const origin = new URL(request.url).origin;
     const responseBody: ComputeAcceptedResponse = {

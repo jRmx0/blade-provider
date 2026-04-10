@@ -190,12 +190,12 @@ export interface ErrorResponse {
     };
 }
 
-export interface ComputeWorkerRequest {
+export interface ComputeProcessRequest {
     jobId: string;
     payload: unknown;
 }
 
-export type ComputeWorkerResponse = { jobId: string } & (
+export type ComputeProcessResponse = { jobId: string } & (
     | { type: "completed"; result: Record<string, unknown> }
     | { type: "failed"; error: ComputeJobError }
 );

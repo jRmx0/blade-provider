@@ -6,7 +6,7 @@ import { routeRequest } from "./server";
 const context: ServerContext = {
 	config: getProviderConfig(),
 	jobs: new InMemoryJobStore(),
-	workerHandle: { activeWorker: null },
+	processHandle: { activeProcess: null },
 };
 
 const server = Bun.serve({
