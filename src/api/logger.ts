@@ -16,9 +16,21 @@ function shouldLog(level: LogLevel): boolean {
     return LEVELS[level] <= LEVELS[currentLevel];
 }
 
+const RESET = "\x1b[0m";
+const COLORS: Record<LogLevel, string> = {
+    debug: "\x1b[90m",   // gray
+    info: "\x1b[36m",   // cyan
+    warn: "\x1b[33m",   // yellow
+    error: "\x1b[31m",   // red
+};
+
+function tag(level: LogLevel): string {
+    return `${COLORS[level]}[${level}]${RESET}`;
+}
+
 export const log = {
-    debug: (...args: unknown[]) => { if (shouldLog("debug")) console.log("[debug]", ...args); },
-    info: (...args: unknown[]) => { if (shouldLog("info")) console.log("[info]", ...args); },
-    warn: (...args: unknown[]) => { if (shouldLog("warn")) console.warn("[warn]", ...args); },
-    error: (...args: unknown[]) => { if (shouldLog("error")) console.error("[error]", ...args); },
+    debug: (...args: unknown[]) => { if (shouldLog("debug")) console.log(tag("debug"), ...args); },
+    info: (...args: unknown[]) => { if (shouldLog("info")) console.log(tag("info"), ...args); },
+    warn: (...args: unknown[]) => { if (shouldLog("warn")) console.warn(tag("warn"), ...args); },
+    error: (...args: unknown[]) => { if (shouldLog("error")) console.error(tag("error"), ...args); },
 };
