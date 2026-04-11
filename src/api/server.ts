@@ -149,7 +149,22 @@ async function launchComputeProcess(
     ]);
 
     console.log("[compute] Process exited with code:", exitCode);
-    console.log("[compute] Raw stdout (", stdoutText.length, "bytes):", JSON.stringify(stdoutText.slice(0, 500)));
+    {
+        const outputLines = stdoutText.split(/\r?\n/).filter(Boolean);
+        const jsonLineIndex = outputLines.findLastIndex((l) => l.trimStart().startsWith("{"));
+        const debugLines = jsonLineIndex === -1 ? outputLines : outputLines.slice(0, jsonLineIndex);
+        const jsonLine = jsonLineIndex !== -1 ? outputLines[jsonLineIndex] : undefined;
+        if (debugLines.length > 0) {
+            console.log("[compute] Debug output:\n" + debugLines.join("\n"));
+        }
+        if (jsonLine) {
+            try {
+                console.log("[compute] Response JSON:\n" + JSON.stringify(JSON.parse(jsonLine), null, 2));
+            } catch {
+                console.log("[compute] Response JSON (unparseable):", jsonLine);
+            }
+        }
+    }
 
     context.processHandle.activeProcess = null;
 
