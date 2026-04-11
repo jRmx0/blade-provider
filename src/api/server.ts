@@ -1,6 +1,7 @@
 import { fileURLToPath } from "url";
 import type { ServerContext } from "../types/apiTypes";
 import { getCoreMetadata } from "./coreBridge";
+import { log } from "./logger";
 import { isRecord, parseRequestJsonBody } from "./jsonUtil";
 import type {
     ComputeAcceptedResponse,
@@ -119,7 +120,7 @@ async function launchComputeProcess(
     }
 
     const processScriptPath = fileURLToPath(new URL("../job/computeProcess.ts", import.meta.url));
-    console.log("[compute] Spawning process:", processScriptPath);
+    log.debug("[compute] Spawning process:", processScriptPath);
     const proc = Bun.spawn(["bun", processScriptPath], {
         stdin: "pipe",
         stdout: "pipe",
@@ -131,14 +132,14 @@ async function launchComputeProcess(
 
     const request: ComputeProcessRequest = { jobId, payload: rawBody };
     const stdinPayload = JSON.stringify(request) + "\n";
-    console.log("[compute] Writing to child stdin:", stdinPayload.length, "bytes");
+    log.debug("[compute] Writing to child stdin:", stdinPayload.length, "bytes");
     proc.stdin.write(stdinPayload);
     await proc.stdin.end();
-    console.log("[compute] stdin closed");
+    log.debug("[compute] stdin closed");
 
     void new Response(proc.stderr).text().then((stderrText) => {
         if (stderrText.trim()) {
-            console.error("[compute] Process stderr:", stderrText.trim());
+            log.error("[compute] Process stderr:", stderrText.trim());
         }
     });
 
@@ -148,20 +149,20 @@ async function launchComputeProcess(
         proc.exited,
     ]);
 
-    console.log("[compute] Process exited with code:", exitCode);
+    log.info("[compute] Process exited with code:", exitCode);
     {
         const outputLines = stdoutText.split(/\r?\n/).filter(Boolean);
         const jsonLineIndex = outputLines.findLastIndex((l) => l.trimStart().startsWith("{"));
         const debugLines = jsonLineIndex === -1 ? outputLines : outputLines.slice(0, jsonLineIndex);
         const jsonLine = jsonLineIndex !== -1 ? outputLines[jsonLineIndex] : undefined;
         if (debugLines.length > 0) {
-            console.log("[compute] Debug output:\n" + debugLines.join("\n"));
+            log.debug("[compute] Debug output:\n" + debugLines.join("\n"));
         }
         if (jsonLine) {
             try {
-                console.log("[compute] Response JSON:\n" + JSON.stringify(JSON.parse(jsonLine), null, 2));
+                log.debug("[compute] Response JSON:\n" + JSON.stringify(JSON.parse(jsonLine), null, 2));
             } catch {
-                console.log("[compute] Response JSON (unparseable):", jsonLine);
+                log.error("[compute] Response JSON (unparseable):", jsonLine);
             }
         }
     }
@@ -210,13 +211,14 @@ async function handleComputeSubmission(request: Request, context: ServerContext)
         return jsonResponse(parsedBody.errorBody, 400);
     }
 
-    console.log("[compute] Incoming request:", JSON.stringify(parsedBody.value, null, 2));
+    log.debug("[compute] Incoming request:", JSON.stringify(parsedBody.value, null, 2));
 
     const queuedJob = context.jobs.createQueued({
         algorithmName: getQueuedAlgorithmName(parsedBody.value),
         requestId: getQueuedRequestId(parsedBody.value),
     });
 
+    log.info(`[compute] Job queued: ${queuedJob.jobId} (${queuedJob.algorithmName})`);
     void launchComputeProcess(queuedJob.jobId, parsedBody.value, context);
 
     const origin = new URL(request.url).origin;
