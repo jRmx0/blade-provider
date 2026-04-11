@@ -1,7 +1,6 @@
 #ifndef METADATA_JSON_H
 #define METADATA_JSON_H
 
-#include "metadata_types.h"
 #include "../../../dependencies/cJSON/cjson.h"
 
 static inline void metadata_add_parameter(

@@ -11,6 +11,7 @@
 
 #include "../internal.h"
 #include "../../metadata/metadata_json.h"
+#include "../../metadata/metadata_types.h"
 
 char *bcd_build_metadata_json(void)
 {
