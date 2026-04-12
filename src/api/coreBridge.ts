@@ -5,7 +5,7 @@ import { isRecord, parseJsonString } from "./jsonUtil";
 
 const coreSymbols = cc({
     source: "./src/core/dispatcher.c",
-    include: ["./dependencies/tcc-headers"],
+    include: ["./dependencies/tcc-headers", "./dependencies/tcc-headers/winapi"],
     flags: ["-w"],
     symbols: {
         dispatch_metadata_json: {

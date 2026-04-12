@@ -12,6 +12,12 @@
 #include "../internal.h"
 #include "../check/bcd_check.h"
 #include "../../../../dependencies/cJSON/cjson.h"
+#include "../../../../dependencies/allocator/allocator.h"
+
+/* Windows SDK defines IN/OUT as SAL annotation macros which collide with
+ * the bcd_event_type_t enum values of the same name. */
+#undef IN
+#undef OUT
 
 #include "compute_runner/bcd_core/bcd_event_list_building.c"
 #include "compute_runner/bcd_core/bcd_cell_computation.c"
@@ -39,6 +45,8 @@ static char *bcd_create_error_json(const char *code, const char *message)
 
 char *bcd_run_compute(const char *input_environment_json)
 {
+	va_tracking_set_baseline();
+	
 	input_environment_t environment;
 	bcd_check_result_t check_result;
 	if (!bcd_check_request_json(input_environment_json, &environment, &check_result))

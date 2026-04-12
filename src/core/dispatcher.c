@@ -16,6 +16,7 @@
 
 #include <stdlib.h>
 #include "../../dependencies/cJSON/cJSON.c"
+#include "../../dependencies/allocator/allocator.c"
 #include "algo_bcd/bcd.c"
 
 static cJSON *parse_algorithm_metadata_json(char *algorithm_json)
