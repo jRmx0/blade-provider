@@ -249,6 +249,14 @@ static char *serialize_result_json(const bcd_event_list_t *event_list,
 		cJSON_AddItemToArray(layers_arr, visit_layer);
 	}
 
+	/* ---- performance (stub — populated when Track Memory Usage is enabled) ---- */
+	{
+		cJSON *performance_obj = cJSON_CreateObject();
+		cJSON *perf_metrics_arr = cJSON_CreateArray();
+		cJSON_AddItemToObject(performance_obj, "metrics", perf_metrics_arr);
+		cJSON_AddItemToObject(root, "performance", performance_obj);
+	}
+
 	char *json = cJSON_PrintUnformatted(root);
 	cJSON_Delete(root);
 	return json; // caller must free

@@ -57,6 +57,23 @@ static inline void metadata_add_parameter(
 }
 
 /*
+ * Appends one performance metric entry { "id": id, "name": name, "type": type }
+ * to the given metrics array.
+ */
+static inline void metadata_add_metric(
+    cJSON *metrics,
+    int id,
+    const char *name,
+    const char *type)
+{
+    cJSON *metric = cJSON_CreateObject();
+    cJSON_AddNumberToObject(metric, "id", id);
+    cJSON_AddStringToObject(metric, "name", name);
+    cJSON_AddStringToObject(metric, "type", type);
+    cJSON_AddItemToArray(metrics, metric);
+}
+
+/*
  * Appends one style attribute entry { "key": key, "styleType": style_type, "defaultValue": value|null }
  * to the given style sub-array.  Pass NULL for value to emit a JSON null.
  */

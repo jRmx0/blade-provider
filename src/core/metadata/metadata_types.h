@@ -96,6 +96,11 @@
 #define BCD_METADATA_COORDSYSTEM_CARTESIAN  "Cartesian"
 #define BCD_METADATA_COORDSYSTEM_GEOGRAPHIC  "Geographic"
 
+/* ── Metric Types ───────────────────────────────────────────────────────── */
+
+#define METADATA_METRIC_TYPE_SINGLE_VALUE "Single-value"
+#define METADATA_METRIC_TYPE_TIME_SERIES  "Time-series"
+
 /* ── Style Types ────────────────────────────────────────────────────────── */
 
 #define METADATA_STYLE_TYPE_BOOLEAN               "Boolean"
