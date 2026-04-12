@@ -57,19 +57,22 @@ static inline void metadata_add_parameter(
 }
 
 /*
- * Appends one performance metric entry { "id": id, "name": name, "type": type }
- * to the given metrics array.
+ * Appends one performance metric entry { "id": id, "name": name, "type": type [, "group": group] }
+ * to the given metrics array.  Pass NULL for group to omit the field.
  */
 static inline void metadata_add_metric(
     cJSON *metrics,
     int id,
     const char *name,
-    const char *type)
+    const char *type,
+    const char *group)
 {
     cJSON *metric = cJSON_CreateObject();
     cJSON_AddNumberToObject(metric, "id", id);
     cJSON_AddStringToObject(metric, "name", name);
     cJSON_AddStringToObject(metric, "type", type);
+    if (group != NULL)
+        cJSON_AddStringToObject(metric, "group", group);
     cJSON_AddItemToArray(metrics, metric);
 }
 
