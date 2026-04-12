@@ -13,6 +13,8 @@
 #include "../check/bcd_check.h"
 #include "../../../../dependencies/cJSON/cjson.h"
 #include "../../../../dependencies/allocator/allocator.h"
+#include <stdlib.h>
+#include <string.h>
 
 /* Windows SDK defines IN/OUT as SAL annotation macros which collide with
  * the bcd_event_type_t enum values of the same name. */
@@ -87,13 +89,13 @@ char *bcd_run_compute(const char *input_environment_json)
 {
 	bool track_memory_usage = bcd_prefetch_track_flag(input_environment_json);
 
-	/* Hook cJSON so all its internal allocations go through the VirtualAlloc
-	 * allocator and are captured in the tracking vector. */
-	cJSON_Hooks hooks = { va_malloc, va_free };
-	cJSON_InitHooks(&hooks);
-
 	if (track_memory_usage)
 	{
+		/* Hook cJSON so its internal allocations go through VirtualAlloc and
+		 * are captured alongside the cvector tracking samples. */
+		cJSON_Hooks hooks = { va_malloc, va_free };
+		cJSON_InitHooks(&hooks);
+
 		va_free_tracking_data();
 		va_tracking_enable();
 		va_tracking_set_baseline();
@@ -109,14 +111,33 @@ char *bcd_run_compute(const char *input_environment_json)
 	if (!bcd_check_request_json(input_environment_json, &environment, &check_result))
 	{
 		va_tracking_enable();
-		cJSON_InitHooks(NULL);
+		if (track_memory_usage) cJSON_InitHooks(NULL);
 		return bcd_create_error_json(check_result.code, check_result.message);
 	}
 
-	char *result = coverage_path_planning_process(&environment);
+	char *va_result = coverage_path_planning_process(&environment);
 	free_input_environment(&environment);
 
 	va_tracking_enable();
-	cJSON_InitHooks(NULL);
-	return result;
+
+	if (track_memory_usage)
+	{
+		cJSON_InitHooks(NULL);
+
+		/* coverage_path_planning_process serialised its output while cJSON was
+		 * hooked to va_malloc, so the result string is VirtualAlloc-backed.
+		 * Copy it to the CRT heap so the caller can safely pass it to free(). */
+		char *result = NULL;
+		if (va_result != NULL)
+		{
+			size_t len = strlen(va_result) + 1;
+			result = (char *)malloc(len);
+			if (result != NULL)
+				memcpy(result, va_result, len);
+			va_free(va_result);
+		}
+		return result;
+	}
+
+	return va_result;
 }
