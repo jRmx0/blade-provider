@@ -23,15 +23,15 @@ static inline void metadata_add_parameter(
     cJSON_AddStringToObject(parameter, "name", name);
     cJSON_AddStringToObject(parameter, "paramType", param_type);
 
-    cJSON *enum_array = cJSON_CreateArray();
     if (enum_values != NULL && enum_value_count > 0)
     {
+        cJSON *enum_array = cJSON_CreateArray();
         for (int i = 0; i < enum_value_count; ++i)
         {
             cJSON_AddItemToArray(enum_array, cJSON_CreateString(enum_values[i]));
         }
+        cJSON_AddItemToObject(parameter, "enumValues", enum_array);
     }
-    cJSON_AddItemToObject(parameter, "enumValues", enum_array);
 
     if (default_value != NULL)
     {
@@ -51,10 +51,6 @@ static inline void metadata_add_parameter(
     if (app_handler != NULL)
     {
         cJSON_AddStringToObject(parameter, "appHandler", app_handler);
-    }
-    else
-    {
-        cJSON_AddNullToObject(parameter, "appHandler");
     }
 
     cJSON_AddItemToArray(parameters, parameter);

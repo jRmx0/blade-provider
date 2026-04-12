@@ -22,10 +22,10 @@ export interface MetadataParamResponse {
     id: number;
     name: string;
     paramType: AlgoParamType;
-    enumValues: string[];
+    enumValues?: string[];
     defaultValue?: string;
     section?: MetadataParamSection;
-    appHandler: AppHandler | null;
+    appHandler?: AppHandler;
 }
 
 export type StyleAttributeKey =
