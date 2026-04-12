@@ -128,6 +128,60 @@ static bool bcd_expect_float_parameter(
 	return true;
 }
 
+static bool bcd_parse_bool_value(const cJSON *value, bool *out)
+{
+	if (cJSON_IsBool(value))
+	{
+		*out = cJSON_IsTrue(value);
+		return true;
+	}
+
+	if (!cJSON_IsString(value) || value->valuestring == NULL)
+	{
+		return false;
+	}
+
+	if (strcmp(value->valuestring, "true") == 0)
+	{
+		*out = true;
+		return true;
+	}
+
+	if (strcmp(value->valuestring, "false") == 0)
+	{
+		*out = false;
+		return true;
+	}
+
+	return false;
+}
+
+static bool bcd_expect_bool_parameter(
+	const cJSON *parameters,
+	const char *name,
+	bool *out,
+	bcd_check_result_t *result,
+	const char *missing_code,
+	const char *missing_message,
+	const char *invalid_code,
+	const char *invalid_message)
+{
+	const cJSON *value = cJSON_GetObjectItemCaseSensitive(parameters, name);
+	if (value == NULL)
+	{
+		bcd_set_result(result, false, missing_code, missing_message);
+		return false;
+	}
+
+	if (!bcd_parse_bool_value(value, out))
+	{
+		bcd_set_result(result, false, invalid_code, invalid_message);
+		return false;
+	}
+
+	return true;
+}
+
 static int bcd_build_edges(polygon_t *polygon)
 {
 	if (polygon == NULL)
@@ -478,6 +532,22 @@ bool bcd_check_request_json(const char *request_json, input_environment_t *envir
 		"BCD requires a Coordinate System parameter.",
 		"unsupported_coordinate_system",
 		"BCD supports only the Cartesian coordinate system."))
+	{
+		cJSON_Delete(root);
+		free_input_environment(environment);
+		return false;
+	}
+
+	bool track_memory_usage = false;
+	if (!bcd_expect_bool_parameter(
+		parameters,
+		"Track Memory Usage",
+		&track_memory_usage,
+		result,
+		"missing_track_memory_usage",
+		"BCD requires a Track Memory Usage parameter.",
+		"invalid_track_memory_usage",
+		"BCD Track Memory Usage must be a boolean."))
 	{
 		cJSON_Delete(root);
 		free_input_environment(environment);

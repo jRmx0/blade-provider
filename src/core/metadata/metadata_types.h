@@ -68,6 +68,7 @@
 #define BCD_METADATA_PARAM_SECTION_ENVIRONMENT    "Environment"
 #define BCD_METADATA_PARAM_SECTION_OBJECT         "Object"
 #define BCD_METADATA_PARAM_SECTION_EXECUTION      "Execution"
+#define BCD_METADATA_PARAM_SECTION_PERFORMANCE    "Performance"
 
 /* ── Parameter Types ────────────────────────────────────────────────────── */
 
