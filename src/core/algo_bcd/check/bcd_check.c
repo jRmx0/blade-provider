@@ -472,12 +472,12 @@ bool bcd_check_request_json(const char *request_json, input_environment_t *envir
 	if (!bcd_expect_string_parameter(
 		parameters,
 		"Coordinate System",
-		"Decimal",
+		"Cartesian",
 		result,
 		"missing_coordinate_system",
 		"BCD requires a Coordinate System parameter.",
 		"unsupported_coordinate_system",
-		"BCD supports only the Decimal coordinate system."))
+		"BCD supports only the Cartesian coordinate system."))
 	{
 		cJSON_Delete(root);
 		free_input_environment(environment);

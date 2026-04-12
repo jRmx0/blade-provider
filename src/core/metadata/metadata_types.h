@@ -92,8 +92,8 @@
 #define BCD_METADATA_TYPE_OFFLINE    "Off-Line"
 #define BCD_METADATA_TYPE_ONLINE     "On-Line"
 
-#define BCD_METADATA_COORDSYSTEM_DECIMAL  "Decimal"
-#define BCD_METADATA_COORDSYSTEM_LATLONG  "Lat/Long"
+#define BCD_METADATA_COORDSYSTEM_CARTESIAN  "Cartesian"
+#define BCD_METADATA_COORDSYSTEM_GEOGRAPHIC  "Geographic"
 
 /* ── Style Types ────────────────────────────────────────────────────────── */
 
