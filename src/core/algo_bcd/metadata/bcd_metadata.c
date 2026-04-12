@@ -58,7 +58,7 @@ char *bcd_build_metadata_json(void)
 	}
 	cJSON_AddItemToObject(algorithm, "metrics", metrics);
 
-	metadata_add_metric(metrics, 1, "Memory Usage",          METADATA_METRIC_TYPE_TIME_SERIES,  "Memory");
+	metadata_add_metric(metrics, 1, "Operatyviosios atminties sunaudojimas", METADATA_METRIC_TYPE_TIME_SERIES,  "Memory");
 	metadata_add_metric(metrics, 2, "Baseline Memory Usage", METADATA_METRIC_TYPE_SINGLE_VALUE, "Memory");
 
 	cJSON *layers = cJSON_CreateArray();
