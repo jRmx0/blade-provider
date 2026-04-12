@@ -11,7 +11,7 @@
 
 #include "../internal.h"
 #include "../check/bcd_check.h"
-#include "../../../../dependencies/cJSON/cjson.h"
+#include "../../../../dependencies/cJSON/cJSON.h"
 #include "../../../../dependencies/allocator/allocator.h"
 #include <stdlib.h>
 #include <string.h>

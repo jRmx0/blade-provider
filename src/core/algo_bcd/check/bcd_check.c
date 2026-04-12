@@ -3,7 +3,7 @@
 #include <string.h>
 
 #include "bcd_check.h"
-#include "../../../../dependencies/cJSON/cjson.h"
+#include "../../../../dependencies/cJSON/cJSON.h"
 #include "../../../../dependencies/allocator/allocator.h"
 
 static void bcd_init_environment(input_environment_t *environment)
