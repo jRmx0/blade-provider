@@ -4,9 +4,11 @@
 #define COVERAGE_PATH_PLANNING_H
 
 #include "../../internal.h"
+#include "../../../../../dependencies/cJSON/cJSON.h"
 
 // Runs the BCD computation pipeline on a pre-validated, pre-parsed environment.
-// Returns a newly allocated JSON string; caller must free().
-char *coverage_path_planning_process(const input_environment_t *env);
+// Returns a cJSON object owned by the caller; hand off to bcd_run_compute for
+// performance injection, serialization, and cleanup.
+cJSON *coverage_path_planning_process(const input_environment_t *env);
 
 #endif // COVERAGE_PATH_PLANNING_H

@@ -115,29 +115,47 @@ char *bcd_run_compute(const char *input_environment_json)
 		return bcd_create_error_json(check_result.code, check_result.message);
 	}
 
-	char *va_result = coverage_path_planning_process(&environment);
-	free_input_environment(&environment);
+	/* Unhook cJSON before the compute pipeline so serialize_result_json
+	 * builds the result tree with CRT allocations. Only BCD algorithm
+	 * data (cvectors, polygon arrays, check parse) appears in the
+	 * working-set arc; serialization overhead is excluded. */
+	if (track_memory_usage)
+		cJSON_InitHooks(NULL);
 
-	va_tracking_enable();
+	cJSON *root = coverage_path_planning_process(&environment);
+	free_input_environment(&environment);
 
 	if (track_memory_usage)
 	{
-		cJSON_InitHooks(NULL);
+		/* All compute data and environment polygons have now been freed via
+		 * va_free. Snapshot captures the full arc including the drop. */
+		long   *samples = va_get_tracking_data();
+		size_t  count   = va_get_tracking_count();
+		va_tracking_disable();
 
-		/* coverage_path_planning_process serialised its output while cJSON was
-		 * hooked to va_malloc, so the result string is VirtualAlloc-backed.
-		 * Copy it to the CRT heap so the caller can safely pass it to free(). */
-		char *result = NULL;
-		if (va_result != NULL)
+		/* Only attach performance to successful results. */
+		if (root != NULL && cJSON_GetObjectItemCaseSensitive(root, "coveragePathPlan") != NULL)
 		{
-			size_t len = strlen(va_result) + 1;
-			result = (char *)malloc(len);
-			if (result != NULL)
-				memcpy(result, va_result, len);
-			va_free(va_result);
+			cJSON *perf = cJSON_CreateObject();
+			cJSON *metrics_arr = cJSON_CreateArray();
+			cJSON_AddItemToObject(perf, "metrics", metrics_arr);
+			cJSON *metric = cJSON_CreateObject();
+			cJSON_AddNumberToObject(metric, "id", 1);
+			cJSON *val_arr = cJSON_CreateArray();
+			for (size_t i = 0; i < count; ++i)
+				cJSON_AddItemToArray(val_arr, cJSON_CreateNumber((double)samples[i]));
+			cJSON_AddItemToObject(metric, "value", val_arr);
+			cJSON_AddItemToArray(metrics_arr, metric);
+			cJSON_AddItemToObject(root, "performance", perf);
 		}
-		return result;
+		va_free_tracking_data();
 	}
 
-	return va_result;
+	va_tracking_enable();
+
+	/* cJSON is no longer hooked; result tree and output string are
+	 * CRT-backed and safe for the caller to free() directly. */
+	char *out = cJSON_PrintUnformatted(root);
+	cJSON_Delete(root);
+	return out;
 }

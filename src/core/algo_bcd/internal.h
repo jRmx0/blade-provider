@@ -14,6 +14,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include "../../../dependencies/cJSON/cJSON.h"
 
 typedef struct
 {
@@ -63,8 +64,8 @@ typedef struct
 } input_environment_t;
 
 // Runs the BCD computation pipeline on a pre-validated, pre-parsed environment.
-// Returns a newly allocated JSON string; caller must free().
-char *coverage_path_planning_process(const input_environment_t *env);
+// Returns a cJSON object owned by the caller.
+cJSON *coverage_path_planning_process(const input_environment_t *env);
 
 // API calls
 

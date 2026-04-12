@@ -15,11 +15,10 @@ static const char *event_type_to_string(bcd_event_type_t t);
 static const char *polygon_type_to_string(polygon_type_t t);
 static char *serialize_event_list_json(const bcd_event_list_t *event_list);
 
-static char *serialize_result_json(const bcd_event_list_t *event_list,
-								   cvector_vector_type(bcd_cell_t) * cell_list,
-								   cvector_vector_type(int) * path_list,
-								   const bcd_motion_plan_t *motion_plan,
-								   bool track_memory_usage)
+static cJSON *serialize_result_json(const bcd_event_list_t *event_list,
+								    cvector_vector_type(bcd_cell_t) * cell_list,
+								    cvector_vector_type(int) * path_list,
+								    const bcd_motion_plan_t *motion_plan)
 {
 	cJSON *root = cJSON_CreateObject();
 
@@ -251,47 +250,20 @@ static char *serialize_result_json(const bcd_event_list_t *event_list,
 		cJSON_AddItemToArray(layers_arr, visit_layer);
 	}
 
-	/* ---- performance ---- */
-	if (track_memory_usage)
-	{
-		/* Snapshot the sample vector before disabling tracking so that the
-		 * cJSON calls used to build the metrics array do not add new samples
-		 * to the data we are reading (bootstrap guard). */
-		long   *samples = va_get_tracking_data();
-		size_t  count   = va_get_tracking_count();
-		va_tracking_disable();
+	/* ---- performance is injected by bcd_run_compute after all
+	 * compute data and environment polygons have been freed, so
+	 * the working-set drop from those releases is captured first. ---- */
 
-		cJSON *performance_obj = cJSON_CreateObject();
-		cJSON *perf_metrics_arr = cJSON_CreateArray();
-		cJSON_AddItemToObject(performance_obj, "metrics", perf_metrics_arr);
-
-		cJSON *metric = cJSON_CreateObject();
-		cJSON_AddNumberToObject(metric, "id", 1);
-		cJSON *value_arr = cJSON_CreateArray();
-		for (size_t i = 0; i < count; ++i)
-		{
-			cJSON_AddItemToArray(value_arr, cJSON_CreateNumber((double)samples[i]));
-		}
-		cJSON_AddItemToObject(metric, "value", value_arr);
-		cJSON_AddItemToArray(perf_metrics_arr, metric);
-
-		va_free_tracking_data();
-
-		cJSON_AddItemToObject(root, "performance", performance_obj);
-	}
-
-	char *json = cJSON_PrintUnformatted(root);
-	cJSON_Delete(root);
-	return json; // caller must free
+	return root;
 }
 
-static char *err_cleanup(bcd_event_list_t *event_list,
-						 cvector_vector_type(bcd_cell_t) * cell_list,
-						 cvector_vector_type(int) * path_list,
-						 bcd_motion_plan_t *motion_plan,
-						 int rc);
+static cJSON *err_cleanup(bcd_event_list_t *event_list,
+						  cvector_vector_type(bcd_cell_t) * cell_list,
+						  cvector_vector_type(int) * path_list,
+						  bcd_motion_plan_t *motion_plan,
+						  int rc);
 
-char *coverage_path_planning_process(const input_environment_t *env)
+cJSON *coverage_path_planning_process(const input_environment_t *env)
 {
 	bcd_event_list_t event_list;
 	event_list.bcd_events = NULL;
@@ -337,11 +309,17 @@ char *coverage_path_planning_process(const input_environment_t *env)
 	}
 	log_bcd_motion(motion_plan);
 
-	char *json_out = serialize_result_json(&event_list, &cell_list, &path_list, &motion_plan, env->track_memory_usage);
+	cJSON *root = serialize_result_json(&event_list, &cell_list, &path_list, &motion_plan);
 
-	err_cleanup(&event_list, &cell_list, &path_list, &motion_plan, rc);
+	/* Free compute data after serializing — these va_free calls are tracked,
+	 * so the working-set drop from releasing cell/path/motion/event data
+	 * appears in the sample vector before the snapshot is taken. */
+	free_bcd_event_list(&event_list);
+	free_bcd_cell_list(&cell_list);
+	cvector_free(path_list);
+	free_bcd_motion(&motion_plan);
 
-	return json_out;
+	return root;
 }
 
 
@@ -445,11 +423,11 @@ static char *serialize_event_list_json(const bcd_event_list_t *event_list)
 	return json; // caller must free
 }
 
-static char *err_cleanup(bcd_event_list_t *event_list,
-						 cvector_vector_type(bcd_cell_t) * cell_list,
-						 cvector_vector_type(int) * path_list,
-						 bcd_motion_plan_t *motion_plan,
-						 int rc)
+static cJSON *err_cleanup(bcd_event_list_t *event_list,
+						  cvector_vector_type(bcd_cell_t) * cell_list,
+						  cvector_vector_type(int) * path_list,
+						  bcd_motion_plan_t *motion_plan,
+						  int rc)
 {
 	free_bcd_event_list(event_list);
 	free_bcd_cell_list(cell_list);
@@ -460,9 +438,7 @@ static char *err_cleanup(bcd_event_list_t *event_list,
 	cJSON_AddStringToObject(err, "status", "error");
 	cJSON_AddNumberToObject(err, "code", rc);
 	cJSON_AddStringToObject(err, "message", "BCD computation failed");
-	char *out = cJSON_PrintUnformatted(err);
-	cJSON_Delete(err);
-	return out;
+	return err;
 }
 
 
