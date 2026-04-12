@@ -2,6 +2,7 @@
 #include <stdbool.h>
 #include "bcd_runner.h"
 #include "../../../../../dependencies/cJSON/cJSON.h"
+#include "../../../../../dependencies/allocator/allocator.h"
 #include "../../../../../dependencies/cvector/cvector.h"
 #include "bcd_core/bcd_event_list_building.h"
 #include "bcd_core/bcd_cell_computation.h"
@@ -17,7 +18,8 @@ static char *serialize_event_list_json(const bcd_event_list_t *event_list);
 static char *serialize_result_json(const bcd_event_list_t *event_list,
 								   cvector_vector_type(bcd_cell_t) * cell_list,
 								   cvector_vector_type(int) * path_list,
-								   const bcd_motion_plan_t *motion_plan)
+								   const bcd_motion_plan_t *motion_plan,
+								   bool track_memory_usage)
 {
 	cJSON *root = cJSON_CreateObject();
 
@@ -249,11 +251,32 @@ static char *serialize_result_json(const bcd_event_list_t *event_list,
 		cJSON_AddItemToArray(layers_arr, visit_layer);
 	}
 
-	/* ---- performance (stub — populated when Track Memory Usage is enabled) ---- */
+	/* ---- performance ---- */
+	if (track_memory_usage)
 	{
+		/* Snapshot the sample vector before disabling tracking so that the
+		 * cJSON calls used to build the metrics array do not add new samples
+		 * to the data we are reading (bootstrap guard). */
+		long   *samples = va_get_tracking_data();
+		size_t  count   = va_get_tracking_count();
+		va_tracking_disable();
+
 		cJSON *performance_obj = cJSON_CreateObject();
 		cJSON *perf_metrics_arr = cJSON_CreateArray();
 		cJSON_AddItemToObject(performance_obj, "metrics", perf_metrics_arr);
+
+		cJSON *metric = cJSON_CreateObject();
+		cJSON_AddNumberToObject(metric, "id", 1);
+		cJSON *value_arr = cJSON_CreateArray();
+		for (size_t i = 0; i < count; ++i)
+		{
+			cJSON_AddItemToArray(value_arr, cJSON_CreateNumber((double)samples[i]));
+		}
+		cJSON_AddItemToObject(metric, "value", value_arr);
+		cJSON_AddItemToArray(perf_metrics_arr, metric);
+
+		va_free_tracking_data();
+
 		cJSON_AddItemToObject(root, "performance", performance_obj);
 	}
 
@@ -314,7 +337,7 @@ char *coverage_path_planning_process(const input_environment_t *env)
 	}
 	log_bcd_motion(motion_plan);
 
-	char *json_out = serialize_result_json(&event_list, &cell_list, &path_list, &motion_plan);
+	char *json_out = serialize_result_json(&event_list, &cell_list, &path_list, &motion_plan, env->track_memory_usage);
 
 	err_cleanup(&event_list, &cell_list, &path_list, &motion_plan, rc);
 

@@ -4,6 +4,7 @@
 
 #include "bcd_check.h"
 #include "../../../../dependencies/cJSON/cjson.h"
+#include "../../../../dependencies/allocator/allocator.h"
 
 static void bcd_init_environment(input_environment_t *environment)
 {
@@ -17,6 +18,7 @@ static void bcd_init_environment(input_environment_t *environment)
 	environment->boundary.edge_count = 0;
 	environment->obstacles = NULL;
 	environment->obstacle_count = 0;
+	environment->track_memory_usage = false;
 }
 
 static void bcd_set_result(bcd_check_result_t *result, bool ok, const char *code, const char *message)
@@ -191,7 +193,7 @@ static int bcd_build_edges(polygon_t *polygon)
 
 	if (polygon->edges != NULL)
 	{
-		free(polygon->edges);
+		va_free(polygon->edges);
 		polygon->edges = NULL;
 		polygon->edge_count = 0;
 	}
@@ -201,7 +203,7 @@ static int bcd_build_edges(polygon_t *polygon)
 		return -2;
 	}
 
-	polygon_edge_t *edges = (polygon_edge_t *)malloc((size_t)polygon->vertex_count * sizeof(polygon_edge_t));
+	polygon_edge_t *edges = (polygon_edge_t *)va_malloc((size_t)polygon->vertex_count * sizeof(polygon_edge_t));
 	if (edges == NULL)
 	{
 		return -3;
@@ -247,7 +249,7 @@ static bool bcd_parse_polygon(
 		return false;
 	}
 
-	point_t *parsed_vertices = (point_t *)malloc((size_t)vertex_count * sizeof(point_t));
+	point_t *parsed_vertices = (point_t *)va_malloc((size_t)vertex_count * sizeof(point_t));
 	if (parsed_vertices == NULL)
 	{
 		bcd_set_result(result, false, "allocation_failed", "Failed to allocate polygon vertices.");
@@ -261,7 +263,7 @@ static bool bcd_parse_polygon(
 		const cJSON *y = cJSON_GetObjectItemCaseSensitive(point, "y");
 		if (!cJSON_IsObject(point) || !cJSON_IsNumber(x) || !cJSON_IsNumber(y))
 		{
-			free(parsed_vertices);
+			va_free(parsed_vertices);
 			bcd_set_result(result, false, invalid_code, invalid_message);
 			return false;
 		}
@@ -278,7 +280,7 @@ static bool bcd_parse_polygon(
 
 	if (bcd_build_edges(polygon) != 0)
 	{
-		free(parsed_vertices);
+		va_free(parsed_vertices);
 		polygon->vertices = NULL;
 		polygon->vertex_count = 0;
 		bcd_set_result(result, false, "allocation_failed", "Failed to allocate polygon edges.");
@@ -297,13 +299,13 @@ void free_polygon(polygon_t *polygon)
 
 	if (polygon->vertices != NULL)
 	{
-		free(polygon->vertices);
+		va_free(polygon->vertices);
 		polygon->vertices = NULL;
 	}
 
 	if (polygon->edges != NULL)
 	{
-		free(polygon->edges);
+		va_free(polygon->edges);
 		polygon->edges = NULL;
 	}
 
@@ -328,7 +330,7 @@ void free_input_environment(input_environment_t *environment)
 			free_polygon(&environment->obstacles[index]);
 		}
 
-		free(environment->obstacles);
+		va_free(environment->obstacles);
 		environment->obstacles = NULL;
 	}
 
@@ -420,7 +422,7 @@ bool bcd_check_request_json(const char *request_json, input_environment_t *envir
 	int obstacle_count = cJSON_IsArray(obstacles) ? cJSON_GetArraySize(obstacles) : 0;
 	if (obstacle_count > 0)
 	{
-		environment->obstacles = (polygon_t *)calloc((size_t)obstacle_count, sizeof(polygon_t));
+		environment->obstacles = (polygon_t *)va_calloc((size_t)obstacle_count, sizeof(polygon_t));
 		if (environment->obstacles == NULL)
 		{
 			cJSON_Delete(root);
@@ -553,6 +555,8 @@ bool bcd_check_request_json(const char *request_json, input_environment_t *envir
 		free_input_environment(environment);
 		return false;
 	}
+
+	environment->track_memory_usage = track_memory_usage;
 
 	cJSON_Delete(root);
 	bcd_set_result(result, true, NULL, NULL);

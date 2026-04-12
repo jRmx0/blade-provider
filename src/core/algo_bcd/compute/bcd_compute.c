@@ -43,18 +43,80 @@ static char *bcd_create_error_json(const char *code, const char *message)
 	return json;
 }
 
+/* Pre-extract the "Track Memory Usage" boolean from the request before any
+ * allocator or cJSON hook is configured. Uses the default CRT-backed cJSON
+ * so this infrastructure parse is never included in the tracked samples.
+ * Defaults to false on any parse failure. */
+static bool bcd_prefetch_track_flag(const char *json)
+{
+	if (json == NULL)
+	{
+		return false;
+	}
+
+	cJSON *root = cJSON_Parse(json);
+	if (!cJSON_IsObject(root))
+	{
+		cJSON_Delete(root);
+		return false;
+	}
+
+	const cJSON *parameters = cJSON_GetObjectItemCaseSensitive(root, "parameters");
+	if (!cJSON_IsObject(parameters))
+	{
+		cJSON_Delete(root);
+		return false;
+	}
+
+	const cJSON *value = cJSON_GetObjectItemCaseSensitive(parameters, "Track Memory Usage");
+	bool result = false;
+	if (cJSON_IsBool(value))
+	{
+		result = cJSON_IsTrue(value);
+	}
+	else if (cJSON_IsString(value) && value->valuestring != NULL)
+	{
+		result = strcmp(value->valuestring, "true") == 0;
+	}
+
+	cJSON_Delete(root);
+	return result;
+}
+
 char *bcd_run_compute(const char *input_environment_json)
 {
-	va_tracking_set_baseline();
-	
+	bool track_memory_usage = bcd_prefetch_track_flag(input_environment_json);
+
+	/* Hook cJSON so all its internal allocations go through the VirtualAlloc
+	 * allocator and are captured in the tracking vector. */
+	cJSON_Hooks hooks = { va_malloc, va_free };
+	cJSON_InitHooks(&hooks);
+
+	if (track_memory_usage)
+	{
+		va_free_tracking_data();
+		va_tracking_enable();
+		va_tracking_set_baseline();
+	}
+	else
+	{
+		va_tracking_disable();
+		va_free_tracking_data();
+	}
+
 	input_environment_t environment;
 	bcd_check_result_t check_result;
 	if (!bcd_check_request_json(input_environment_json, &environment, &check_result))
 	{
+		va_tracking_enable();
+		cJSON_InitHooks(NULL);
 		return bcd_create_error_json(check_result.code, check_result.message);
 	}
 
 	char *result = coverage_path_planning_process(&environment);
 	free_input_environment(&environment);
+
+	va_tracking_enable();
+	cJSON_InitHooks(NULL);
 	return result;
 }
