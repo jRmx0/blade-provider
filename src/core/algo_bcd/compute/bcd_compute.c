@@ -129,8 +129,9 @@ char *bcd_run_compute(const char *input_environment_json)
 	{
 		/* All compute data and environment polygons have now been freed via
 		 * va_free. Snapshot captures the full arc including the drop. */
-		long   *samples = va_get_tracking_data();
-		size_t  count   = va_get_tracking_count();
+		long   *samples  = va_get_tracking_data();
+		size_t  count    = va_get_tracking_count();
+		long    baseline = va_get_baseline();
 		va_tracking_disable();
 
 		/* Only attach performance to successful results. */
@@ -146,6 +147,14 @@ char *bcd_run_compute(const char *input_environment_json)
 				cJSON_AddItemToArray(val_arr, cJSON_CreateNumber((double)samples[i]));
 			cJSON_AddItemToObject(metric, "value", val_arr);
 			cJSON_AddItemToArray(metrics_arr, metric);
+
+			/* id=2 Baseline Memory Usage — absolute working-set floor in bytes
+			 * before the BCD tracking window began. Single-value metric. */
+			cJSON *baseline_metric = cJSON_CreateObject();
+			cJSON_AddNumberToObject(baseline_metric, "id", 2);
+			cJSON_AddNumberToObject(baseline_metric, "value", (double)baseline);
+			cJSON_AddItemToArray(metrics_arr, baseline_metric);
+
 			cJSON_AddItemToObject(root, "performance", perf);
 		}
 		va_free_tracking_data();
