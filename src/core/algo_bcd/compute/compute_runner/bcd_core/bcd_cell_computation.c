@@ -103,31 +103,31 @@ int compute_bcd_cells(const bcd_event_list_t *event_list,
 
         switch (curr_evt_type)
         {
-        case SIDE_IN:
+        case BCD_SIDE_IN:
             rc = handle_side_in(curr_evt, cell_list);
             break;
 
-        case IN:
+        case BCD_IN:
             rc = handle_in(curr_evt, cell_list);
             break;
 
-        case SIDE_OUT:
+        case BCD_SIDE_OUT:
             rc = handle_side_out(curr_evt, cell_list);
             break;
 
-        case OUT:
+        case BCD_OUT:
             rc = handle_out(curr_evt, cell_list);
             break;
 
-        case FLOOR:
+        case BCD_FLOOR:
             rc = handle_floor(curr_evt, cell_list);
             break;
 
-        case CEILING:
+        case BCD_CEILING:
             rc = handle_ceiling(curr_evt, cell_list);
             break;
 
-        case NONE:
+        case BCD_NONE:
             return -2; // Unhandled event
 
         default:
@@ -236,7 +236,7 @@ static int handle_in(const bcd_event_t curr_evt,
                     prev_cell_index,
                     c_point,
                     f_point,
-                    IN,
+                    BCD_IN,
                     (int)top_cell_index,
                     (int)bottom_cell_index);
 
@@ -336,7 +336,7 @@ static int handle_side_out(const bcd_event_t curr_evt,
                     (int)cell_index,
                     curr_evt.polygon_vertex,
                     curr_evt.polygon_vertex,
-                    SIDE_OUT,
+                    BCD_SIDE_OUT,
                     -1,
                     -1);
 
@@ -397,7 +397,7 @@ static int handle_out(const bcd_event_t curr_evt,
                     top_cell_index,
                     c_pt,
                     curr_evt.polygon_vertex,
-                    OUT,
+                    BCD_OUT,
                     new_cell_index,
                     -1);
 
@@ -405,7 +405,7 @@ static int handle_out(const bcd_event_t curr_evt,
                     bottom_cell_index,
                     curr_evt.polygon_vertex,
                     f_pt,
-                    OUT,
+                    BCD_OUT,
                     new_cell_index,
                     -1);
 
@@ -611,7 +611,7 @@ static void update_bcd_cell(cvector_vector_type(bcd_cell_t) * cell_list,
     (*cell_list)[target_cell_index].c_end = c_pt;
     (*cell_list)[target_cell_index].f_begin = f_pt;
 
-    if (evt_type == IN)
+    if (evt_type == BCD_IN)
     {
         if (top_cell_index >= 0)
             add_head_cell_neighbor_list(&(*cell_list)[target_cell_index].neighbor_list,
@@ -621,7 +621,7 @@ static void update_bcd_cell(cvector_vector_type(bcd_cell_t) * cell_list,
                                         bottom_cell_index);
     }
 
-    if (evt_type == OUT)
+    if (evt_type == BCD_OUT)
     {
         if (top_cell_index >= 0)
             add_tail_cell_neighbor_list(&(*cell_list)[target_cell_index].neighbor_list,

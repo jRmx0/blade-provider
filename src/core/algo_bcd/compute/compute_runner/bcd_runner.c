@@ -350,29 +350,29 @@ static const char *event_type_to_string(bcd_event_type_t t)
 {
 	switch (t)
 	{
-	case B_INIT:
+	case BCD_B_INIT:
 		return "B_INIT";
-	case B_DEINIT:
+	case BCD_B_DEINIT:
 		return "B_DEINIT";
-	case B_IN:
+	case BCD_B_IN:
 		return "B_IN";
-	case B_OUT:
+	case BCD_B_OUT:
 		return "B_OUT";
-	case B_SIDE_IN:
+	case BCD_B_SIDE_IN:
 		return "B_SIDE_IN";
-	case B_SIDE_OUT:
+	case BCD_B_SIDE_OUT:
 		return "B_SIDE_OUT";
-	case IN:
+	case BCD_IN:
 		return "IN";
-	case SIDE_IN:
+	case BCD_SIDE_IN:
 		return "SIDE_IN";
-	case OUT:
+	case BCD_OUT:
 		return "OUT";
-	case SIDE_OUT:
+	case BCD_SIDE_OUT:
 		return "SIDE_OUT";
-	case FLOOR:
+	case BCD_FLOOR:
 		return "FLOOR";
-	case CEILING:
+	case BCD_CEILING:
 		return "CEILING";
 	default:
 		return "UNKNOWN";
@@ -479,43 +479,43 @@ static void log_event_list(const bcd_event_list_t *event_list)
 			const char *type_str = "UNKNOWN";
 			switch (event_list->bcd_events[i].bcd_event_type)
 			{
-			case B_INIT:
+			case BCD_B_INIT:
 				type_str = "B_INIT";
 				break;
-			case B_DEINIT:
+			case BCD_B_DEINIT:
 				type_str = "B_DEINIT";
 				break;
-			case B_IN:
+			case BCD_B_IN:
 				type_str = "B_IN";
 				break;
-			case B_OUT:
+			case BCD_B_OUT:
 				type_str = "B_OUT";
 				break;
-			case B_SIDE_IN:
+			case BCD_B_SIDE_IN:
 				type_str = "B_SIDE_IN";
 				break;
-			case B_SIDE_OUT:
+			case BCD_B_SIDE_OUT:
 				type_str = "B_SIDE_OUT";
 				break;
-			case IN:
+			case BCD_IN:
 				type_str = "IN";
 				break;
-			case SIDE_IN:
+			case BCD_SIDE_IN:
 				type_str = "SIDE_IN";
 				break;
-			case OUT:
+			case BCD_OUT:
 				type_str = "OUT";
 				break;
-			case SIDE_OUT:
+			case BCD_SIDE_OUT:
 				type_str = "SIDE_OUT";
 				break;
-			case FLOOR:
+			case BCD_FLOOR:
 				type_str = "FLOOR";
 				break;
-			case CEILING:
+			case BCD_CEILING:
 				type_str = "CEILING";
 				break;
-			case NONE:
+			case BCD_NONE:
 				break;
 			}
 			printf("  Event %d: (%.2f, %.2f) type=%s polygon=%s\n",

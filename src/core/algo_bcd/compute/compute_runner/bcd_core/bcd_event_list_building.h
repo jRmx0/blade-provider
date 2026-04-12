@@ -7,24 +7,24 @@
 #include "../../../internal.h"
 
 typedef enum {
-    B_IN,
-    B_SIDE_IN,
-    B_INIT,
+    BCD_B_IN,
+    BCD_B_SIDE_IN,
+    BCD_B_INIT,
     
-    B_OUT,
-    B_SIDE_OUT,
-    B_DEINIT,
+    BCD_B_OUT,
+    BCD_B_SIDE_OUT,
+    BCD_B_DEINIT,
 
-    IN,                 
-    SIDE_IN,
+    BCD_IN,                 
+    BCD_SIDE_IN,
     
-    OUT,
-    SIDE_OUT,
+    BCD_OUT,
+    BCD_SIDE_OUT,
     
-    FLOOR,
-    CEILING,
+    BCD_FLOOR,
+    BCD_CEILING,
 
-    NONE
+    BCD_NONE
 } bcd_event_type_t;
 
 typedef struct {

@@ -189,7 +189,7 @@ static int find_leftmost_event(const polygon_t polygon,
     polygon_type_t polygon_type;
     polygon_type = polygon.winding == POLYGON_WINDING_CW ? BOUNDARY : OBSTACLE;
     bcd_event_type_t event_type;
-    event_type = polygon_type == BOUNDARY ? SIDE_IN : IN;
+    event_type = polygon_type == BOUNDARY ? BCD_SIDE_IN : BCD_IN;
 
     leftmost_event = fill_bcd_event(polygon_type,
                                     polygon.vertices[leftmost_index],
@@ -223,36 +223,36 @@ static int find_common_event(const polygon_t polygon,
 
     if (in_event(polygon.edges[terminating], polygon.edges[emanating]))
     {
-        event_type = IN;
+        event_type = BCD_IN;
         floor_edge_index = terminating;
         ceiling_edge_index = emanating;
     }
     else if (side_in_event(polygon.edges[terminating], polygon.edges[emanating]))
     {
-        event_type = SIDE_IN;
+        event_type = BCD_SIDE_IN;
         floor_edge_index = terminating;
         ceiling_edge_index = emanating;
     }
     else if (out_event(polygon.edges[emanating], polygon.edges[terminating]))
     {
-        event_type = OUT;
+        event_type = BCD_OUT;
         floor_edge_index = emanating;
         ceiling_edge_index = terminating;
     }
     else if (side_out_event(polygon.edges[emanating], polygon.edges[terminating]))
     {
-        event_type = SIDE_OUT;
+        event_type = BCD_SIDE_OUT;
         floor_edge_index = emanating;
         ceiling_edge_index = terminating;
     }
-    else if ((event_type = floor_or_ceiling_event(event_list)) != NONE)
+    else if ((event_type = floor_or_ceiling_event(event_list)) != BCD_NONE)
     {
-        if (event_type == FLOOR)
+        if (event_type == BCD_FLOOR)
         {
             floor_edge_index = terminating;
             ceiling_edge_index = -1;
         }
-        else if (event_type == CEILING)
+        else if (event_type == BCD_CEILING)
         {
             floor_edge_index = -1;
             ceiling_edge_index = emanating;
@@ -375,14 +375,14 @@ static bcd_event_type_t floor_or_ceiling_event(const bcd_event_list_t *event_lis
     {
         bcd_event_type_t prev_event = event_list->bcd_events[i].bcd_event_type;
 
-        if (prev_event == B_INIT || prev_event == B_IN || prev_event == B_SIDE_IN || prev_event == IN || prev_event == SIDE_IN)
-            return CEILING;
+        if (prev_event == BCD_B_INIT || prev_event == BCD_B_IN || prev_event == BCD_B_SIDE_IN || prev_event == BCD_IN || prev_event == BCD_SIDE_IN)
+            return BCD_CEILING;
 
-        if (prev_event == B_DEINIT || prev_event == B_OUT || prev_event == B_SIDE_OUT || prev_event == OUT || prev_event == SIDE_OUT)
-            return FLOOR;
+        if (prev_event == BCD_B_DEINIT || prev_event == BCD_B_OUT || prev_event == BCD_B_SIDE_OUT || prev_event == BCD_OUT || prev_event == BCD_SIDE_OUT)
+            return BCD_FLOOR;
     }
 
-    return NONE;
+    return BCD_NONE;
 }
 
 static float compute_vector_angle_degrees(polygon_edge_t poly_edge)
