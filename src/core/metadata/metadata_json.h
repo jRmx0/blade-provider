@@ -60,7 +60,7 @@ static inline void metadata_add_parameter(
  * Appends one performance metric entry { "id": id, "name": name, "type": type [, "group": group] }
  * to the given metrics array.  Pass NULL for group to omit the field.
  */
-static inline void metadata_add_metric(
+static inline cJSON *metadata_add_metric(
     cJSON *metrics,
     int id,
     const char *name,
@@ -74,6 +74,25 @@ static inline void metadata_add_metric(
     if (group != NULL)
         cJSON_AddStringToObject(metric, "group", group);
     cJSON_AddItemToArray(metrics, metric);
+    return metric;
+}
+
+/*
+ * Attaches a "style" sub-object to a Time-series metric with optional axis labels.
+ * Pass NULL for either label to omit that field.
+ * Call this immediately after metadata_add_metric for Time-series metrics.
+ */
+static inline void metadata_add_timeseries_style(
+    cJSON *metric,
+    const char *x_axis_label,
+    const char *y_axis_label)
+{
+    cJSON *style = cJSON_CreateObject();
+    if (x_axis_label != NULL)
+        cJSON_AddStringToObject(style, "xAxisLabel", x_axis_label);
+    if (y_axis_label != NULL)
+        cJSON_AddStringToObject(style, "yAxisLabel", y_axis_label);
+    cJSON_AddItemToObject(metric, "style", style);
 }
 
 /*

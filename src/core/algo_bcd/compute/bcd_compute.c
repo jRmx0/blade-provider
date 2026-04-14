@@ -28,6 +28,8 @@
 #include "compute_runner/bcd_core/bcd_geometry.c"
 #include "compute_runner/bcd_runner.c"
 
+#define BYTES_PER_KB 1024.0
+
 static char *bcd_create_error_json(const char *code, const char *message)
 {
 	cJSON *response = cJSON_CreateObject();
@@ -144,15 +146,15 @@ char *bcd_run_compute(const char *input_environment_json)
 			cJSON_AddNumberToObject(metric, "id", 1);
 			cJSON *val_arr = cJSON_CreateArray();
 			for (size_t i = 0; i < count; ++i)
-				cJSON_AddItemToArray(val_arr, cJSON_CreateNumber((double)samples[i]));
+				cJSON_AddItemToArray(val_arr, cJSON_CreateNumber((double)samples[i] / BYTES_PER_KB));
 			cJSON_AddItemToObject(metric, "value", val_arr);
 			cJSON_AddItemToArray(metrics_arr, metric);
 
-			/* id=2 Baseline Memory Usage — absolute working-set floor in bytes
+			/* id=2 Baseline Memory Usage — absolute working-set floor in KB
 			 * before the BCD tracking window began. Single-value metric. */
 			cJSON *baseline_metric = cJSON_CreateObject();
 			cJSON_AddNumberToObject(baseline_metric, "id", 2);
-			cJSON_AddNumberToObject(baseline_metric, "value", (double)baseline);
+			cJSON_AddNumberToObject(baseline_metric, "value", (double)baseline / BYTES_PER_KB);
 			cJSON_AddItemToArray(metrics_arr, baseline_metric);
 
 			cJSON_AddItemToObject(root, "performance", perf);
