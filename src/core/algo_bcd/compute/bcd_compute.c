@@ -26,6 +26,7 @@
 #include "compute_runner/bcd_core/bcd_coverage_planning.c"
 #include "compute_runner/bcd_core/bcd_motion_planning.c"
 #include "compute_runner/bcd_core/bcd_geometry.c"
+#include "../preprocess/bcd_preprocess.c"
 #include "compute_runner/bcd_runner.c"
 
 #define BYTES_PER_KB 1024.0

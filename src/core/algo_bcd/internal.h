@@ -65,7 +65,8 @@ typedef struct
 
 // Runs the BCD computation pipeline on a pre-validated, pre-parsed environment.
 // Returns a cJSON object owned by the caller.
-cJSON *coverage_path_planning_process(const input_environment_t *env);
+// Mutates env in-place (preprocessing resolves sweep-axis vertex collisions).
+cJSON *coverage_path_planning_process(input_environment_t *env);
 
 // API calls
 

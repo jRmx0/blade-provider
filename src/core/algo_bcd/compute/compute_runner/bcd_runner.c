@@ -8,6 +8,7 @@
 #include "bcd_core/bcd_coverage_planning.h"
 #include "bcd_core/bcd_motion_planning.h"
 #include "bcd_core/bcd_geometry.h"
+#include "../../preprocess/bcd_preprocess.h"
 
 static void log_event_list(const bcd_event_list_t *event_list);
 static const char *event_type_to_string(bcd_event_type_t t);
@@ -262,13 +263,20 @@ static cJSON *err_cleanup(bcd_event_list_t *event_list,
 						  bcd_motion_plan_t *motion_plan,
 						  int rc);
 
-cJSON *coverage_path_planning_process(const input_environment_t *env)
+cJSON *coverage_path_planning_process(input_environment_t *env)
 {
 	bcd_event_list_t event_list;
 	event_list.bcd_events = NULL;
 	event_list.length = 0;
 
-	int rc = build_bcd_event_list(env, &event_list);
+	int rc = bcd_preprocess_environment(env, 0.0f);
+	if (rc != 0)
+	{
+		printf("coverage_path_planning: environment preprocessing failed (code %d)\n", rc);
+		return err_cleanup(&event_list, NULL, NULL, NULL, rc);
+	}
+
+	rc = build_bcd_event_list(env, &event_list);
 	if (rc != 0)
 	{
 		printf("coverage_path_planning: BCD event list generation failed (code %d)\n", rc);
