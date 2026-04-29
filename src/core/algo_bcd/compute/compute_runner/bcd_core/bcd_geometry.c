@@ -1,7 +1,7 @@
 #include "bcd_geometry.h"
 
 /* ---- grid resolution and refinement tolerance ---- */
-#define FARTHEST_GRID_N   32
+#define FARTHEST_GRID_N 32
 #define FARTHEST_MIN_STEP 1e-4f
 
 /* ------------------------------------------------------------------ */
@@ -23,8 +23,10 @@ static float seg_dist_sq(point_t P, point_t A, point_t B)
         return apx * apx + apy * apy;
     }
     float t = (apx * abx + apy * aby) / len_sq;
-    if (t < 0.0f) t = 0.0f;
-    if (t > 1.0f) t = 1.0f;
+    if (t < 0.0f)
+        t = 0.0f;
+    if (t > 1.0f)
+        t = 1.0f;
     float dx = apx - t * abx;
     float dy = apy - t * aby;
     return dx * dx + dy * dy;
@@ -39,7 +41,7 @@ static float seg_dist_sq(point_t P, point_t A, point_t B)
 static void cell_interp_bounds(const bcd_cell_t *cell, float x,
                                float *out_ceil_y, float *out_floor_y)
 {
-    int ceil_n  = (int)cvector_size(cell->ceiling_edge_list);
+    int ceil_n = (int)cvector_size(cell->ceiling_edge_list);
     int floor_n = (int)cvector_size(cell->floor_edge_list);
 
     /* ceiling y (left → right) */
@@ -49,16 +51,17 @@ static void cell_interp_bounds(const bcd_cell_t *cell, float x,
         for (int j = 0; j < ceil_n; ++j)
         {
             float bx = (j < ceil_n - 1) ? cell->ceiling_edge_list[j].end.x
-                                         : cell->c_end.x;
+                                        : cell->c_end.x;
             float by = (j < ceil_n - 1) ? cell->ceiling_edge_list[j].end.y
-                                         : cell->c_end.y;
+                                        : cell->c_end.y;
             if (x <= bx || j == ceil_n - 1)
             {
                 float dx = bx - ax;
                 ceil_y = (dx < 1e-9f) ? ay : ay + (x - ax) / dx * (by - ay);
                 break;
             }
-            ax = bx; ay = by;
+            ax = bx;
+            ay = by;
         }
     }
 
@@ -76,11 +79,12 @@ static void cell_interp_bounds(const bcd_cell_t *cell, float x,
                 floor_y = (dx < 1e-9f) ? ay : ay + (ax - x) / dx * (by - ay);
                 break;
             }
-            ax = bx; ay = by;
+            ax = bx;
+            ay = by;
         }
     }
 
-    *out_ceil_y  = ceil_y;
+    *out_ceil_y = ceil_y;
     *out_floor_y = floor_y;
 }
 
@@ -95,20 +99,22 @@ static void cell_interp_bounds(const bcd_cell_t *cell, float x,
  */
 static float cell_min_edge_dist_sq(point_t P, const bcd_cell_t *cell)
 {
-    int   ceil_n  = (int)cvector_size(cell->ceiling_edge_list);
-    int   floor_n = (int)cvector_size(cell->floor_edge_list);
-    float min_d   = 1e38f;
+    int ceil_n = (int)cvector_size(cell->ceiling_edge_list);
+    int floor_n = (int)cvector_size(cell->floor_edge_list);
+    float min_d = 1e38f;
     float d;
 
     /* left vertical */
     d = seg_dist_sq(P, cell->c_begin, cell->f_end);
-    if (d < min_d) min_d = d;
+    if (d < min_d)
+        min_d = d;
 
     /* ceiling chain (left → right) */
     if (ceil_n == 0)
     {
         d = seg_dist_sq(P, cell->c_begin, cell->c_end);
-        if (d < min_d) min_d = d;
+        if (d < min_d)
+            min_d = d;
     }
     else
     {
@@ -116,25 +122,29 @@ static float cell_min_edge_dist_sq(point_t P, const bcd_cell_t *cell)
         for (int j = 0; j < ceil_n; ++j)
         {
             float bx = (j < ceil_n - 1) ? cell->ceiling_edge_list[j].end.x
-                                         : cell->c_end.x;
+                                        : cell->c_end.x;
             float by = (j < ceil_n - 1) ? cell->ceiling_edge_list[j].end.y
-                                         : cell->c_end.y;
+                                        : cell->c_end.y;
             point_t A = {ax, ay}, B = {bx, by};
             d = seg_dist_sq(P, A, B);
-            if (d < min_d) min_d = d;
-            ax = bx; ay = by;
+            if (d < min_d)
+                min_d = d;
+            ax = bx;
+            ay = by;
         }
     }
 
     /* right vertical */
     d = seg_dist_sq(P, cell->c_end, cell->f_begin);
-    if (d < min_d) min_d = d;
+    if (d < min_d)
+        min_d = d;
 
     /* floor chain (right → left) */
     if (floor_n == 0)
     {
         d = seg_dist_sq(P, cell->f_begin, cell->f_end);
-        if (d < min_d) min_d = d;
+        if (d < min_d)
+            min_d = d;
     }
     else
     {
@@ -145,8 +155,10 @@ static float cell_min_edge_dist_sq(point_t P, const bcd_cell_t *cell)
             float by = (j > 0) ? cell->floor_edge_list[j].end.y : cell->f_end.y;
             point_t A = {ax, ay}, B = {bx, by};
             d = seg_dist_sq(P, A, B);
-            if (d < min_d) min_d = d;
-            ax = bx; ay = by;
+            if (d < min_d)
+                min_d = d;
+            ax = bx;
+            ay = by;
         }
     }
 
@@ -177,12 +189,12 @@ point_t bcd_cell_farthest_interior_point(const bcd_cell_t *cell)
      *   new y is clamped to the interior at that column.  Because boundary-clamped
      *   candidates have min-dist 0 they are never accepted, so clamping is safe.
      */
-    float left_x     = cell->c_begin.x;
-    float right_x    = cell->c_end.x;
+    float left_x = cell->c_begin.x;
+    float right_x = cell->c_end.x;
     float cell_width = right_x - left_x;
 
-    point_t best   = cell->c_begin; /* overwritten by first valid grid hit */
-    float   best_d = -1.0f;
+    point_t best = cell->c_begin; /* overwritten by first valid grid hit */
+    float best_d = -1.0f;
 
     /* ---- Phase 1: grid scan ---- */
     for (int ix = 0; ix < FARTHEST_GRID_N; ++ix)
@@ -192,7 +204,8 @@ point_t bcd_cell_farthest_interior_point(const bcd_cell_t *cell)
         cell_interp_bounds(cell, x, &ceil_y, &floor_y);
 
         float h = floor_y - ceil_y;
-        if (h < 1e-9f) continue; /* degenerate column, skip */
+        if (h < 1e-9f)
+            continue; /* degenerate column, skip */
 
         for (int iy = 0; iy < FARTHEST_GRID_N; ++iy)
         {
@@ -204,7 +217,7 @@ point_t bcd_cell_farthest_interior_point(const bcd_cell_t *cell)
             if (d > best_d)
             {
                 best_d = d;
-                best   = P;
+                best = P;
             }
         }
     }
@@ -215,8 +228,8 @@ point_t bcd_cell_farthest_interior_point(const bcd_cell_t *cell)
     {
         int improved = 0;
 
-        const float ddx[4] = { step, -step, 0.0f,  0.0f  };
-        const float ddy[4] = { 0.0f,  0.0f, step, -step  };
+        const float ddx[4] = {step, -step, 0.0f, 0.0f};
+        const float ddy[4] = {0.0f, 0.0f, step, -step};
 
         for (int k = 0; k < 4; ++k)
         {
@@ -224,15 +237,20 @@ point_t bcd_cell_farthest_interior_point(const bcd_cell_t *cell)
             float ny = best.y + ddy[k];
 
             /* clamp x to cell x-range */
-            if (nx < left_x)  nx = left_x;
-            if (nx > right_x) nx = right_x;
+            if (nx < left_x)
+                nx = left_x;
+            if (nx > right_x)
+                nx = right_x;
 
             /* clamp y to interior at the new x */
             float cy, fy;
             cell_interp_bounds(cell, nx, &cy, &fy);
-            if (fy - cy < 1e-9f) continue;
-            if (ny < cy) ny = cy;
-            if (ny > fy) ny = fy;
+            if (fy - cy < 1e-9f)
+                continue;
+            if (ny < cy)
+                ny = cy;
+            if (ny > fy)
+                ny = fy;
 
             point_t P;
             P.x = nx;
@@ -241,14 +259,25 @@ point_t bcd_cell_farthest_interior_point(const bcd_cell_t *cell)
             float d = cell_min_edge_dist_sq(P, cell);
             if (d > best_d)
             {
-                best_d   = d;
-                best     = P;
+                best_d = d;
+                best = P;
                 improved = 1;
             }
         }
 
-        if (!improved) step *= 0.5f;
+        if (!improved)
+            step *= 0.5f;
     }
 
     return best;
+}
+
+point_t bcd_cell_midpoint_at_x(const bcd_cell_t *cell, float x)
+{
+    float ceil_y, floor_y;
+    cell_interp_bounds(cell, x, &ceil_y, &floor_y);
+    point_t p;
+    p.x = x;
+    p.y = (ceil_y + floor_y) / 2.0f;
+    return p;
 }

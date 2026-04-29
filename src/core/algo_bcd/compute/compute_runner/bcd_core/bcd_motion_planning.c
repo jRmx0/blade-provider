@@ -5,6 +5,7 @@
 
 #include "bcd_cell_computation.h"
 #include "bcd_motion_planning.h"
+#include "bcd_geometry.h"
 
 // --- COMPUTE_BCD_MOTION
 
@@ -57,17 +58,33 @@ static bool compute_sweep_endpoints(float x,
 
 // --- ---
 
-static bool append_sweep_line_connection(cvector_vector_type(point_t) *ox,
+static bool append_sweep_line_connection(cvector_vector_type(point_t) * ox,
                                          float current_x, float next_x,
                                          const bcd_cell_t *cell, bool going_down);
 
 // --- --- COMPUTE_BOUSTROPHEDON_MOTION
 
+static point_t compute_crossing_waypoint(const bcd_cell_t *cell_a, const bcd_cell_t *cell_b);
+
+// ---
+
+static void append_cell_spine_waypoints(cvector_vector_type(point_t) * nav,
+                                        const bcd_cell_t *cell,
+                                        float x_from, float x_to);
+
+// ---
+
+static cvector_vector_type(int) extract_cell_chain(const cvector_vector_type(int) * path_list,
+                                                   int begin_path_pos,
+                                                   int end_path_pos);
+
+// ---
+
 static cvector_vector_type(point_t) compute_connection_motion(const cvector_vector_type(bcd_cell_t) * cell_list,
                                                               const cvector_vector_type(int) * path_list,
-                                                              int begin_cell_index,
+                                                              int begin_path_pos,
                                                               point_t begin_point,
-                                                              int end_cell_index,
+                                                              int end_path_pos,
                                                               point_t end_point);
 
 // IMPLEMENTATION --- compute_bcd_motion ----------------------------
@@ -77,10 +94,8 @@ int compute_bcd_motion(cvector_vector_type(bcd_cell_t) * cell_list,
                        bcd_motion_plan_t *motion_plan,
                        float step_size)
 {
-    int begin_cell_index;
+    int begin_path_pos = 0;
     point_t begin_point = {0};
-    int end_cell_index;
-    point_t end_point = {0};
     bool compute_nav = false;
 
     size_t i;
@@ -104,26 +119,25 @@ int compute_bcd_motion(cvector_vector_type(bcd_cell_t) * cell_list,
 
         if (compute_nav)
         {
-            end_cell_index = (*path_list)[i];
-            end_point = *cvector_front(ox);
+            point_t end_point = *cvector_front(ox);
 
             nav = compute_connection_motion((const cvector_vector_type(bcd_cell_t) *)cell_list,
                                             (const cvector_vector_type(int) *)path_list,
-                                            begin_cell_index,
+                                            begin_path_pos,
                                             begin_point,
-                                            end_cell_index,
+                                            (int)i,
                                             end_point);
         }
 
         cell_motion_plan_t curr_section;
         curr_section.ox = ox;
-        curr_section.nav = nav; // Navigation not implemented yet
+        curr_section.nav = nav;
 
         cvector_push_back(motion_plan->section, curr_section);
 
         (*cell_list)[(*path_list)[i]].cleaned = true;
 
-        begin_cell_index = (*path_list)[i];
+        begin_path_pos = (int)i;
         begin_point = *cvector_back(ox);
         compute_nav = true;
     }
@@ -147,8 +161,8 @@ static cvector_vector_type(point_t) compute_boustrophedon_motion(const cvector_v
     const bcd_cell_t *cell = &(*cell_list)[cell_index];
 
     float cell_start_x = cell->c_begin.x;
-    float cell_end_x   = cell->c_end.x;
-    float cell_width   = cell_end_x - cell_start_x;
+    float cell_end_x = cell->c_end.x;
+    float cell_width = cell_end_x - cell_start_x;
 
     if (cell_width <= 0 || step_size <= 0)
     {
@@ -166,7 +180,7 @@ static cvector_vector_type(point_t) compute_boustrophedon_motion(const cvector_v
         point_t start_point, end_point;
         if (!compute_sweep_endpoints(current_x,
                                      cell->ceiling_edge_list, (int)cvector_size(cell->ceiling_edge_list),
-                                     cell->floor_edge_list,   (int)cvector_size(cell->floor_edge_list),
+                                     cell->floor_edge_list, (int)cvector_size(cell->floor_edge_list),
                                      going_down, &start_point, &end_point))
         {
             cvector_free(ox);
@@ -308,9 +322,9 @@ static bool compute_sweep_endpoints(float x,
                                     point_t *out_start, point_t *out_end)
 {
     const polygon_edge_t *start_edges = going_down ? ceiling_edges : floor_edges;
-    int start_count                   = going_down ? ceiling_count : floor_count;
-    const polygon_edge_t *end_edges   = going_down ? floor_edges   : ceiling_edges;
-    int end_count                     = going_down ? floor_count   : ceiling_count;
+    int start_count = going_down ? ceiling_count : floor_count;
+    const polygon_edge_t *end_edges = going_down ? floor_edges : ceiling_edges;
+    int end_count = going_down ? floor_count : ceiling_count;
 
     if (!try_find_intersection_point(x, start_edges, start_count, out_start))
         return false;
@@ -320,7 +334,7 @@ static bool compute_sweep_endpoints(float x,
     return true;
 }
 
-static bool append_sweep_line_connection(cvector_vector_type(point_t) *ox,
+static bool append_sweep_line_connection(cvector_vector_type(point_t) * ox,
                                          float current_x, float next_x,
                                          const bcd_cell_t *cell, bool going_down)
 {
@@ -329,11 +343,11 @@ static bool append_sweep_line_connection(cvector_vector_type(point_t) *ox,
     // going_down=false -> ended at ceiling, next starts at ceiling.
     const polygon_edge_t *active_edges = going_down ? cell->floor_edge_list : cell->ceiling_edge_list;
     int active_count = going_down
-        ? (int)cvector_size(cell->floor_edge_list)
-        : (int)cvector_size(cell->ceiling_edge_list);
+                           ? (int)cvector_size(cell->floor_edge_list)
+                           : (int)cvector_size(cell->ceiling_edge_list);
 
     int current_edge_index = find_intersecting_edge_index(current_x, active_edges, active_count);
-    int next_edge_index    = find_intersecting_edge_index(next_x,    active_edges, active_count);
+    int next_edge_index = find_intersecting_edge_index(next_x, active_edges, active_count);
 
     if (current_edge_index != -1 && next_edge_index != -1 &&
         current_edge_index != next_edge_index)
@@ -352,14 +366,196 @@ static bool append_sweep_line_connection(cvector_vector_type(point_t) *ox,
 
 // --- --- COMPUTE_BOUSTROPHEDON_MOTION
 
+static point_t compute_crossing_waypoint(const bcd_cell_t *cell_a, const bcd_cell_t *cell_b)
+{
+    // Use the cell's corner points directly — not the ceiling/floor edge chains.
+    // Edge chains may be shorter than the full cell side when a BCD event (IN/OUT)
+    // creates two cells whose edges terminate at the event vertex, making edge-chain
+    // intersection at x_cross unreliable or out-of-range.
+    //
+    // The shared vertical boundary is defined by cell corner points:
+    //   A left of B  →  right side of A:  top = c_end,   bottom = f_begin
+    //   A right of B →  left  side of A:  top = c_begin, bottom = f_end
+    point_t top, bottom;
+
+    if (cell_a->c_begin.x < cell_b->c_begin.x)
+    {
+        // A is left of B: cross A's right boundary
+        top = cell_a->c_end;
+        bottom = cell_a->f_begin;
+    }
+    else
+    {
+        // A is right of B: cross A's left boundary
+        top = cell_a->c_begin;
+        bottom = cell_a->f_end;
+    }
+
+    point_t waypoint;
+    waypoint.x = top.x;
+    waypoint.y = (top.y + bottom.y) / 2.0f;
+    return waypoint;
+}
+
+// ---
+
+static void append_cell_spine_waypoints(cvector_vector_type(point_t) * nav,
+                                        const bcd_cell_t *cell,
+                                        float x_from, float x_to)
+{
+    // Collect all kink x-values from the ceiling and floor edge chains that lie
+    // strictly between x_from and x_to.  Kinks are the joints between adjacent
+    // edge segments — at these x-values the boundary changes slope, so the
+    // medial-axis midpoint y(x) also changes slope.  Inserting a waypoint at
+    // each kink guarantees the piecewise-linear spine exactly traces the medial
+    // axis and cannot exit through a concave boundary between waypoints.
+    float x_min = x_from < x_to ? x_from : x_to;
+    float x_max = x_from < x_to ? x_to : x_from;
+
+    int ceil_n = (int)cvector_size(cell->ceiling_edge_list);
+    int floor_n = (int)cvector_size(cell->floor_edge_list);
+
+    // Ceiling kinks: interior joins at ceiling_edge_list[j].end.x, j = 0..ceil_n-2
+    // Floor kinks:   interior joins at floor_edge_list[j].end.x,   j = 1..floor_n-1
+    cvector_vector_type(float) kinks = NULL;
+
+    for (int j = 0; j < ceil_n - 1; ++j)
+    {
+        float kx = cell->ceiling_edge_list[j].end.x;
+        if (kx > x_min && kx < x_max)
+            cvector_push_back(kinks, kx);
+    }
+    for (int j = 1; j < floor_n; ++j)
+    {
+        float kx = cell->floor_edge_list[j].end.x;
+        if (kx > x_min && kx < x_max)
+            cvector_push_back(kinks, kx);
+    }
+
+    if (kinks == NULL)
+        return;
+
+    // Insertion-sort kinks in direction of travel.
+    // Kink count is always small (typically 0–3), so this is fast.
+    int k_count = (int)cvector_size(kinks);
+    bool ascending = (x_from < x_to);
+
+    for (int a = 1; a < k_count; ++a)
+    {
+        float key = kinks[a];
+        int b = a - 1;
+        while (b >= 0 && (ascending ? kinks[b] > key : kinks[b] < key))
+        {
+            kinks[b + 1] = kinks[b];
+            b--;
+        }
+        kinks[b + 1] = key;
+    }
+
+    for (int k = 0; k < k_count; ++k)
+    {
+        point_t spine_pt = bcd_cell_midpoint_at_x(cell, kinks[k]);
+        cvector_push_back(*nav, spine_pt);
+    }
+
+    cvector_free(kinks);
+}
+
+// ---
+
+static cvector_vector_type(int) extract_cell_chain(const cvector_vector_type(int) * path_list,
+                                                   int begin_path_pos,
+                                                   int end_path_pos)
+{
+    cvector_vector_type(int) chain = NULL;
+
+    if (path_list == NULL)
+        return chain;
+
+    if (begin_path_pos < 0 || end_path_pos < begin_path_pos ||
+        end_path_pos >= (int)cvector_size(*path_list))
+        return chain;
+
+    // Slice path_list directly by position — no value search needed.
+    // This is safe even when the same cell index appears multiple times
+    // in path_list (e.g. as both a BFS transit insertion and a primary
+    // coverage cell), because we always have the exact positions.
+    for (int i = begin_path_pos; i <= end_path_pos; ++i)
+    {
+        cvector_push_back(chain, (*path_list)[i]);
+    }
+
+    return chain;
+}
+
+// IMPLEMENTATION --- compute_connection_motion ----------------------
+
 static cvector_vector_type(point_t) compute_connection_motion(const cvector_vector_type(bcd_cell_t) * cell_list,
                                                               const cvector_vector_type(int) * path_list,
-                                                              int begin_cell_index,
+                                                              int begin_path_pos,
                                                               point_t begin_point,
-                                                              int end_cell_index,
+                                                              int end_path_pos,
                                                               point_t end_point)
 {
-    return NULL;
+    cvector_vector_type(point_t) nav = NULL;
+
+    if (cell_list == NULL || path_list == NULL)
+        return nav;
+
+    // Extract the ordered chain of cell indices by slicing path_list at the
+    // exact known positions — never by searching for a value, because the same
+    // cell index can appear multiple times (as a BFS transit insertion and as a
+    // primary coverage cell) and value-search would pick the wrong occurrence.
+    cvector_vector_type(int) chain = extract_cell_chain(path_list, begin_path_pos, end_path_pos);
+
+    int chain_len = (int)cvector_size(chain);
+
+    // Need at least two cells (begin + end)
+    if (chain_len < 2)
+    {
+        cvector_free(chain);
+        return nav;
+    }
+
+    // Start at the begin point
+    cvector_push_back(nav, begin_point);
+
+    float current_x = begin_point.x;
+
+    for (int i = 0; i < chain_len - 1; ++i)
+    {
+        int idx_a = chain[i];
+        int idx_b = chain[i + 1];
+
+        const bcd_cell_t *cell_a = &(*cell_list)[idx_a];
+        const bcd_cell_t *cell_b = &(*cell_list)[idx_b];
+
+        // Compute crossing waypoint: midpoint of the shared vertical cell boundary.
+        point_t crossing = compute_crossing_waypoint(cell_a, cell_b);
+        float x_cross = crossing.x;
+
+        // Insert medial-axis spine waypoints for cell_a between current_x and
+        // x_cross.  For each kink (slope change in ceiling/floor) strictly
+        // between those x-values, the midpoint of the boundary gap is added.
+        // This guarantees the piecewise-linear path stays inside cell_a even
+        // when the boundary is concave due to obstacle deflection.
+        append_cell_spine_waypoints(&nav, cell_a, current_x, x_cross);
+
+        cvector_push_back(nav, crossing);
+        current_x = x_cross;
+    }
+
+    // Handle the final cell: from its entry crossing to end_point.
+    // The end cell may also have concave boundaries between those x-values.
+    int idx_end = chain[chain_len - 1];
+    const bcd_cell_t *end_cell = &(*cell_list)[idx_end];
+    append_cell_spine_waypoints(&nav, end_cell, current_x, end_point.x);
+
+    // Arrive at the end point (start of the next coverage sweep)
+    cvector_push_back(nav, end_point);
+
+    cvector_free(chain);
+    return nav;
 }
 
 // MOTION_PLAN HELPERS
