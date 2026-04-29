@@ -98,6 +98,11 @@ int compute_bcd_motion(cvector_vector_type(bcd_cell_t) * cell_list,
     point_t begin_point = {0};
     bool compute_nav = false;
 
+    // Track the very first coverage point for the closing return nav.
+    int first_path_pos = 0;
+    point_t first_point = {0};
+    bool first_recorded = false;
+
     size_t i;
     for (i = 0; i < cvector_size(*path_list); ++i)
     {
@@ -115,31 +120,60 @@ int compute_bcd_motion(cvector_vector_type(bcd_cell_t) * cell_list,
             return -1;
         }
 
-        cvector_vector_type(point_t) nav = NULL;
-
         if (compute_nav)
         {
+            // Nav connects the previous section's coverage END to this section's
+            // coverage START.  Assign it to the already-pushed previous section
+            // so that each section's nav describes how to LEAVE that section,
+            // not how to arrive at it.
             point_t end_point = *cvector_front(ox);
 
-            nav = compute_connection_motion((const cvector_vector_type(bcd_cell_t) *)cell_list,
-                                            (const cvector_vector_type(int) *)path_list,
-                                            begin_path_pos,
-                                            begin_point,
-                                            (int)i,
-                                            end_point);
+            cvector_vector_type(point_t) nav =
+                compute_connection_motion((const cvector_vector_type(bcd_cell_t) *)cell_list,
+                                          (const cvector_vector_type(int) *)path_list,
+                                          begin_path_pos,
+                                          begin_point,
+                                          (int)i,
+                                          end_point);
+
+            int prev_section_idx = (int)cvector_size(motion_plan->section) - 1;
+            motion_plan->section[prev_section_idx].nav = nav;
         }
 
+        // Push current section with nav=NULL; nav will be filled in on the
+        // next iteration once the next cell's start point is known.
         cell_motion_plan_t curr_section;
         curr_section.ox = ox;
-        curr_section.nav = nav;
+        curr_section.nav = NULL;
 
         cvector_push_back(motion_plan->section, curr_section);
 
         (*cell_list)[(*path_list)[i]].cleaned = true;
 
+        // Record the very first coverage point for the closing return nav.
+        if (!first_recorded)
+        {
+            first_path_pos = (int)i;
+            first_point = *cvector_front(ox);
+            first_recorded = true;
+        }
+
         begin_path_pos = (int)i;
         begin_point = *cvector_back(ox);
         compute_nav = true;
+    }
+
+    // Generate the closing nav: last coverage end → first coverage start.
+    // Hardcoded as a direct two-point path for now.
+    if (first_recorded && cvector_size(motion_plan->section) > 0)
+    {
+        int last_section_idx = (int)cvector_size(motion_plan->section) - 1;
+
+        cvector_vector_type(point_t) return_nav = NULL;
+        cvector_push_back(return_nav, begin_point);
+        cvector_push_back(return_nav, first_point);
+
+        motion_plan->section[last_section_idx].nav = return_nav;
     }
 
     return 0;
@@ -288,21 +322,21 @@ static void add_edge_transition_path(cvector_vector_type(point_t) * path,
     if (forward)
     {
         // Moving forward (left to right): the kink vertex between edge[i] and
-        // edge[i+1] is edge[i].begin (= edge[i-1].end by chain invariant).
-        // Pushing only edge[i].begin per step avoids duplicating the shared
-        // boundary point that the previous iteration already emitted.
+        // edge[i+1] is edge[i].end (the right endpoint of segment i, shared
+        // with edge[i+1].begin by the chain invariant).
         for (int i = start_edge_index; i < end_edge_index; i++)
         {
-            cvector_push_back(*path, edge_list[i].begin);
+            cvector_push_back(*path, edge_list[i].end);
         }
     }
     else
     {
         // Moving backward (right to left): the kink vertex between edge[i] and
-        // edge[i-1] is edge[i].end.
+        // edge[i-1] is edge[i].begin (the left endpoint of segment i, shared
+        // with edge[i-1].end by the chain invariant).
         for (int i = start_edge_index; i > end_edge_index; i--)
         {
-            cvector_push_back(*path, edge_list[i].end);
+            cvector_push_back(*path, edge_list[i].begin);
         }
     }
 }
@@ -373,20 +407,36 @@ static point_t compute_crossing_waypoint(const bcd_cell_t *cell_a, const bcd_cel
     // creates two cells whose edges terminate at the event vertex, making edge-chain
     // intersection at x_cross unreliable or out-of-range.
     //
-    // The shared vertical boundary is defined by cell corner points:
-    //   A left of B  →  right side of A:  top = c_end,   bottom = f_begin
-    //   A right of B →  left  side of A:  top = c_begin, bottom = f_end
+    // Determine which side of cell_a is the shared boundary with cell_b by
+    // comparing c_end.x (right edge of A) to c_begin.x (left edge of B).
+    // Using c_end vs c_begin is more reliable than comparing c_begin of both
+    // cells, because two adjacent cells share the boundary where A ends and B
+    // begins (or vice versa).
     point_t top, bottom;
 
-    if (cell_a->c_begin.x < cell_b->c_begin.x)
+    if (cell_a->c_end.x <= cell_b->c_begin.x + 1e-3f &&
+        cell_a->c_end.x >= cell_b->c_begin.x - 1e-3f)
     {
-        // A is left of B: cross A's right boundary
+        // A's right edge is shared with B's left edge
+        top = cell_a->c_end;
+        bottom = cell_a->f_begin;
+    }
+    else if (cell_a->c_begin.x <= cell_b->c_end.x + 1e-3f &&
+             cell_a->c_begin.x >= cell_b->c_end.x - 1e-3f)
+    {
+        // A's left edge is shared with B's right edge
+        top = cell_a->c_begin;
+        bottom = cell_a->f_end;
+    }
+    else if (cell_a->c_end.x < cell_b->c_end.x)
+    {
+        // Fallback: A is spatially left of B → cross A's right boundary
         top = cell_a->c_end;
         bottom = cell_a->f_begin;
     }
     else
     {
-        // A is right of B: cross A's left boundary
+        // Fallback: A is spatially right of B → cross A's left boundary
         top = cell_a->c_begin;
         bottom = cell_a->f_end;
     }
