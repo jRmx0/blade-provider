@@ -421,44 +421,64 @@ static bool append_sweep_line_connection(cvector_vector_type(point_t) * ox,
 
 static point_t compute_crossing_waypoint(const bcd_cell_t *cell_a, const bcd_cell_t *cell_b)
 {
-    // Use the cell's corner points directly — not the ceiling/floor edge chains.
-    // Edge chains may be shorter than the full cell side when a BCD event (IN/OUT)
-    // creates two cells whose edges terminate at the event vertex, making edge-chain
-    // intersection at x_cross unreliable or out-of-range.
+    // Use the shorter of the two cells' boundary spans to place the crossing
+    // waypoint.  At a BCD event vertex the two cells have asymmetric openings at
+    // the shared x: one cell's boundary is clipped by the event vertex (shorter)
+    // while the other's extends to the full polygon height (taller).  The shorter
+    // span is the actual physical bottleneck both cells share, so its midpoint
+    // is guaranteed to lie inside both cells' open space.
     //
-    // Determine which side of cell_a is the shared boundary with cell_b by
-    // comparing c_end.x (right edge of A) to c_begin.x (left edge of B).
-    // Using c_end vs c_begin is more reliable than comparing c_begin of both
-    // cells, because two adjacent cells share the boundary where A ends and B
-    // begins (or vice versa).
-    point_t top, bottom;
+    // Edge chains are not used here: they may be shorter than the full cell side
+    // when an event vertex terminates them early, making intersection unreliable.
+    //
+    // Detect which side of the shared boundary each cell contributes by comparing
+    // cell_a->c_end.x (right edge of A) with cell_b->c_begin.x (left edge of B),
+    // then read both pairs of corners and pick the pair with the smaller span.
+    point_t top_a, bottom_a;
+    point_t top_b, bottom_b;
 
     if (cell_a->c_end.x <= cell_b->c_begin.x + 1e-3f &&
         cell_a->c_end.x >= cell_b->c_begin.x - 1e-3f)
     {
         // A's right edge is shared with B's left edge
-        top = cell_a->c_end;
-        bottom = cell_a->f_begin;
+        top_a = cell_a->c_end;
+        bottom_a = cell_a->f_begin;
+        top_b = cell_b->c_begin;
+        bottom_b = cell_b->f_end;
     }
     else if (cell_a->c_begin.x <= cell_b->c_end.x + 1e-3f &&
              cell_a->c_begin.x >= cell_b->c_end.x - 1e-3f)
     {
         // A's left edge is shared with B's right edge
-        top = cell_a->c_begin;
-        bottom = cell_a->f_end;
+        top_a = cell_a->c_begin;
+        bottom_a = cell_a->f_end;
+        top_b = cell_b->c_end;
+        bottom_b = cell_b->f_begin;
     }
     else if (cell_a->c_end.x < cell_b->c_end.x)
     {
-        // Fallback: A is spatially left of B → cross A's right boundary
-        top = cell_a->c_end;
-        bottom = cell_a->f_begin;
+        // Fallback: A is spatially left of B
+        top_a = cell_a->c_end;
+        bottom_a = cell_a->f_begin;
+        top_b = cell_b->c_begin;
+        bottom_b = cell_b->f_end;
     }
     else
     {
-        // Fallback: A is spatially right of B → cross A's left boundary
-        top = cell_a->c_begin;
-        bottom = cell_a->f_end;
+        // Fallback: A is spatially right of B
+        top_a = cell_a->c_begin;
+        bottom_a = cell_a->f_end;
+        top_b = cell_b->c_end;
+        bottom_b = cell_b->f_begin;
     }
+
+    // Pick the pair with the shorter vertical span — that is the tighter
+    // opening both cells must share, so its midpoint fits inside both.
+    float span_a = fabsf(top_a.y - bottom_a.y);
+    float span_b = fabsf(top_b.y - bottom_b.y);
+
+    point_t top = (span_a <= span_b) ? top_a : top_b;
+    point_t bottom = (span_a <= span_b) ? bottom_a : bottom_b;
 
     point_t waypoint;
     waypoint.x = top.x;
