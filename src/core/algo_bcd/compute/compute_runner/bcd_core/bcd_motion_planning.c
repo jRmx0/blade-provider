@@ -40,9 +40,7 @@ static void add_edge_transition_path(cvector_vector_type(point_t) * path,
                                      const polygon_edge_t *edge_list,
                                      int edge_count,
                                      int start_edge_index,
-                                     int end_edge_index,
-                                     float start_x,
-                                     float end_x);
+                                     int end_edge_index);
 
 // --- --- COMPUTE_BOUSTROPHEDON_MOTION
 
@@ -149,8 +147,6 @@ static cvector_vector_type(point_t) compute_boustrophedon_motion(const cvector_v
 
     // Generate boustrophedon pattern as a continuous path
     bool going_down = true; // Start by going from ceiling to floor
-    int last_ceiling_edge_index = -1;
-    int last_floor_edge_index = -1;
 
     for (int i = 0; i < num_lines; i++)
     {
@@ -208,29 +204,29 @@ static cvector_vector_type(point_t) compute_boustrophedon_motion(const cvector_v
             int next_ceiling_edge_index = find_intersecting_edge_index(next_x, cell->ceiling_edge_list, cvector_size(cell->ceiling_edge_list));
             int next_floor_edge_index = find_intersecting_edge_index(next_x, cell->floor_edge_list, cvector_size(cell->floor_edge_list));
 
-            // Determine which boundary we need to follow for transition
+            // Determine which boundary we need to follow for transition.
+            // Guard uses current_*_edge_index (not last_*) so the first transition
+            // (i=0 -> i=1) is correctly handled even before any "last" index exists.
             if (going_down)
             {
-                // Current sweep ended at floor, next will start at floor
-                // Check if we need to follow floor edges between current and next position
-                if (last_floor_edge_index != -1 && next_floor_edge_index != -1 &&
+                // Current sweep ended at floor, next will start at floor.
+                // Follow the floor boundary between the two x positions if the
+                // edge changes (i.e. a kink/obstacle vertex lies between them).
+                if (current_floor_edge_index != -1 && next_floor_edge_index != -1 &&
                     current_floor_edge_index != next_floor_edge_index)
                 {
-                    // Add transition path following floor boundary
                     add_edge_transition_path(&ox, cell->floor_edge_list, cvector_size(cell->floor_edge_list),
-                                             current_floor_edge_index, next_floor_edge_index, current_x, next_x);
+                                             current_floor_edge_index, next_floor_edge_index);
                 }
             }
             else
             {
-                // Current sweep ended at ceiling, next will start at ceiling
-                // Check if we need to follow ceiling edges between current and next position
-                if (last_ceiling_edge_index != -1 && next_ceiling_edge_index != -1 &&
+                // Current sweep ended at ceiling, next will start at ceiling.
+                if (current_ceiling_edge_index != -1 && next_ceiling_edge_index != -1 &&
                     current_ceiling_edge_index != next_ceiling_edge_index)
                 {
-                    // Add transition path following ceiling boundary
                     add_edge_transition_path(&ox, cell->ceiling_edge_list, cvector_size(cell->ceiling_edge_list),
-                                             current_ceiling_edge_index, next_ceiling_edge_index, current_x, next_x);
+                                             current_ceiling_edge_index, next_ceiling_edge_index);
                 }
             }
 
@@ -248,10 +244,6 @@ static cvector_vector_type(point_t) compute_boustrophedon_motion(const cvector_v
             // Add the start point of next line
             cvector_push_back(ox, next_start);
         }
-
-        // Update last edge indices for next iteration
-        last_ceiling_edge_index = current_ceiling_edge_index;
-        last_floor_edge_index = current_floor_edge_index;
 
         // Alternate direction for next line
         going_down = !going_down;
@@ -334,9 +326,7 @@ static void add_edge_transition_path(cvector_vector_type(point_t) * path,
                                      const polygon_edge_t *edge_list,
                                      int edge_count,
                                      int start_edge_index,
-                                     int end_edge_index,
-                                     float start_x,
-                                     float end_x)
+                                     int end_edge_index)
 {
     if (start_edge_index == end_edge_index || start_edge_index == -1 || end_edge_index == -1)
     {
@@ -348,56 +338,22 @@ static void add_edge_transition_path(cvector_vector_type(point_t) * path,
 
     if (forward)
     {
-        // Moving forward through edges
+        // Moving forward (left to right): the kink vertex between edge[i] and
+        // edge[i+1] is edge[i].begin (= edge[i-1].end by chain invariant).
+        // Pushing only edge[i].begin per step avoids duplicating the shared
+        // boundary point that the previous iteration already emitted.
         for (int i = start_edge_index; i < end_edge_index; i++)
         {
-            const polygon_edge_t *edge = &edge_list[i];
-
-            if (i == start_edge_index)
-            {
-                // For the first edge, add the endpoint closer to end_x
-                if (fabs(edge->end.x - end_x) < fabs(edge->begin.x - end_x))
-                {
-                    cvector_push_back(*path, edge->end);
-                }
-                else
-                {
-                    cvector_push_back(*path, edge->begin);
-                }
-            }
-            else
-            {
-                // For intermediate edges, add both endpoints to follow the boundary
-                cvector_push_back(*path, edge->begin);
-                cvector_push_back(*path, edge->end);
-            }
+            cvector_push_back(*path, edge_list[i].begin);
         }
     }
     else
     {
-        // Moving backward through edges
+        // Moving backward (right to left): the kink vertex between edge[i] and
+        // edge[i-1] is edge[i].end.
         for (int i = start_edge_index; i > end_edge_index; i--)
         {
-            const polygon_edge_t *edge = &edge_list[i];
-
-            if (i == start_edge_index)
-            {
-                // For the first edge, add the endpoint closer to end_x
-                if (fabs(edge->begin.x - end_x) < fabs(edge->end.x - end_x))
-                {
-                    cvector_push_back(*path, edge->begin);
-                }
-                else
-                {
-                    cvector_push_back(*path, edge->end);
-                }
-            }
-            else
-            {
-                // For intermediate edges, add both endpoints to follow the boundary
-                cvector_push_back(*path, edge->end);
-                cvector_push_back(*path, edge->begin);
-            }
+            cvector_push_back(*path, edge_list[i].end);
         }
     }
 }
