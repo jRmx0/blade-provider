@@ -165,14 +165,22 @@ int compute_bcd_motion(cvector_vector_type(bcd_cell_t) * cell_list,
     }
 
     // Generate the closing nav: last coverage end → first coverage start.
-    // Hardcoded as a direct two-point path for now.
+    // path_list already encodes the return route: compute_bcd_path_list appends
+    // a shortest-path back to starting_cell_index at the tail of path_list.
+    // Slicing forward from begin_path_pos to path_list.size()-1 gives the
+    // correct cell-visit-order return journey without reversing anything.
     if (first_recorded && cvector_size(motion_plan->section) > 0)
     {
         int last_section_idx = (int)cvector_size(motion_plan->section) - 1;
+        int path_list_end = (int)cvector_size(*path_list) - 1;
 
-        cvector_vector_type(point_t) return_nav = NULL;
-        cvector_push_back(return_nav, begin_point);
-        cvector_push_back(return_nav, first_point);
+        cvector_vector_type(point_t) return_nav =
+            compute_connection_motion((const cvector_vector_type(bcd_cell_t) *)cell_list,
+                                      (const cvector_vector_type(int) *)path_list,
+                                      begin_path_pos,
+                                      begin_point,
+                                      path_list_end,
+                                      first_point);
 
         motion_plan->section[last_section_idx].nav = return_nav;
     }
@@ -535,8 +543,9 @@ static cvector_vector_type(int) extract_cell_chain(const cvector_vector_type(int
     if (path_list == NULL)
         return chain;
 
-    if (begin_path_pos < 0 || end_path_pos < begin_path_pos ||
-        end_path_pos >= (int)cvector_size(*path_list))
+    int path_size = (int)cvector_size(*path_list);
+    if (begin_path_pos < 0 || begin_path_pos >= path_size ||
+        end_path_pos < begin_path_pos || end_path_pos >= path_size)
         return chain;
 
     // Slice path_list directly by position — no value search needed.
@@ -544,9 +553,7 @@ static cvector_vector_type(int) extract_cell_chain(const cvector_vector_type(int
     // in path_list (e.g. as both a BFS transit insertion and a primary
     // coverage cell), because we always have the exact positions.
     for (int i = begin_path_pos; i <= end_path_pos; ++i)
-    {
         cvector_push_back(chain, (*path_list)[i]);
-    }
 
     return chain;
 }
