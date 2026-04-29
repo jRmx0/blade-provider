@@ -42,7 +42,8 @@ static void add_edge_transition_path(cvector_vector_type(point_t) * path,
                                      const polygon_edge_t *edge_list,
                                      int edge_count,
                                      int start_edge_index,
-                                     int end_edge_index);
+                                     int end_edge_index,
+                                     bool chain_reversed);
 
 // --- ---
 
@@ -309,34 +310,41 @@ static void add_edge_transition_path(cvector_vector_type(point_t) * path,
                                      const polygon_edge_t *edge_list,
                                      int edge_count,
                                      int start_edge_index,
-                                     int end_edge_index)
+                                     int end_edge_index,
+                                     bool chain_reversed)
 {
     if (start_edge_index == end_edge_index || start_edge_index == -1 || end_edge_index == -1)
     {
         return; // No transition needed
     }
 
-    // Determine direction of traversal
-    bool forward = start_edge_index < end_edge_index;
+    // Determine direction of traversal through the index space.
+    bool index_increasing = start_edge_index < end_edge_index;
 
-    if (forward)
+    // Ceiling chain (chain_reversed=false): index 0 = leftmost segment.
+    //   .begin = left vertex, .end = right vertex.
+    //   Kink between edge[i] and edge[i+1] is at edge[i].end  (increasing index → emit .end).
+    //   Kink between edge[i] and edge[i-1] is at edge[i].begin (decreasing index → emit .begin).
+    //
+    // Floor chain (chain_reversed=true): index 0 = leftmost segment,
+    //   but .begin = RIGHT vertex and .end = LEFT vertex (opposite of ceiling).
+    //   Kink between floor[i] and floor[i+1] is at floor[i].begin (increasing index → emit .begin).
+    //   Kink between floor[i] and floor[i-1] is at floor[i].end   (decreasing index → emit .end).
+
+    if (index_increasing)
     {
-        // Moving forward (left to right): the kink vertex between edge[i] and
-        // edge[i+1] is edge[i].end (the right endpoint of segment i, shared
-        // with edge[i+1].begin by the chain invariant).
         for (int i = start_edge_index; i < end_edge_index; i++)
         {
-            cvector_push_back(*path, edge_list[i].end);
+            point_t kink = chain_reversed ? edge_list[i].begin : edge_list[i].end;
+            cvector_push_back(*path, kink);
         }
     }
     else
     {
-        // Moving backward (right to left): the kink vertex between edge[i] and
-        // edge[i-1] is edge[i].begin (the left endpoint of segment i, shared
-        // with edge[i-1].end by the chain invariant).
         for (int i = start_edge_index; i > end_edge_index; i--)
         {
-            cvector_push_back(*path, edge_list[i].begin);
+            point_t kink = chain_reversed ? edge_list[i].end : edge_list[i].begin;
+            cvector_push_back(*path, kink);
         }
     }
 }
@@ -386,8 +394,11 @@ static bool append_sweep_line_connection(cvector_vector_type(point_t) * ox,
     if (current_edge_index != -1 && next_edge_index != -1 &&
         current_edge_index != next_edge_index)
     {
+        // Floor edge list is stored right→left (chain_reversed=true).
+        // Ceiling edge list is stored left→right (chain_reversed=false).
+        bool chain_reversed = going_down; // going_down=true means active boundary is floor
         add_edge_transition_path(ox, active_edges, active_count,
-                                 current_edge_index, next_edge_index);
+                                 current_edge_index, next_edge_index, chain_reversed);
     }
 
     point_t next_start;
@@ -465,8 +476,10 @@ static void append_cell_spine_waypoints(cvector_vector_type(point_t) * nav,
     int ceil_n = (int)cvector_size(cell->ceiling_edge_list);
     int floor_n = (int)cvector_size(cell->floor_edge_list);
 
-    // Ceiling kinks: interior joins at ceiling_edge_list[j].end.x, j = 0..ceil_n-2
-    // Floor kinks:   interior joins at floor_edge_list[j].end.x,   j = 1..floor_n-1
+    // Ceiling kinks: interior joins at ceiling_edge_list[j].end.x,   j = 0..ceil_n-2
+    //   (ceiling chain left→right: .end is the right/shared vertex)
+    // Floor kinks:   interior joins at floor_edge_list[j].begin.x,   j = 0..floor_n-2
+    //   (floor chain: .begin is the RIGHT vertex of segment j, shared with segment j+1)
     cvector_vector_type(float) kinks = NULL;
 
     for (int j = 0; j < ceil_n - 1; ++j)
@@ -475,9 +488,9 @@ static void append_cell_spine_waypoints(cvector_vector_type(point_t) * nav,
         if (kx > x_min && kx < x_max)
             cvector_push_back(kinks, kx);
     }
-    for (int j = 1; j < floor_n; ++j)
+    for (int j = 0; j < floor_n - 1; ++j)
     {
-        float kx = cell->floor_edge_list[j].end.x;
+        float kx = cell->floor_edge_list[j].begin.x;
         if (kx > x_min && kx < x_max)
             cvector_push_back(kinks, kx);
     }
