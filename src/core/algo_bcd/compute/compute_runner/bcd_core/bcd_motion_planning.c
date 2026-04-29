@@ -25,11 +25,12 @@ static bool is_x_in_edge_range(float x,
 
 // --- ---
 
-static point_t find_intersection_point(float x,
-                                       const polygon_edge_t *edge_list,
-                                       int edge_count);
+static bool try_find_intersection_point(float x,
+                                        const polygon_edge_t *edge_list,
+                                        int edge_count,
+                                        point_t *out_point);
 
-// --- --- --- FIND_INTERSECTION__POINT
+// --- --- --- TRY_FIND_INTERSECTION_POINT
 
 static float find_y_intersection(float x,
                                  const polygon_edge_t *edge);
@@ -41,6 +42,24 @@ static void add_edge_transition_path(cvector_vector_type(point_t) * path,
                                      int edge_count,
                                      int start_edge_index,
                                      int end_edge_index);
+
+// --- ---
+
+static float compute_sweep_x(float cell_start_x, int line_index, float step_size, float cell_end_x);
+
+// --- ---
+
+static bool compute_sweep_endpoints(float x,
+                                    const polygon_edge_t *ceiling_edges, int ceiling_count,
+                                    const polygon_edge_t *floor_edges, int floor_count,
+                                    bool going_down,
+                                    point_t *out_start, point_t *out_end);
+
+// --- ---
+
+static bool append_sweep_line_connection(cvector_vector_type(point_t) *ox,
+                                         float current_x, float next_x,
+                                         const bcd_cell_t *cell, bool going_down);
 
 // --- --- COMPUTE_BOUSTROPHEDON_MOTION
 
@@ -127,125 +146,50 @@ static cvector_vector_type(point_t) compute_boustrophedon_motion(const cvector_v
 
     const bcd_cell_t *cell = &(*cell_list)[cell_index];
 
-    // Get cell boundaries
-    point_t ceiling_start = cell->c_begin;
-    point_t ceiling_end = cell->c_end;
-    point_t floor_start = cell->f_begin;
-    point_t floor_end = cell->f_end;
-
-    // Calculate the sweep direction (perpendicular to the cell)
-    // Assuming cells are oriented vertically, sweep horizontally
-    float cell_width = ceiling_end.x - ceiling_start.x;
+    float cell_start_x = cell->c_begin.x;
+    float cell_end_x   = cell->c_end.x;
+    float cell_width   = cell_end_x - cell_start_x;
 
     if (cell_width <= 0 || step_size <= 0)
     {
         return ox;
     }
 
-    // Calculate number of sweep lines
     int num_lines = (int)(cell_width / step_size) + 1;
 
-    // Generate boustrophedon pattern as a continuous path
-    bool going_down = true; // Start by going from ceiling to floor
+    bool going_down = true;
 
     for (int i = 0; i < num_lines; i++)
     {
-        float x_offset = i * step_size;
-        float current_x = ceiling_start.x + x_offset;
-
-        // Don't exceed the cell boundary
-        if (current_x > ceiling_end.x)
-        {
-            current_x = ceiling_end.x;
-        }
-
-        // Find which edges we're intersecting with
-        int current_ceiling_edge_index = find_intersecting_edge_index(current_x, cell->ceiling_edge_list, cvector_size(cell->ceiling_edge_list));
-        int current_floor_edge_index = find_intersecting_edge_index(current_x, cell->floor_edge_list, cvector_size(cell->floor_edge_list));
+        float current_x = compute_sweep_x(cell_start_x, i, step_size, cell_end_x);
 
         point_t start_point, end_point;
-
-        if (going_down)
+        if (!compute_sweep_endpoints(current_x,
+                                     cell->ceiling_edge_list, (int)cvector_size(cell->ceiling_edge_list),
+                                     cell->floor_edge_list,   (int)cvector_size(cell->floor_edge_list),
+                                     going_down, &start_point, &end_point))
         {
-            // Going from ceiling to floor
-            start_point = find_intersection_point(current_x, cell->ceiling_edge_list, cvector_size(cell->ceiling_edge_list));
-            end_point = find_intersection_point(current_x, cell->floor_edge_list, cvector_size(cell->floor_edge_list));
-        }
-        else
-        {
-            // Going from floor to ceiling
-            start_point = find_intersection_point(current_x, cell->floor_edge_list, cvector_size(cell->floor_edge_list));
-            end_point = find_intersection_point(current_x, cell->ceiling_edge_list, cvector_size(cell->ceiling_edge_list));
+            cvector_free(ox);
+            return NULL;
         }
 
-        // For the first line, add the start point
         if (i == 0)
         {
             cvector_push_back(ox, start_point);
         }
 
-        // Always add the end point (this completes the current sweep line)
         cvector_push_back(ox, end_point);
 
-        // Handle edge transitions and connecting to next line
         if (i < num_lines - 1)
         {
-            // Calculate the next line position
-            float next_x_offset = (i + 1) * step_size;
-            float next_x = ceiling_start.x + next_x_offset;
-
-            // Don't exceed the cell boundary
-            if (next_x > ceiling_end.x)
+            float next_x = compute_sweep_x(cell_start_x, i + 1, step_size, cell_end_x);
+            if (!append_sweep_line_connection(&ox, current_x, next_x, cell, going_down))
             {
-                next_x = ceiling_end.x;
+                cvector_free(ox);
+                return NULL;
             }
-
-            // Find which edges the next line will intersect with
-            int next_ceiling_edge_index = find_intersecting_edge_index(next_x, cell->ceiling_edge_list, cvector_size(cell->ceiling_edge_list));
-            int next_floor_edge_index = find_intersecting_edge_index(next_x, cell->floor_edge_list, cvector_size(cell->floor_edge_list));
-
-            // Determine which boundary we need to follow for transition.
-            // Guard uses current_*_edge_index (not last_*) so the first transition
-            // (i=0 -> i=1) is correctly handled even before any "last" index exists.
-            if (going_down)
-            {
-                // Current sweep ended at floor, next will start at floor.
-                // Follow the floor boundary between the two x positions if the
-                // edge changes (i.e. a kink/obstacle vertex lies between them).
-                if (current_floor_edge_index != -1 && next_floor_edge_index != -1 &&
-                    current_floor_edge_index != next_floor_edge_index)
-                {
-                    add_edge_transition_path(&ox, cell->floor_edge_list, cvector_size(cell->floor_edge_list),
-                                             current_floor_edge_index, next_floor_edge_index);
-                }
-            }
-            else
-            {
-                // Current sweep ended at ceiling, next will start at ceiling.
-                if (current_ceiling_edge_index != -1 && next_ceiling_edge_index != -1 &&
-                    current_ceiling_edge_index != next_ceiling_edge_index)
-                {
-                    add_edge_transition_path(&ox, cell->ceiling_edge_list, cvector_size(cell->ceiling_edge_list),
-                                             current_ceiling_edge_index, next_ceiling_edge_index);
-                }
-            }
-
-            // Calculate the start point of the next line
-            point_t next_start;
-            if (!going_down) // Next line will go down (ceiling to floor)
-            {
-                next_start = find_intersection_point(next_x, cell->ceiling_edge_list, cvector_size(cell->ceiling_edge_list));
-            }
-            else // Next line will go up (floor to ceiling)
-            {
-                next_start = find_intersection_point(next_x, cell->floor_edge_list, cvector_size(cell->floor_edge_list));
-            }
-
-            // Add the start point of next line
-            cvector_push_back(ox, next_start);
         }
 
-        // Alternate direction for next line
         going_down = !going_down;
     }
 
@@ -284,26 +228,17 @@ static bool is_x_in_edge_range(float x, const polygon_edge_t *edge)
 
 // --- ---
 
-static point_t find_intersection_point(float x, const polygon_edge_t *edge_list, int edge_count)
+static bool try_find_intersection_point(float x, const polygon_edge_t *edge_list, int edge_count, point_t *out_point)
 {
-    point_t result = {x, 0.0f}; // Default point with x coordinate and y=0
-
     int edge_index = find_intersecting_edge_index(x, edge_list, edge_count);
-    if (edge_index >= 0)
+    if (edge_index < 0)
     {
-        result.y = find_y_intersection(x, &edge_list[edge_index]);
-    }
-    else
-    {
-        // Fallback: if no edge found, try to use the first or last edge
-        if (edge_list != NULL && edge_count > 0)
-        {
-            // Use the first edge as fallback
-            result.y = find_y_intersection(x, &edge_list[0]);
-        }
+        return false;
     }
 
-    return result;
+    out_point->x = x;
+    out_point->y = find_y_intersection(x, &edge_list[edge_index]);
+    return true;
 }
 
 // --- --- --- FIND_INTERSECTION__POINT
@@ -356,6 +291,63 @@ static void add_edge_transition_path(cvector_vector_type(point_t) * path,
             cvector_push_back(*path, edge_list[i].end);
         }
     }
+}
+
+// --- ---
+
+static float compute_sweep_x(float cell_start_x, int line_index, float step_size, float cell_end_x)
+{
+    float x = cell_start_x + (float)line_index * step_size;
+    return x > cell_end_x ? cell_end_x : x;
+}
+
+static bool compute_sweep_endpoints(float x,
+                                    const polygon_edge_t *ceiling_edges, int ceiling_count,
+                                    const polygon_edge_t *floor_edges, int floor_count,
+                                    bool going_down,
+                                    point_t *out_start, point_t *out_end)
+{
+    const polygon_edge_t *start_edges = going_down ? ceiling_edges : floor_edges;
+    int start_count                   = going_down ? ceiling_count : floor_count;
+    const polygon_edge_t *end_edges   = going_down ? floor_edges   : ceiling_edges;
+    int end_count                     = going_down ? floor_count   : ceiling_count;
+
+    if (!try_find_intersection_point(x, start_edges, start_count, out_start))
+        return false;
+    if (!try_find_intersection_point(x, end_edges, end_count, out_end))
+        return false;
+
+    return true;
+}
+
+static bool append_sweep_line_connection(cvector_vector_type(point_t) *ox,
+                                         float current_x, float next_x,
+                                         const bcd_cell_t *cell, bool going_down)
+{
+    // Active boundary: where the current sweep ended and where the next sweep starts.
+    // going_down=true  -> ended at floor, next starts at floor.
+    // going_down=false -> ended at ceiling, next starts at ceiling.
+    const polygon_edge_t *active_edges = going_down ? cell->floor_edge_list : cell->ceiling_edge_list;
+    int active_count = going_down
+        ? (int)cvector_size(cell->floor_edge_list)
+        : (int)cvector_size(cell->ceiling_edge_list);
+
+    int current_edge_index = find_intersecting_edge_index(current_x, active_edges, active_count);
+    int next_edge_index    = find_intersecting_edge_index(next_x,    active_edges, active_count);
+
+    if (current_edge_index != -1 && next_edge_index != -1 &&
+        current_edge_index != next_edge_index)
+    {
+        add_edge_transition_path(ox, active_edges, active_count,
+                                 current_edge_index, next_edge_index);
+    }
+
+    point_t next_start;
+    if (!try_find_intersection_point(next_x, active_edges, active_count, &next_start))
+        return false;
+
+    cvector_push_back(*ox, next_start);
+    return true;
 }
 
 // --- --- COMPUTE_BOUSTROPHEDON_MOTION
