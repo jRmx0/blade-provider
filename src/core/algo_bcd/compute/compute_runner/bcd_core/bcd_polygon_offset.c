@@ -93,12 +93,49 @@ cvector_vector_type(point_t) compute_polygon_vertex_offset(
 
         if (is_reflex_vertex(prev, curr, next, winding))
         {
-            // At a reflex vertex emit two separate offset points (one per
-            // adjacent edge) to avoid the miter crossing the polygon boundary.
+            // At a reflex vertex the bisector miter points to the wrong side,
+            // and emitting two separate offset points creates an extra vertex
+            // that generates spurious events in downstream algorithms (BCD).
+            //
+            // Instead, compute the intersection of the two adjacent offset
+            // edge lines.  This yields a single geometrically correct corner
+            // point that fills the concavity rather than notching it, and
+            // keeps the output polygon vertex count equal to the input count.
+            //
+            // Line 1: passes through (curr + n1*offset), direction (curr-prev)
+            // Line 2: passes through (curr + n2*offset), direction (next-curr)
             point_t p1 = {curr.x + n1.x * offset, curr.y + n1.y * offset};
             point_t p2 = {curr.x + n2.x * offset, curr.y + n2.y * offset};
-            cvector_push_back(result, p1);
-            cvector_push_back(result, p2);
+
+            float d1x = curr.x - prev.x;
+            float d1y = curr.y - prev.y;
+            float d2x = next.x - curr.x;
+            float d2y = next.y - curr.y;
+            float denom = d1x * d2y - d1y * d2x;
+
+            if (fabsf(denom) < 1e-9f)
+            {
+                // Parallel edges — emit midpoint as fallback.
+                point_t mid = {(p1.x + p2.x) * 0.5f, (p1.y + p2.y) * 0.5f};
+                cvector_push_back(result, mid);
+            }
+            else
+            {
+                float t = ((p2.x - p1.x) * d2y - (p2.y - p1.y) * d2x) / denom;
+                point_t isect = {p1.x + t * d1x, p1.y + t * d1y};
+                float dx = isect.x - curr.x;
+                float dy = isect.y - curr.y;
+                if (dx * dx + dy * dy > max_miter * max_miter)
+                {
+                    // Intersection too far away — clamp to midpoint.
+                    point_t mid = {(p1.x + p2.x) * 0.5f, (p1.y + p2.y) * 0.5f};
+                    cvector_push_back(result, mid);
+                }
+                else
+                {
+                    cvector_push_back(result, isect);
+                }
+            }
         }
         else
         {

@@ -13,9 +13,11 @@
  * For CCW polygons (obstacles), a positive offset expands the polygon outward.
  *
  * At sharp convex corners the miter length is clamped to 4 * offset to avoid
- * extreme spikes. At reflex (concave) corners two separate points are emitted
- * (one per adjacent edge normal) instead of a single miter point, to prevent
- * self-intersections.
+ * extreme spikes. At reflex (concave) corners the intersection of the two
+ * adjacent offset edge lines is emitted as a single point, filling the
+ * concavity rather than notching it. If the intersection is too far away or
+ * the adjacent edges are parallel, the midpoint of the two edge-normal offsets
+ * is used as a fallback. The output vertex count always equals the input count.
  *
  * Returns a newly-allocated cvector of offset points. The caller is
  * responsible for freeing it with cvector_free(). Returns NULL on allocation

@@ -169,7 +169,7 @@ static int handle_in(const bcd_event_t curr_evt,
                      cvector_vector_type(bcd_cell_t) * cell_list)
 {
     // PREV CELL
-    
+
     int prev_cell_index = -1;
     point_t c_point;
     point_t f_point;
@@ -210,7 +210,7 @@ static int handle_in(const bcd_event_t curr_evt,
 
     cvector_push_back(*cell_list, top_cell);
     size_t top_cell_index = cvector_size(*cell_list) - 1;
-    
+
     // BOTTOM CELL
 
     bcd_neighbor_list_t bottom_nl = {0};
@@ -229,7 +229,7 @@ static int handle_in(const bcd_event_t curr_evt,
 
     cvector_push_back(*cell_list, bottom_cell);
     size_t bottom_cell_index = cvector_size(*cell_list) - 1;
-    
+
     // PREV CELL
 
     update_bcd_cell(cell_list,
@@ -376,7 +376,7 @@ static int handle_out(const bcd_event_t curr_evt,
 
     add_tail_cell_neighbor_list(&new_nl, top_cell_index);
     add_tail_cell_neighbor_list(&new_nl, bottom_cell_index);
-    
+
     new_cell = fill_bcd_cell(c_pt,
                              *cvector_back((*cell_list)[top_cell_index].ceiling_edge_list),
                              (point_t){0},
@@ -391,7 +391,7 @@ static int handle_out(const bcd_event_t curr_evt,
     cvector_push_back(*cell_list, new_cell);
 
     // UPDATING CELLS
-    int new_cell_index = (int) cvector_size(*cell_list) - 1;
+    int new_cell_index = (int)cvector_size(*cell_list) - 1;
 
     update_bcd_cell(cell_list,
                     top_cell_index,
@@ -427,7 +427,7 @@ static void out_find_top_cell(const bcd_event_t curr_evt,
 
     point_t floor_edge_begin;
     size_t i;
-    
+
     for (i = 0; i < cvector_size(*cell_list); ++i)
     {
         if (!(*cell_list)[i].open)
@@ -525,6 +525,9 @@ static int handle_floor(const bcd_event_t curr_evt,
         if (!(*cell_list)[i].open)
             continue;
 
+        if (cvector_size((*cell_list)[i].floor_edge_list) == 0)
+            continue;
+
         point_t f_edge_begin;
         f_edge_begin = cvector_back((*cell_list)[i].floor_edge_list)->begin;
 
@@ -532,6 +535,12 @@ static int handle_floor(const bcd_event_t curr_evt,
         {
             break;
         }
+    }
+
+    if (i >= cvector_size(*cell_list))
+    {
+        printf("Error: No matching cell found in handle_floor\n");
+        return -1;
     }
 
     cvector_push_back((*cell_list)[i].floor_edge_list, curr_evt.floor_edge);
@@ -548,11 +557,20 @@ static int handle_ceiling(const bcd_event_t curr_evt,
         if (!(*cell_list)[i].open)
             continue;
 
+        if (cvector_size((*cell_list)[i].ceiling_edge_list) == 0)
+            continue;
+
         point_t c_edge_end;
         c_edge_end = cvector_back((*cell_list)[i].ceiling_edge_list)->end;
 
         if (are_equal_points(curr_evt.polygon_vertex, c_edge_end))
             break;
+    }
+
+    if (i >= cvector_size(*cell_list))
+    {
+        printf("Error: No matching cell found in handle_ceiling\n");
+        return -1;
     }
 
     cvector_push_back((*cell_list)[i].ceiling_edge_list, curr_evt.ceiling_edge);
