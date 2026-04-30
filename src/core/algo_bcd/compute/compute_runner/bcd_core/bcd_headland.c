@@ -745,7 +745,86 @@ int compute_bcd_headland(const input_environment_t *env,
     va_free(headland_generated);
     va_free(call_stack);
 
-    return 0;
+    // --- Validate reduced geometry ---
+    //
+    // After applying bcd_shrink, two failure modes are possible:
+    //
+    //   -10  obstacles_too_close   : expanded obstacle i overlaps obstacle j
+    //   -11  obstacle_escapes_zone : expanded obstacle vertex lies outside
+    //                                the shrunken zone
+    //
+    // Both checks reuse vg_point_in_polygon with temporary cvectors built
+    // from the already-stored polygon_t vertex arrays.
+
+    int geometry_rc = 0;
+
+    // Build zone cvector once for both checks.
+    cvector_vector_type(point_t) zone_cv = NULL;
+    for (uint32_t vi = 0; vi < headland->shrunken_zone.vertex_count; ++vi)
+        cvector_push_back(zone_cv, headland->shrunken_zone.vertices[vi]);
+
+    // Build obstacle cvectors array.
+    uint32_t obs_count = headland->expanded_obstacle_count;
+    cvector_vector_type(point_t) *obs_cvs = NULL;
+    if (obs_count > 0)
+    {
+        obs_cvs = (cvector_vector_type(point_t) *)va_calloc(
+            (size_t)obs_count, sizeof(cvector_vector_type(point_t)));
+        if (obs_cvs != NULL)
+        {
+            for (uint32_t k = 0; k < obs_count; ++k)
+            {
+                for (uint32_t vi = 0; vi < headland->expanded_obstacles[k].vertex_count; ++vi)
+                    cvector_push_back(obs_cvs[k], headland->expanded_obstacles[k].vertices[vi]);
+            }
+        }
+    }
+
+    if (geometry_rc == 0 && obs_cvs != NULL && zone_cv != NULL)
+    {
+        for (uint32_t k = 0; k < obs_count && geometry_rc == 0; ++k)
+        {
+            if (obs_cvs[k] == NULL)
+                continue;
+
+            uint32_t vc = (uint32_t)cvector_size(obs_cvs[k]);
+            for (uint32_t vi = 0; vi < vc && geometry_rc == 0; ++vi)
+            {
+                point_t v = obs_cvs[k][vi];
+
+                // Check: vertex outside shrunken zone → escape.
+                if (!vg_point_in_polygon(v, zone_cv))
+                {
+                    printf("compute_bcd_headland: expanded obstacle %u escapes shrunken zone (vertex %u)\n", k, vi);
+                    geometry_rc = -11;
+                    break;
+                }
+
+                // Check: vertex inside any other expanded obstacle → overlap.
+                for (uint32_t j = 0; j < obs_count && geometry_rc == 0; ++j)
+                {
+                    if (j == k || obs_cvs[j] == NULL)
+                        continue;
+                    if (vg_point_in_polygon(v, obs_cvs[j]))
+                    {
+                        printf("compute_bcd_headland: expanded obstacles %u and %u overlap\n", k, j);
+                        geometry_rc = -10;
+                    }
+                }
+            }
+        }
+    }
+
+    // Free temporary cvectors.
+    cvector_free(zone_cv);
+    if (obs_cvs != NULL)
+    {
+        for (uint32_t k = 0; k < obs_count; ++k)
+            cvector_free(obs_cvs[k]);
+        va_free(obs_cvs);
+    }
+
+    return geometry_rc;
 }
 
 // IMPLEMENTATION --- free_bcd_headland ---------------------------------

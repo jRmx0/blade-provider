@@ -344,6 +344,20 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 		if (hrc != 0)
 		{
 			printf("coverage_path_planning: headland generation failed (code %d)\n", hrc);
+			free_bcd_headland(&headland);
+
+			const char *err_code =
+				(hrc == -10) ? "obstacles_too_close" : (hrc == -11) ? "obstacle_too_close_to_boundary"
+																	: "headland_failed";
+			const char *err_msg =
+				(hrc == -10) ? "Two or more obstacles are too close to each other: their expanded headland boundaries overlap. Reduce Path Width, Headland Coverage Offset, or increase the distance between obstacles." : (hrc == -11) ? "An obstacle is too close to the zone boundary: its expanded headland boundary escapes the shrunken zone. Reduce Path Width, Headland Coverage Offset, or move the obstacle away from the boundary."
+																																																										: "Headland generation failed.";
+
+			cJSON *err = cJSON_CreateObject();
+			cJSON_AddStringToObject(err, "status", "error");
+			cJSON_AddStringToObject(err, "code", err_code);
+			cJSON_AddStringToObject(err, "message", err_msg);
+			return err;
 		}
 		else
 		{
