@@ -21,6 +21,10 @@ static void bcd_init_environment(input_environment_t *environment)
 	environment->track_memory_usage = false;
 	environment->headland = false;
 	environment->headland_coverage_offset = 0.0f;
+	environment->start_point.x = 0.0f;
+	environment->start_point.y = 0.0f;
+	environment->end_point.x = 0.0f;
+	environment->end_point.y = 0.0f;
 }
 
 static void bcd_set_result(bcd_check_result_t *result, bool ok, const char *code, const char *message)
@@ -183,6 +187,34 @@ static bool bcd_expect_bool_parameter(
 		return false;
 	}
 
+	return true;
+}
+
+static bool bcd_parse_point_object(
+	const cJSON *point_json,
+	point_t *out,
+	bcd_check_result_t *result,
+	const char *missing_code,
+	const char *missing_message,
+	const char *invalid_code,
+	const char *invalid_message)
+{
+	if (!cJSON_IsObject(point_json))
+	{
+		bcd_set_result(result, false, missing_code, missing_message);
+		return false;
+	}
+
+	const cJSON *x = cJSON_GetObjectItemCaseSensitive(point_json, "x");
+	const cJSON *y = cJSON_GetObjectItemCaseSensitive(point_json, "y");
+	if (!cJSON_IsNumber(x) || !cJSON_IsNumber(y))
+	{
+		bcd_set_result(result, false, invalid_code, invalid_message);
+		return false;
+	}
+
+	out->x = (float)x->valuedouble;
+	out->y = (float)y->valuedouble;
 	return true;
 }
 
@@ -406,6 +438,36 @@ bool bcd_check_request_json(const char *request_json, input_environment_t *envir
 			result,
 			"invalid_boundary",
 			"BCD boundary must be a polygon with at least 3 numeric vertices."))
+	{
+		cJSON_Delete(root);
+		free_input_environment(environment);
+		return false;
+	}
+
+	const cJSON *start_point_json = cJSON_GetObjectItemCaseSensitive(environment_json, "startPoint");
+	if (!bcd_parse_point_object(
+			start_point_json,
+			&environment->start_point,
+			result,
+			"missing_start_point",
+			"BCD requires a startPoint in the environment.",
+			"invalid_start_point",
+			"BCD startPoint must be an object with numeric x and y."))
+	{
+		cJSON_Delete(root);
+		free_input_environment(environment);
+		return false;
+	}
+
+	const cJSON *end_point_json = cJSON_GetObjectItemCaseSensitive(environment_json, "endPoint");
+	if (!bcd_parse_point_object(
+			end_point_json,
+			&environment->end_point,
+			result,
+			"missing_end_point",
+			"BCD requires an endPoint in the environment.",
+			"invalid_end_point",
+			"BCD endPoint must be an object with numeric x and y."))
 	{
 		cJSON_Delete(root);
 		free_input_environment(environment);

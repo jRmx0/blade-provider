@@ -23,4 +23,11 @@ point_t bcd_cell_farthest_interior_point(const bcd_cell_t *cell);
  */
 point_t bcd_cell_midpoint_at_x(const bcd_cell_t *cell, float x);
 
+/**
+ * Returns the index of the cell in cell_list that contains point p, or the
+ * index of the cell whose x-midpoint is closest to p.x when p lies outside
+ * all cells. Returns 0 when cell_list is empty.
+ */
+int bcd_find_starting_cell(const cvector_vector_type(bcd_cell_t) * cell_list, point_t p);
+
 #endif // BCD_GEOMETRY_H

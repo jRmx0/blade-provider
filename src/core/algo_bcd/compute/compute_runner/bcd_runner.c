@@ -24,7 +24,8 @@ static cJSON *serialize_result_json(const bcd_event_list_t *event_list,
 									cvector_vector_type(bcd_cell_t) * cell_list,
 									cvector_vector_type(int) * path_list,
 									const bcd_motion_plan_t *motion_plan,
-									const bcd_headland_t *headland)
+									const bcd_headland_t *headland,
+									cvector_vector_type(point_t) start_nav)
 {
 	cJSON *root = cJSON_CreateObject();
 
@@ -35,6 +36,29 @@ static cJSON *serialize_result_json(const bcd_event_list_t *event_list,
 	cJSON_AddItemToObject(coverage_path_plan_obj, "segments", segments_arr);
 
 	int segment_id = 0;
+
+	// Start transit segment (start_point → first headland or coverage waypoint)
+	if (start_nav != NULL && cvector_size(start_nav) > 0)
+	{
+		cJSON *jsegment = cJSON_CreateObject();
+		cJSON_AddNumberToObject(jsegment, "id", segment_id++);
+		cJSON_AddStringToObject(jsegment, "type", headland != NULL ? "headlandTransit" : "coverageTransit");
+		cJSON *path_arr = cJSON_CreateArray();
+		cJSON_AddItemToObject(jsegment, "path", path_arr);
+		int pt_count = (int)cvector_size(start_nav);
+		for (int j = 0; j < pt_count; ++j)
+		{
+			const point_t *pt = &start_nav[j];
+			cJSON *jpath_point = cJSON_CreateObject();
+			cJSON_AddNumberToObject(jpath_point, "id", j + 1);
+			cJSON *jpoint = cJSON_CreateObject();
+			cJSON_AddNumberToObject(jpoint, "x", pt->x);
+			cJSON_AddNumberToObject(jpoint, "y", pt->y);
+			cJSON_AddItemToObject(jpath_point, "point", jpoint);
+			cJSON_AddItemToArray(path_arr, jpath_point);
+		}
+		cJSON_AddItemToArray(segments_arr, jsegment);
+	}
 
 	// Headland segments (prepended before coverage/transit)
 	if (headland && headland->sections)
@@ -370,6 +394,8 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 			headland_env.path_overlap = env->path_overlap;
 			headland_env.track_memory_usage = env->track_memory_usage;
 			headland_env.headland = false; // already processed
+			headland_env.start_point = env->start_point;
+			headland_env.end_point = env->end_point;
 			headland_env.boundary = headland.shrunken_zone;
 			headland_env.obstacles = headland.expanded_obstacles;
 			headland_env.obstacle_count = headland.expanded_obstacle_count;
@@ -413,7 +439,10 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 	// log_bcd_cell_list((const cvector_vector_type(bcd_cell_t) *) &cell_list);
 
 	cvector_vector_type(int) path_list = NULL;
-	rc = compute_bcd_path_list(&cell_list, -1, &path_list);
+	int starting_cell_index = bcd_find_starting_cell(
+		(const cvector_vector_type(bcd_cell_t) *)&cell_list,
+		active_env->start_point);
+	rc = compute_bcd_path_list(&cell_list, starting_cell_index, &path_list);
 	if (rc != 0)
 	{
 		printf("coverage_path_planning: BCD path computation failed (code %d)\n", rc);
@@ -428,7 +457,8 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 	rc = compute_bcd_motion(&cell_list,
 							(const cvector_vector_type(int) *)&path_list,
 							&motion_plan,
-							active_env->path_width - active_env->path_overlap);
+							active_env->path_width - active_env->path_overlap,
+							active_env->end_point);
 	if (rc != 0)
 	{
 		printf("coverage_path_planning: BCD motion computation failed (code %d)\n", rc);
@@ -510,8 +540,72 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 		}
 	}
 
+	// --- Start point → first path waypoint transit ---
+	// Bridges the gap from start_point to the first headland (or coverage) waypoint.
+	// Emitted as the very first segment in coveragePathPlan.segments.
+	cvector_vector_type(point_t) start_nav = NULL;
+
+	if (has_headland)
+	{
+		// Route from start_point to the first headland waypoint via headland_astar.
+		// Uses the same hl_half offset free-space as the headland → coverage transit.
+		if (headland.sections != NULL && cvector_size(headland.sections) > 0)
+		{
+			headland_section_t *first_hs = &headland.sections[0];
+			if (first_hs->path != NULL && cvector_size(first_hs->path) > 0)
+			{
+				point_t sp_from = env->start_point;
+				point_t sp_to = first_hs->path[0];
+
+				float hl_half = env->path_width / 2.0f;
+				uint32_t sp_nav_total = 1 + env->obstacle_count;
+				cvector_vector_type(point_t) *sp_nav_polys =
+					(cvector_vector_type(point_t) *)va_calloc(sp_nav_total,
+															  sizeof(cvector_vector_type(point_t)));
+
+				if (sp_nav_polys != NULL)
+				{
+					sp_nav_polys[0] = compute_polygon_vertex_offset(
+						env->boundary.vertices, env->boundary.vertex_count,
+						POLYGON_WINDING_CW, hl_half);
+
+					for (uint32_t k = 0; k < env->obstacle_count; ++k)
+						sp_nav_polys[k + 1] = compute_polygon_vertex_offset(
+							env->obstacles[k].vertices, env->obstacles[k].vertex_count,
+							POLYGON_WINDING_CCW, hl_half);
+
+					start_nav = headland_astar(sp_from, sp_to, sp_nav_polys, sp_nav_total);
+
+					for (uint32_t p = 0; p < sp_nav_total; ++p)
+						cvector_free(sp_nav_polys[p]);
+					va_free(sp_nav_polys);
+				}
+
+				if (start_nav == NULL)
+				{
+					// Fallback: direct 2-point path.
+					cvector_push_back(start_nav, sp_from);
+					cvector_push_back(start_nav, sp_to);
+				}
+			}
+		}
+	}
+	else
+	{
+		// No headland: direct 2-point line from start_point to the first coverage waypoint.
+		if (motion_plan.section != NULL && cvector_size(motion_plan.section) > 0 &&
+			motion_plan.section[0].ox != NULL && cvector_size(motion_plan.section[0].ox) > 0)
+		{
+			point_t sp_from = active_env->start_point;
+			point_t sp_to = motion_plan.section[0].ox[0];
+			cvector_push_back(start_nav, sp_from);
+			cvector_push_back(start_nav, sp_to);
+		}
+	}
+
 	cJSON *root = serialize_result_json(&event_list, &cell_list, &path_list, &motion_plan,
-										has_headland ? &headland : NULL);
+										has_headland ? &headland : NULL,
+										start_nav);
 
 	/* Free compute data after serializing — these va_free calls are tracked,
 	 * so the working-set drop from releasing cell/path/motion/event data
@@ -520,6 +614,7 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 	free_bcd_cell_list(&cell_list);
 	cvector_free(path_list);
 	free_bcd_motion(&motion_plan);
+	cvector_free(start_nav);
 
 	if (has_headland)
 		free_bcd_headland(&headland);

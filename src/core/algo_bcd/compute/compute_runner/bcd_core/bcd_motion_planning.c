@@ -12,16 +12,13 @@
 int compute_bcd_motion(cvector_vector_type(bcd_cell_t) * cell_list,
                        const cvector_vector_type(int) * path_list,
                        bcd_motion_plan_t *motion_plan,
-                       float step_size)
+                       float step_size,
+                       point_t end_point)
 {
     int begin_path_pos = 0;
     point_t begin_point = {0};
     bool compute_nav = false;
-
-    // Track the very first coverage point for the closing return nav.
-    int first_path_pos = 0;
-    point_t first_point = {0};
-    bool first_recorded = false;
+    bool any_section = false;
 
     size_t i;
     for (i = 0; i < cvector_size(*path_list); ++i)
@@ -46,7 +43,7 @@ int compute_bcd_motion(cvector_vector_type(bcd_cell_t) * cell_list,
             // coverage START.  Assign it to the already-pushed previous section
             // so that each section's nav describes how to LEAVE that section,
             // not how to arrive at it.
-            point_t end_point = *cvector_front(ox);
+            point_t next_start = *cvector_front(ox);
 
             cvector_vector_type(point_t) nav =
                 compute_connection_motion((const cvector_vector_type(bcd_cell_t) *)cell_list,
@@ -54,7 +51,7 @@ int compute_bcd_motion(cvector_vector_type(bcd_cell_t) * cell_list,
                                           begin_path_pos,
                                           begin_point,
                                           (int)i,
-                                          end_point);
+                                          next_start);
 
             int prev_section_idx = (int)cvector_size(motion_plan->section) - 1;
             motion_plan->section[prev_section_idx].nav = nav;
@@ -70,25 +67,18 @@ int compute_bcd_motion(cvector_vector_type(bcd_cell_t) * cell_list,
 
         (*cell_list)[(*path_list)[i]].cleaned = true;
 
-        // Record the very first coverage point for the closing return nav.
-        if (!first_recorded)
-        {
-            first_path_pos = (int)i;
-            first_point = *cvector_front(ox);
-            first_recorded = true;
-        }
-
+        any_section = true;
         begin_path_pos = (int)i;
         begin_point = *cvector_back(ox);
         compute_nav = true;
     }
 
-    // Generate the closing nav: last coverage end → first coverage start.
+    // Generate the closing nav: last coverage end → end_point.
     // path_list already encodes the return route: compute_bcd_path_list appends
     // a shortest-path back to starting_cell_index at the tail of path_list.
     // Slicing forward from begin_path_pos to path_list.size()-1 gives the
     // correct cell-visit-order return journey without reversing anything.
-    if (first_recorded && cvector_size(motion_plan->section) > 0)
+    if (any_section && cvector_size(motion_plan->section) > 0)
     {
         int last_section_idx = (int)cvector_size(motion_plan->section) - 1;
         int path_list_end = (int)cvector_size(*path_list) - 1;
@@ -99,7 +89,7 @@ int compute_bcd_motion(cvector_vector_type(bcd_cell_t) * cell_list,
                                       begin_path_pos,
                                       begin_point,
                                       path_list_end,
-                                      first_point);
+                                      end_point);
 
         motion_plan->section[last_section_idx].nav = return_nav;
     }

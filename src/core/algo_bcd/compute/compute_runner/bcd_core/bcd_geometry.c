@@ -281,3 +281,43 @@ point_t bcd_cell_midpoint_at_x(const bcd_cell_t *cell, float x)
     p.y = (ceil_y + floor_y) / 2.0f;
     return p;
 }
+
+int bcd_find_starting_cell(const cvector_vector_type(bcd_cell_t) * cell_list, point_t p)
+{
+    if (cell_list == NULL || cvector_size(*cell_list) == 0)
+        return 0;
+
+    int cell_count = (int)cvector_size(*cell_list);
+
+    /* Phase 1: containment check — return the cell that contains p. */
+    for (int i = 0; i < cell_count; ++i)
+    {
+        const bcd_cell_t *cell = &(*cell_list)[i];
+        if (p.x < cell->c_begin.x || p.x > cell->c_end.x)
+            continue;
+
+        float ceil_y, floor_y;
+        cell_interp_bounds(cell, p.x, &ceil_y, &floor_y);
+
+        if (p.y >= ceil_y && p.y <= floor_y)
+            return i;
+    }
+
+    /* Phase 2: fallback — nearest cell by x-midpoint distance. */
+    int best_index = 0;
+    float best_dist = 1e38f;
+    for (int i = 0; i < cell_count; ++i)
+    {
+        const bcd_cell_t *cell = &(*cell_list)[i];
+        float mid_x = (cell->c_begin.x + cell->c_end.x) / 2.0f;
+        float dist = p.x - mid_x;
+        if (dist < 0.0f)
+            dist = -dist;
+        if (dist < best_dist)
+        {
+            best_dist = dist;
+            best_index = i;
+        }
+    }
+    return best_index;
+}

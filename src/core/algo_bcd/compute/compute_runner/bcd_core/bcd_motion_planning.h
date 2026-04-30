@@ -18,7 +18,8 @@ typedef struct
 int compute_bcd_motion(cvector_vector_type(bcd_cell_t) * cell_list,
                        const cvector_vector_type(int) * path_list,
                        bcd_motion_plan_t *motion_plan,
-                       float step_size);
+                       float step_size,
+                       point_t end_point);
 
 void log_bcd_motion(const bcd_motion_plan_t motion_plan);
 

@@ -62,6 +62,9 @@ typedef struct
     bool track_memory_usage;
     bool headland;
 
+    point_t start_point;
+    point_t end_point;
+
     polygon_t boundary;
 
     polygon_t *obstacles;
