@@ -72,7 +72,8 @@ typedef struct
 typedef struct
 {
     cvector_vector_type(point_t) path;
-    int source_index; // -1 = zone boundary, 0+ = obstacle index
+    cvector_vector_type(point_t) nav; // transit to next section (or to first coverage point)
+    int source_index;                 // -1 = zone boundary, 0+ = obstacle index
 } headland_section_t;
 
 typedef struct

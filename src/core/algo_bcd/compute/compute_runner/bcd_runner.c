@@ -64,10 +64,31 @@ static cJSON *serialize_result_json(const bcd_event_list_t *event_list,
 				cJSON_AddItemToArray(path_arr, jpath_point);
 			}
 			cJSON_AddItemToArray(segments_arr, jsegment);
+
+			// headland transit segment (connects this section to next, or to first coverage point)
+			if (hs->nav != NULL && cvector_size(hs->nav) > 0)
+			{
+				cJSON *jtransit = cJSON_CreateObject();
+				cJSON_AddNumberToObject(jtransit, "id", segment_id++);
+				cJSON_AddStringToObject(jtransit, "type", "headlandTransit");
+				cJSON *nav_arr = cJSON_CreateArray();
+				cJSON_AddItemToObject(jtransit, "path", nav_arr);
+				int nav_count = (int)cvector_size(hs->nav);
+				for (int j = 0; j < nav_count; ++j)
+				{
+					const point_t *pt = &hs->nav[j];
+					cJSON *jnav_point = cJSON_CreateObject();
+					cJSON_AddNumberToObject(jnav_point, "id", j + 1);
+					cJSON *jpoint = cJSON_CreateObject();
+					cJSON_AddNumberToObject(jpoint, "x", pt->x);
+					cJSON_AddNumberToObject(jpoint, "y", pt->y);
+					cJSON_AddItemToObject(jnav_point, "point", jpoint);
+					cJSON_AddItemToArray(nav_arr, jnav_point);
+				}
+				cJSON_AddItemToArray(segments_arr, jtransit);
+			}
 		}
 	}
-
-	if (motion_plan && motion_plan->section)
 	{
 		int section_count = cvector_size(motion_plan->section);
 		for (int i = 0; i < section_count; ++i)
@@ -402,6 +423,71 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 		return err_cleanup(&event_list, &cell_list, &path_list, &motion_plan, rc);
 	}
 	log_bcd_motion(motion_plan);
+
+	// --- Headland → first coverage point transit ---
+	// The last headland section's nav must point to the first coverage waypoint.
+	// This can only be computed here because motion_plan is not available inside
+	// compute_bcd_headland.
+	//
+	// from_pt lies on the headland boundary, not inside any BCD cell, so
+	// compute_connection_motion is not appropriate here — it degrades to a
+	// direct line when from_pt falls outside the first cell's x-range.
+	//
+	// Instead, reuse the same visibility-graph A* used for inter-section
+	// headland transit: rebuild temporary offset-polygon cvectors from the
+	// stored shrunken_zone and expanded_obstacles geometry (both are already
+	// the exact offset polygons that define the headland free-space), then
+	// route through them.  headland_astar is available here because
+	// bcd_headland.c is #included directly into this translation unit.
+	if (has_headland && headland.sections != NULL)
+	{
+		int hl_count = (int)cvector_size(headland.sections);
+		if (hl_count > 0 &&
+			motion_plan.section != NULL && cvector_size(motion_plan.section) > 0 &&
+			motion_plan.section[0].ox != NULL && cvector_size(motion_plan.section[0].ox) > 0)
+		{
+			headland_section_t *last_hs = &headland.sections[hl_count - 1];
+			if (last_hs->path != NULL && cvector_size(last_hs->path) > 0)
+			{
+				point_t from_pt = last_hs->path[cvector_size(last_hs->path) - 1];
+				point_t to_pt = motion_plan.section[0].ox[0];
+
+				// Build temporary cvector array matching the layout expected by
+				// headland_astar: slot 0 = shrunken zone, slot k+1 = expanded obstacle k.
+				uint32_t nav_total = 1 + headland.expanded_obstacle_count;
+				cvector_vector_type(point_t) *nav_polys =
+					(cvector_vector_type(point_t) *)va_calloc(nav_total,
+															  sizeof(cvector_vector_type(point_t)));
+
+				cvector_vector_type(point_t) hl_nav = NULL;
+
+				if (nav_polys != NULL)
+				{
+					for (uint32_t vi = 0; vi < headland.shrunken_zone.vertex_count; ++vi)
+						cvector_push_back(nav_polys[0], headland.shrunken_zone.vertices[vi]);
+
+					for (uint32_t k = 0; k < headland.expanded_obstacle_count; ++k)
+						for (uint32_t vi = 0; vi < headland.expanded_obstacles[k].vertex_count; ++vi)
+							cvector_push_back(nav_polys[k + 1], headland.expanded_obstacles[k].vertices[vi]);
+
+					hl_nav = headland_astar(from_pt, to_pt, nav_polys, nav_total);
+
+					for (uint32_t p = 0; p < nav_total; ++p)
+						cvector_free(nav_polys[p]);
+					va_free(nav_polys);
+				}
+
+				if (hl_nav == NULL)
+				{
+					// Fallback: direct 2-point path.
+					cvector_push_back(hl_nav, from_pt);
+					cvector_push_back(hl_nav, to_pt);
+				}
+
+				last_hs->nav = hl_nav;
+			}
+		}
+	}
 
 	cJSON *root = serialize_result_json(&event_list, &cell_list, &path_list, &motion_plan,
 										has_headland ? &headland : NULL);

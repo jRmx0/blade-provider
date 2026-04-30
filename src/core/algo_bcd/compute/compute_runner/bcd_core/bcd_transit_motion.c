@@ -44,8 +44,22 @@ cvector_vector_type(point_t) compute_connection_motion(const cvector_vector_type
 
     int chain_len = (int)cvector_size(chain);
 
+    // Single-cell transit: trace the medial-axis spine within the cell.
+    // This handles the headland → first coverage entry where both endpoints
+    // map to the same BCD cell.
+    if (chain_len == 1)
+    {
+        int idx = chain[0];
+        const bcd_cell_t *cell = &(*cell_list)[idx];
+        cvector_push_back(nav, begin_point);
+        append_cell_spine_waypoints(&nav, cell, begin_point.x, end_point.x);
+        cvector_push_back(nav, end_point);
+        cvector_free(chain);
+        return nav;
+    }
+
     // Need at least two cells (begin + end)
-    if (chain_len < 2)
+    if (chain_len < 1)
     {
         cvector_free(chain);
         return nav;
