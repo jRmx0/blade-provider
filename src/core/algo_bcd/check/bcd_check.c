@@ -19,6 +19,7 @@ static void bcd_init_environment(input_environment_t *environment)
 	environment->obstacles = NULL;
 	environment->obstacle_count = 0;
 	environment->track_memory_usage = false;
+	environment->headland = false;
 }
 
 static void bcd_set_result(bcd_check_result_t *result, bool ok, const char *code, const char *message)
@@ -398,12 +399,12 @@ bool bcd_check_request_json(const char *request_json, input_environment_t *envir
 	}
 
 	if (!bcd_parse_polygon(
-		cJSON_GetArrayItem(zones, 0),
-		&environment->boundary,
-		POLYGON_WINDING_CW,
-		result,
-		"invalid_boundary",
-		"BCD boundary must be a polygon with at least 3 numeric vertices."))
+			cJSON_GetArrayItem(zones, 0),
+			&environment->boundary,
+			POLYGON_WINDING_CW,
+			result,
+			"invalid_boundary",
+			"BCD boundary must be a polygon with at least 3 numeric vertices."))
 	{
 		cJSON_Delete(root);
 		free_input_environment(environment);
@@ -435,12 +436,12 @@ bool bcd_check_request_json(const char *request_json, input_environment_t *envir
 		for (int index = 0; index < obstacle_count; ++index)
 		{
 			if (!bcd_parse_polygon(
-				cJSON_GetArrayItem(obstacles, index),
-				&environment->obstacles[index],
-				POLYGON_WINDING_CCW,
-				result,
-				"invalid_obstacle",
-				"BCD obstacles must be polygons with at least 3 numeric vertices."))
+					cJSON_GetArrayItem(obstacles, index),
+					&environment->obstacles[index],
+					POLYGON_WINDING_CCW,
+					result,
+					"invalid_obstacle",
+					"BCD obstacles must be polygons with at least 3 numeric vertices."))
 			{
 				cJSON_Delete(root);
 				free_input_environment(environment);
@@ -450,14 +451,14 @@ bool bcd_check_request_json(const char *request_json, input_environment_t *envir
 	}
 
 	if (!bcd_expect_float_parameter(
-		parameters,
-		"Path Width",
-		&environment->path_width,
-		result,
-		"missing_path_width",
-		"BCD requires a Path Width parameter.",
-		"invalid_path_width",
-		"BCD Path Width must be a number greater than 0."))
+			parameters,
+			"Path Width",
+			&environment->path_width,
+			result,
+			"missing_path_width",
+			"BCD requires a Path Width parameter.",
+			"invalid_path_width",
+			"BCD Path Width must be a number greater than 0."))
 	{
 		cJSON_Delete(root);
 		free_input_environment(environment);
@@ -473,14 +474,14 @@ bool bcd_check_request_json(const char *request_json, input_environment_t *envir
 	}
 
 	if (!bcd_expect_float_parameter(
-		parameters,
-		"Path Overlap",
-		&environment->path_overlap,
-		result,
-		"missing_path_overlap",
-		"BCD requires a Path Overlap parameter.",
-		"invalid_path_overlap",
-		"BCD Path Overlap must be a number greater than or equal to 0 and smaller than Path Width."))
+			parameters,
+			"Path Overlap",
+			&environment->path_overlap,
+			result,
+			"missing_path_overlap",
+			"BCD requires a Path Overlap parameter.",
+			"invalid_path_overlap",
+			"BCD Path Overlap must be a number greater than or equal to 0 and smaller than Path Width."))
 	{
 		cJSON_Delete(root);
 		free_input_environment(environment);
@@ -496,14 +497,14 @@ bool bcd_check_request_json(const char *request_json, input_environment_t *envir
 	}
 
 	if (!bcd_expect_string_parameter(
-		parameters,
-		"Format",
-		"Polygon",
-		result,
-		"missing_format",
-		"BCD requires a Format parameter.",
-		"unsupported_format",
-		"BCD supports only the Polygon format."))
+			parameters,
+			"Format",
+			"Polygon",
+			result,
+			"missing_format",
+			"BCD requires a Format parameter.",
+			"unsupported_format",
+			"BCD supports only the Polygon format."))
 	{
 		cJSON_Delete(root);
 		free_input_environment(environment);
@@ -511,14 +512,14 @@ bool bcd_check_request_json(const char *request_json, input_environment_t *envir
 	}
 
 	if (!bcd_expect_string_parameter(
-		parameters,
-		"Type",
-		"Off-Line",
-		result,
-		"missing_type",
-		"BCD requires a Type parameter.",
-		"unsupported_type",
-		"BCD supports only the Off-Line type."))
+			parameters,
+			"Type",
+			"Off-Line",
+			result,
+			"missing_type",
+			"BCD requires a Type parameter.",
+			"unsupported_type",
+			"BCD supports only the Off-Line type."))
 	{
 		cJSON_Delete(root);
 		free_input_environment(environment);
@@ -526,14 +527,14 @@ bool bcd_check_request_json(const char *request_json, input_environment_t *envir
 	}
 
 	if (!bcd_expect_string_parameter(
-		parameters,
-		"Coordinate System",
-		"Cartesian",
-		result,
-		"missing_coordinate_system",
-		"BCD requires a Coordinate System parameter.",
-		"unsupported_coordinate_system",
-		"BCD supports only the Cartesian coordinate system."))
+			parameters,
+			"Coordinate System",
+			"Cartesian",
+			result,
+			"missing_coordinate_system",
+			"BCD requires a Coordinate System parameter.",
+			"unsupported_coordinate_system",
+			"BCD supports only the Cartesian coordinate system."))
 	{
 		cJSON_Delete(root);
 		free_input_environment(environment);
@@ -542,14 +543,14 @@ bool bcd_check_request_json(const char *request_json, input_environment_t *envir
 
 	bool track_memory_usage = false;
 	if (!bcd_expect_bool_parameter(
-		parameters,
-		"Track Memory Usage",
-		&track_memory_usage,
-		result,
-		"missing_track_memory_usage",
-		"BCD requires a Track Memory Usage parameter.",
-		"invalid_track_memory_usage",
-		"BCD Track Memory Usage must be a boolean."))
+			parameters,
+			"Track Memory Usage",
+			&track_memory_usage,
+			result,
+			"missing_track_memory_usage",
+			"BCD requires a Track Memory Usage parameter.",
+			"invalid_track_memory_usage",
+			"BCD Track Memory Usage must be a boolean."))
 	{
 		cJSON_Delete(root);
 		free_input_environment(environment);
@@ -557,6 +558,24 @@ bool bcd_check_request_json(const char *request_json, input_environment_t *envir
 	}
 
 	environment->track_memory_usage = track_memory_usage;
+
+	bool headland = false;
+	if (!bcd_expect_bool_parameter(
+			parameters,
+			"Headland",
+			&headland,
+			result,
+			"missing_headland",
+			"BCD requires a Headland parameter.",
+			"invalid_headland",
+			"BCD Headland must be a boolean."))
+	{
+		cJSON_Delete(root);
+		free_input_environment(environment);
+		return false;
+	}
+
+	environment->headland = headland;
 
 	cJSON_Delete(root);
 	bcd_set_result(result, true, NULL, NULL);

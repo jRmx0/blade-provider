@@ -15,6 +15,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "../../../dependencies/cJSON/cJSON.h"
+#include "../../../dependencies/cvector/cvector.h"
 
 typedef struct
 {
@@ -28,13 +29,15 @@ typedef struct
     point_t end;
 } polygon_edge_t;
 
-typedef enum {
+typedef enum
+{
     POLYGON_WINDING_UNKNOWN = 0,
-    POLYGON_WINDING_CW = 1,         // Boundary winding type
-    POLYGON_WINDING_CCW = 2         // Obstacle winding type
+    POLYGON_WINDING_CW = 1, // Boundary winding type
+    POLYGON_WINDING_CCW = 2 // Obstacle winding type
 } polygon_winding_t;
 
-typedef enum {
+typedef enum
+{
     BOUNDARY,
     OBSTACLE
 } polygon_type_t;
@@ -47,7 +50,7 @@ typedef struct
     uint32_t vertex_count;
 
     polygon_edge_t *edges;
-    uint32_t edge_count;   
+    uint32_t edge_count;
 } polygon_t;
 
 typedef struct
@@ -56,12 +59,29 @@ typedef struct
     float path_width;
     float path_overlap;
     bool track_memory_usage;
+    bool headland;
 
     polygon_t boundary;
 
     polygon_t *obstacles;
     uint32_t obstacle_count;
 } input_environment_t;
+
+// Headland types
+
+typedef struct
+{
+    cvector_vector_type(point_t) path;
+    int source_index; // -1 = zone boundary, 0+ = obstacle index
+} headland_section_t;
+
+typedef struct
+{
+    cvector_vector_type(headland_section_t) sections;
+    polygon_t shrunken_zone;
+    polygon_t *expanded_obstacles;
+    uint32_t expanded_obstacle_count;
+} bcd_headland_t;
 
 // Runs the BCD computation pipeline on a pre-validated, pre-parsed environment.
 // Returns a cJSON object owned by the caller.

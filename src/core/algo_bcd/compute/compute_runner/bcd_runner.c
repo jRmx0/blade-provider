@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdbool.h>
+#include <string.h>
 #include "bcd_runner.h"
 #include "../../../../../dependencies/cJSON/cJSON.h"
 #include "../../../../../dependencies/cvector/cvector.h"
@@ -8,7 +9,11 @@
 #include "bcd_core/bcd_coverage_planning.h"
 #include "bcd_core/bcd_motion_planning.h"
 #include "bcd_core/bcd_geometry.h"
+#include "bcd_core/bcd_headland.h"
 #include "../../preprocess/bcd_preprocess.h"
+
+#include "bcd_core/bcd_polygon_offset.c"
+#include "bcd_core/bcd_headland.c"
 
 static void log_event_list(const bcd_event_list_t *event_list);
 static const char *event_type_to_string(bcd_event_type_t t);
@@ -16,9 +21,10 @@ static const char *polygon_type_to_string(polygon_type_t t);
 static char *serialize_event_list_json(const bcd_event_list_t *event_list);
 
 static cJSON *serialize_result_json(const bcd_event_list_t *event_list,
-								    cvector_vector_type(bcd_cell_t) * cell_list,
-								    cvector_vector_type(int) * path_list,
-								    const bcd_motion_plan_t *motion_plan)
+									cvector_vector_type(bcd_cell_t) * cell_list,
+									cvector_vector_type(int) * path_list,
+									const bcd_motion_plan_t *motion_plan,
+									const bcd_headland_t *headland)
 {
 	cJSON *root = cJSON_CreateObject();
 
@@ -28,10 +34,42 @@ static cJSON *serialize_result_json(const bcd_event_list_t *event_list,
 	cJSON *segments_arr = cJSON_CreateArray();
 	cJSON_AddItemToObject(coverage_path_plan_obj, "segments", segments_arr);
 
+	int segment_id = 0;
+
+	// Headland segments (prepended before coverage/transit)
+	if (headland && headland->sections)
+	{
+		int section_count = (int)cvector_size(headland->sections);
+		for (int i = 0; i < section_count; ++i)
+		{
+			const headland_section_t *hs = &headland->sections[i];
+			if (hs->path == NULL || cvector_size(hs->path) == 0)
+				continue;
+
+			cJSON *jsegment = cJSON_CreateObject();
+			cJSON_AddNumberToObject(jsegment, "id", segment_id++);
+			cJSON_AddStringToObject(jsegment, "type", "headland");
+			cJSON *path_arr = cJSON_CreateArray();
+			cJSON_AddItemToObject(jsegment, "path", path_arr);
+			int pt_count = (int)cvector_size(hs->path);
+			for (int j = 0; j < pt_count; ++j)
+			{
+				const point_t *pt = &hs->path[j];
+				cJSON *jpath_point = cJSON_CreateObject();
+				cJSON_AddNumberToObject(jpath_point, "id", j + 1);
+				cJSON *jpoint = cJSON_CreateObject();
+				cJSON_AddNumberToObject(jpoint, "x", pt->x);
+				cJSON_AddNumberToObject(jpoint, "y", pt->y);
+				cJSON_AddItemToObject(jpath_point, "point", jpoint);
+				cJSON_AddItemToArray(path_arr, jpath_point);
+			}
+			cJSON_AddItemToArray(segments_arr, jsegment);
+		}
+	}
+
 	if (motion_plan && motion_plan->section)
 	{
 		int section_count = cvector_size(motion_plan->section);
-		int segment_id = 0;
 		for (int i = 0; i < section_count; ++i)
 		{
 			const cell_motion_plan_t *section = &motion_plan->section[i];
@@ -155,7 +193,7 @@ static cJSON *serialize_result_json(const bcd_event_list_t *event_list,
 				 *
 				 * Capacity: 2 + (ceil_n-1) + 2 + (floor_n-1) = ceil_n + floor_n + 2
 				 */
-				int ceil_n  = (int)cvector_size(cell->ceiling_edge_list);
+				int ceil_n = (int)cvector_size(cell->ceiling_edge_list);
 				int floor_n = (int)cvector_size(cell->floor_edge_list);
 				int raw_cap = ceil_n + floor_n + 2;
 
@@ -269,17 +307,60 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 	event_list.bcd_events = NULL;
 	event_list.length = 0;
 
-	int rc = bcd_preprocess_environment(env, 0.0f);
+	// --- Headland pass (optional) ---
+	bcd_headland_t headland;
+	memset(&headland, 0, sizeof(bcd_headland_t));
+	bool has_headland = false;
+
+	input_environment_t headland_env;
+	memset(&headland_env, 0, sizeof(input_environment_t));
+
+	input_environment_t *active_env = env;
+
+	if (env->headland)
+	{
+		int hrc = compute_bcd_headland(env, &headland);
+		if (hrc != 0)
+		{
+			printf("coverage_path_planning: headland generation failed (code %d)\n", hrc);
+		}
+		else
+		{
+			has_headland = true;
+
+			// Build a reduced input_environment_t pointing at the headland geometry.
+			// This is a shallow wrapper — the polygon data is owned by headland.
+			headland_env.id = env->id;
+			headland_env.path_width = env->path_width;
+			headland_env.path_overlap = env->path_overlap;
+			headland_env.track_memory_usage = env->track_memory_usage;
+			headland_env.headland = false; // already processed
+			headland_env.boundary = headland.shrunken_zone;
+			headland_env.obstacles = headland.expanded_obstacles;
+			headland_env.obstacle_count = headland.expanded_obstacle_count;
+
+			active_env = &headland_env;
+
+			printf("coverage_path_planning: headland generated %zu section(s)\n",
+				   cvector_size(headland.sections));
+		}
+	}
+
+	int rc = bcd_preprocess_environment(active_env, 0.0f);
 	if (rc != 0)
 	{
 		printf("coverage_path_planning: environment preprocessing failed (code %d)\n", rc);
+		if (has_headland)
+			free_bcd_headland(&headland);
 		return err_cleanup(&event_list, NULL, NULL, NULL, rc);
 	}
 
-	rc = build_bcd_event_list(env, &event_list);
+	rc = build_bcd_event_list(active_env, &event_list);
 	if (rc != 0)
 	{
 		printf("coverage_path_planning: BCD event list generation failed (code %d)\n", rc);
+		if (has_headland)
+			free_bcd_headland(&headland);
 		return err_cleanup(&event_list, NULL, NULL, NULL, rc);
 	}
 	printf("coverage_path_planning: successfully generated %d events\n", event_list.length);
@@ -289,6 +370,8 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 	if (rc != 0)
 	{
 		printf("coverage_path_planning: BCD cell computation failed (code %d)\n", rc);
+		if (has_headland)
+			free_bcd_headland(&headland);
 		return err_cleanup(&event_list, &cell_list, NULL, NULL, rc);
 	}
 	printf("coverage_path_planning: successfully generated %zu cells\n", cvector_size(cell_list));
@@ -299,6 +382,8 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 	if (rc != 0)
 	{
 		printf("coverage_path_planning: BCD path computation failed (code %d)\n", rc);
+		if (has_headland)
+			free_bcd_headland(&headland);
 		return err_cleanup(&event_list, &cell_list, &path_list, NULL, rc);
 	}
 	printf("coverage_path_planning: successfully generated path with %zu visits\n", cvector_size(path_list));
@@ -308,15 +393,18 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 	rc = compute_bcd_motion(&cell_list,
 							(const cvector_vector_type(int) *)&path_list,
 							&motion_plan,
-							env->path_width - env->path_overlap);
+							active_env->path_width - active_env->path_overlap);
 	if (rc != 0)
 	{
 		printf("coverage_path_planning: BCD motion computation failed (code %d)\n", rc);
+		if (has_headland)
+			free_bcd_headland(&headland);
 		return err_cleanup(&event_list, &cell_list, &path_list, &motion_plan, rc);
 	}
 	log_bcd_motion(motion_plan);
 
-	cJSON *root = serialize_result_json(&event_list, &cell_list, &path_list, &motion_plan);
+	cJSON *root = serialize_result_json(&event_list, &cell_list, &path_list, &motion_plan,
+										has_headland ? &headland : NULL);
 
 	/* Free compute data after serializing — these va_free calls are tracked,
 	 * so the working-set drop from releasing cell/path/motion/event data
@@ -326,10 +414,11 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 	cvector_free(path_list);
 	free_bcd_motion(&motion_plan);
 
+	if (has_headland)
+		free_bcd_headland(&headland);
+
 	return root;
 }
-
-
 
 static const char *event_type_to_string(bcd_event_type_t t)
 {
@@ -438,7 +527,8 @@ static cJSON *err_cleanup(bcd_event_list_t *event_list,
 {
 	free_bcd_event_list(event_list);
 	free_bcd_cell_list(cell_list);
-	if (path_list) cvector_free(*path_list);
+	if (path_list)
+		cvector_free(*path_list);
 	free_bcd_motion(motion_plan);
 
 	cJSON *err = cJSON_CreateObject();
@@ -447,8 +537,6 @@ static cJSON *err_cleanup(bcd_event_list_t *event_list,
 	cJSON_AddStringToObject(err, "message", "BCD computation failed");
 	return err;
 }
-
-
 
 static void log_event_list(const bcd_event_list_t *event_list)
 {
@@ -515,5 +603,3 @@ bool are_equal_points(point_t a,
 {
 	return a.x == b.x && a.y == b.y;
 }
-
-
