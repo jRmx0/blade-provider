@@ -24,8 +24,10 @@
 #include "compute_runner/bcd_core/bcd_event_list_building.c"
 #include "compute_runner/bcd_core/bcd_cell_computation.c"
 #include "compute_runner/bcd_core/bcd_coverage_planning.c"
-#include "compute_runner/bcd_core/bcd_motion_planning.c"
 #include "compute_runner/bcd_core/bcd_geometry.c"
+#include "compute_runner/bcd_core/bcd_ox_motion.c"
+#include "compute_runner/bcd_core/bcd_transit_motion.c"
+#include "compute_runner/bcd_core/bcd_motion_planning.c"
 #include "../preprocess/bcd_preprocess.c"
 #include "compute_runner/bcd_runner.c"
 
@@ -96,7 +98,7 @@ char *bcd_run_compute(const char *input_environment_json)
 	{
 		/* Hook cJSON so its internal allocations go through VirtualAlloc and
 		 * are captured alongside the cvector tracking samples. */
-		cJSON_Hooks hooks = { va_malloc, va_free };
+		cJSON_Hooks hooks = {va_malloc, va_free};
 		cJSON_InitHooks(&hooks);
 
 		va_free_tracking_data();
@@ -114,7 +116,8 @@ char *bcd_run_compute(const char *input_environment_json)
 	if (!bcd_check_request_json(input_environment_json, &environment, &check_result))
 	{
 		va_tracking_enable();
-		if (track_memory_usage) cJSON_InitHooks(NULL);
+		if (track_memory_usage)
+			cJSON_InitHooks(NULL);
 		return bcd_create_error_json(check_result.code, check_result.message);
 	}
 
@@ -132,9 +135,9 @@ char *bcd_run_compute(const char *input_environment_json)
 	{
 		/* All compute data and environment polygons have now been freed via
 		 * va_free. Snapshot captures the full arc including the drop. */
-		long   *samples  = va_get_tracking_data();
-		size_t  count    = va_get_tracking_count();
-		long    baseline = va_get_baseline();
+		long *samples = va_get_tracking_data();
+		size_t count = va_get_tracking_count();
+		long baseline = va_get_baseline();
 		va_tracking_disable();
 
 		/* Only attach performance to successful results. */
