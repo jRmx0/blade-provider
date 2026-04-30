@@ -97,12 +97,12 @@ static cJSON *serialize_result_json(const bcd_event_list_t *event_list,
 				cJSON_AddItemToArray(segments_arr, jsegment);
 			}
 
-			// transit segment
+			// coverage transit segment
 			if (section->nav && cvector_size(section->nav) > 0)
 			{
 				cJSON *jsegment = cJSON_CreateObject();
 				cJSON_AddNumberToObject(jsegment, "id", segment_id++);
-				cJSON_AddStringToObject(jsegment, "type", "transit");
+				cJSON_AddStringToObject(jsegment, "type", "coverageTransit");
 				cJSON *path_arr = cJSON_CreateArray();
 				cJSON_AddItemToObject(jsegment, "path", path_arr);
 				int nav_count = cvector_size(section->nav);
