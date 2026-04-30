@@ -452,9 +452,14 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 				point_t from_pt = last_hs->path[cvector_size(last_hs->path) - 1];
 				point_t to_pt = motion_plan.section[0].ox[0];
 
-				// Build temporary cvector array matching the layout expected by
-				// headland_astar: slot 0 = shrunken zone, slot k+1 = expanded obstacle k.
-				uint32_t nav_total = 1 + headland.expanded_obstacle_count;
+				// Build temporary offset-polygon cvectors at half_width (the headland
+				// strip offset) from the original env vertices.  headland.shrunken_zone
+				// is now at (path_width - path_overlap) — the BCD area boundary — which
+				// is larger than the headland ring, so from_pt (on the headland boundary)
+				// would lie outside it and A* would fail.  Using half_width keeps the
+				// free-space identical to what compute_bcd_headland used internally.
+				float hl_half = env->path_width / 2.0f;
+				uint32_t nav_total = 1 + env->obstacle_count;
 				cvector_vector_type(point_t) *nav_polys =
 					(cvector_vector_type(point_t) *)va_calloc(nav_total,
 															  sizeof(cvector_vector_type(point_t)));
@@ -463,12 +468,14 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 
 				if (nav_polys != NULL)
 				{
-					for (uint32_t vi = 0; vi < headland.shrunken_zone.vertex_count; ++vi)
-						cvector_push_back(nav_polys[0], headland.shrunken_zone.vertices[vi]);
+					nav_polys[0] = compute_polygon_vertex_offset(
+						env->boundary.vertices, env->boundary.vertex_count,
+						POLYGON_WINDING_CW, hl_half);
 
-					for (uint32_t k = 0; k < headland.expanded_obstacle_count; ++k)
-						for (uint32_t vi = 0; vi < headland.expanded_obstacles[k].vertex_count; ++vi)
-							cvector_push_back(nav_polys[k + 1], headland.expanded_obstacles[k].vertices[vi]);
+					for (uint32_t k = 0; k < env->obstacle_count; ++k)
+						nav_polys[k + 1] = compute_polygon_vertex_offset(
+							env->obstacles[k].vertices, env->obstacles[k].vertex_count,
+							POLYGON_WINDING_CCW, hl_half);
 
 					hl_nav = headland_astar(from_pt, to_pt, nav_polys, nav_total);
 

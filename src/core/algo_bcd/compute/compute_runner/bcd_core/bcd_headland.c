@@ -684,14 +684,32 @@ int compute_bcd_headland(const input_environment_t *env,
     }
 
     // --- Build reduced geometry polygons for BCD ---
-    if (offset_polys[0] != NULL)
+    //
+    // The BCD area boundary must be offset inward (zone) / outward (obstacles)
+    // by bcd_shrink from the original polygon edges.
+    //
+    // headland_coverage_offset is measured from the headland path centreline
+    // (which sits at half_width from the original edge), so the total offset
+    // from the original edge is:
+    //
+    //   bcd_shrink = half_width + headland_coverage_offset
+    //
+    // offset_polys[] remain at half_width and are used only for headland path
+    // tracing and A* transit — they must not be reused here.
+    float bcd_shrink = half_width + env->headland_coverage_offset;
+
+    cvector_vector_type(point_t) bcd_zone_verts = compute_polygon_vertex_offset(
+        env->boundary.vertices, env->boundary.vertex_count,
+        POLYGON_WINDING_CW, bcd_shrink);
+    if (bcd_zone_verts != NULL)
     {
-        int rc = build_offset_polygon(offset_polys[0], POLYGON_WINDING_CW,
+        int rc = build_offset_polygon(bcd_zone_verts, POLYGON_WINDING_CW,
                                       &headland->shrunken_zone);
         if (rc != 0)
         {
             printf("compute_bcd_headland: failed to build shrunken zone polygon (%d)\n", rc);
         }
+        cvector_free(bcd_zone_verts);
     }
 
     if (env->obstacle_count > 0)
@@ -703,14 +721,18 @@ int compute_bcd_headland(const input_environment_t *env,
             headland->expanded_obstacle_count = env->obstacle_count;
             for (uint32_t k = 0; k < env->obstacle_count; ++k)
             {
-                if (offset_polys[k + 1] != NULL)
+                cvector_vector_type(point_t) bcd_obs_verts = compute_polygon_vertex_offset(
+                    env->obstacles[k].vertices, env->obstacles[k].vertex_count,
+                    POLYGON_WINDING_CCW, bcd_shrink);
+                if (bcd_obs_verts != NULL)
                 {
-                    int rc = build_offset_polygon(offset_polys[k + 1], POLYGON_WINDING_CCW,
+                    int rc = build_offset_polygon(bcd_obs_verts, POLYGON_WINDING_CCW,
                                                   &headland->expanded_obstacles[k]);
                     if (rc != 0)
                     {
                         printf("compute_bcd_headland: failed to build expanded obstacle %u polygon (%d)\n", k, rc);
                     }
+                    cvector_free(bcd_obs_verts);
                 }
             }
         }

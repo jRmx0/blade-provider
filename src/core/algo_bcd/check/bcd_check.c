@@ -20,6 +20,7 @@ static void bcd_init_environment(input_environment_t *environment)
 	environment->obstacle_count = 0;
 	environment->track_memory_usage = false;
 	environment->headland = false;
+	environment->headland_coverage_offset = 0.0f;
 }
 
 static void bcd_set_result(bcd_check_result_t *result, bool ok, const char *code, const char *message)
@@ -576,6 +577,32 @@ bool bcd_check_request_json(const char *request_json, input_environment_t *envir
 	}
 
 	environment->headland = headland;
+
+	float headland_coverage_offset = 0.0f;
+	if (!bcd_expect_float_parameter(
+			parameters,
+			"Headland Coverage Offset",
+			&headland_coverage_offset,
+			result,
+			"missing_headland_coverage_offset",
+			"BCD requires a Headland Coverage Offset parameter.",
+			"invalid_headland_coverage_offset",
+			"BCD Headland Coverage Offset must be a number greater than or equal to 0."))
+	{
+		cJSON_Delete(root);
+		free_input_environment(environment);
+		return false;
+	}
+
+	if (headland_coverage_offset < 0.0f)
+	{
+		cJSON_Delete(root);
+		bcd_set_result(result, false, "invalid_headland_coverage_offset", "BCD Headland Coverage Offset must be greater than or equal to 0.");
+		free_input_environment(environment);
+		return false;
+	}
+
+	environment->headland_coverage_offset = headland_coverage_offset;
 
 	cJSON_Delete(root);
 	bcd_set_result(result, true, NULL, NULL);

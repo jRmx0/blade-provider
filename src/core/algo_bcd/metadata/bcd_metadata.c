@@ -47,6 +47,7 @@ char *bcd_build_metadata_json(void)
 	metadata_add_parameter(parameters, 5, "Coordinate System", BCD_METADATA_PARAM_TYPE_ENUM, coordsystem_values, 1, BCD_METADATA_COORDSYSTEM_CARTESIAN, BCD_METADATA_PARAM_SECTION_ENVIRONMENT, BCD_METADATA_APP_HANDLER_ENVIRONMENT_COORDSYSTEM, 0, 0.0);
 	metadata_add_parameter(parameters, 6, "Track Memory Usage", BCD_METADATA_PARAM_TYPE_BOOLEAN, NULL, 0, "true", BCD_METADATA_PARAM_SECTION_PERFORMANCE, BCD_METADATA_APP_HANDLER_NONE, 0, 0.0);
 	metadata_add_parameter(parameters, 7, "Headland", BCD_METADATA_PARAM_TYPE_BOOLEAN, NULL, 0, "true", BCD_METADATA_PARAM_SECTION_COVERAGE_PATH, BCD_METADATA_APP_HANDLER_NONE, 0, 0.0);
+	metadata_add_parameter(parameters, 8, "Headland Coverage Offset", BCD_METADATA_PARAM_TYPE_DECIMAL, NULL, 0, "0", BCD_METADATA_PARAM_SECTION_COVERAGE_PATH, BCD_METADATA_APP_HANDLER_NONE, 0, 0.0);
 
 	cJSON *metrics = cJSON_CreateArray();
 	if (metrics == NULL)

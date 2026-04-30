@@ -58,6 +58,7 @@ typedef struct
     uint32_t id;
     float path_width;
     float path_overlap;
+    float headland_coverage_offset; // 0 = auto (1.5 * path_width - path_overlap)
     bool track_memory_usage;
     bool headland;
 
