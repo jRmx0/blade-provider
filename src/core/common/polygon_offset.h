@@ -20,12 +20,15 @@
  *     separate offset-edge endpoints replace the single miter point. Output
  *     vertex count may exceed input count by the number of bevelled corners.
  *
- * At reflex (concave) corners the intersection of the two adjacent offset edge
- * lines is emitted as a single point in all cases. If the intersection is too
- * far away or the adjacent edges are parallel, a directionally robust fallback
- * point is used with distance chosen to preserve at least `offset` clearance
- * from both adjacent edges whenever possible (instead of collapsing toward the
- * original corner).
+ * At reflex (concave) corners, the default is to emit the intersection of the
+ * two adjacent offset edge lines as a single point. If that intersection is
+ * too far away or edges are parallel, a directionally robust fallback point is
+ * used with distance chosen to preserve at least `offset` clearance from both
+ * adjacent edges whenever possible.
+ *
+ * In bevel-enabled mode, CW polygons (zone boundaries) additionally bevel sharp
+ * reflex corners (parallel or overlong-miter cases) to two points, matching the
+ * sharp-corner headland treatment used at obstacle outer corners.
  *
  * Returns a newly-allocated cvector of offset points. The caller is
  * responsible for freeing it with cvector_free(). Returns NULL on allocation
