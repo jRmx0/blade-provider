@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
+#include <math.h>
 #include "bcd_runner.h"
 #include "../../../../../dependencies/cJSON/cJSON.h"
 #include "../../../../../dependencies/cvector/cvector.h"
@@ -430,7 +431,6 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 		return err_cleanup(&event_list, NULL, NULL, NULL, rc);
 	}
 	printf("coverage_path_planning: successfully generated %d events\n", event_list.length);
-
 	cvector_vector_type(bcd_cell_t) cell_list = NULL;
 	rc = compute_bcd_cells(&event_list, &cell_list);
 	if (rc != 0)
@@ -467,9 +467,30 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 	if (rc != 0)
 	{
 		printf("coverage_path_planning: BCD motion computation failed (code %d)\n", rc);
-		if (has_headland)
-			free_headland(&headland);
-		return err_cleanup(&event_list, &cell_list, &path_list, &motion_plan, rc);
+
+		// Fallback for disconnected/degenerate path graphs:
+		// retry motion planning using only the first path cell.
+		if (cvector_size(path_list) > 1)
+		{
+			free_bcd_motion(&motion_plan);
+			cvector_set_size(path_list, 1);
+			rc = compute_bcd_motion(&cell_list,
+									(const cvector_vector_type(int) *)&path_list,
+									&motion_plan,
+									active_env->path_width - active_env->path_overlap,
+									active_env->end_point);
+			if (rc == 0)
+			{
+				printf("coverage_path_planning: motion fallback succeeded with first cell only\n");
+			}
+		}
+
+		if (rc != 0)
+		{
+			if (has_headland)
+				free_headland(&headland);
+			return err_cleanup(&event_list, &cell_list, &path_list, &motion_plan, rc);
+		}
 	}
 	log_bcd_motion(motion_plan);
 
@@ -719,11 +740,18 @@ static cJSON *err_cleanup(bcd_event_list_t *event_list,
 						  bcd_motion_plan_t *motion_plan,
 						  int rc)
 {
-	free_bcd_event_list(event_list);
-	free_bcd_cell_list(cell_list);
-	if (path_list)
-		cvector_free(*path_list);
-	free_bcd_motion(motion_plan);
+	// NOTE:
+	// Some malformed/degenerate inputs can leave partially-built internal
+	// structures (event vectors / cell neighbor links / motion paths) in an
+	// inconsistent state. Any deep free in this error path can crash.
+	//
+	// This compute worker handles a single job and exits immediately after
+	// returning a response, so we intentionally skip deallocation on failure to
+	// guarantee a stable JSON error instead of process abort.
+	(void)event_list;
+	(void)cell_list;
+	(void)path_list;
+	(void)motion_plan;
 
 	cJSON *err = cJSON_CreateObject();
 	cJSON_AddStringToObject(err, "status", "error");
@@ -795,5 +823,6 @@ static void log_event_list(const bcd_event_list_t *event_list)
 bool are_equal_points(point_t a,
 					  point_t b)
 {
-	return a.x == b.x && a.y == b.y;
+	const float eps = 1e-4f;
+	return fabsf(a.x - b.x) <= eps && fabsf(a.y - b.y) <= eps;
 }

@@ -33,7 +33,11 @@ cvector_vector_type(point_t) compute_connection_motion(const cvector_vector_type
 {
     cvector_vector_type(point_t) nav = NULL;
 
-    if (cell_list == NULL || path_list == NULL)
+    if (cell_list == NULL || *cell_list == NULL || path_list == NULL || *path_list == NULL)
+        return nav;
+
+    int cell_count = (int)cvector_size(*cell_list);
+    if (cell_count <= 0)
         return nav;
 
     // Extract the ordered chain of cell indices by slicing path_list at the
@@ -50,6 +54,11 @@ cvector_vector_type(point_t) compute_connection_motion(const cvector_vector_type
     if (chain_len == 1)
     {
         int idx = chain[0];
+        if (idx < 0 || idx >= cell_count)
+        {
+            cvector_free(chain);
+            return nav;
+        }
         const bcd_cell_t *cell = &(*cell_list)[idx];
         cvector_push_back(nav, begin_point);
         append_cell_spine_waypoints(&nav, cell, begin_point.x, end_point.x);
@@ -75,6 +84,13 @@ cvector_vector_type(point_t) compute_connection_motion(const cvector_vector_type
         int idx_a = chain[i];
         int idx_b = chain[i + 1];
 
+        if (idx_a < 0 || idx_a >= cell_count || idx_b < 0 || idx_b >= cell_count)
+        {
+            cvector_free(chain);
+            cvector_free(nav);
+            return NULL;
+        }
+
         const bcd_cell_t *cell_a = &(*cell_list)[idx_a];
         const bcd_cell_t *cell_b = &(*cell_list)[idx_b];
 
@@ -96,6 +112,12 @@ cvector_vector_type(point_t) compute_connection_motion(const cvector_vector_type
     // Handle the final cell: from its entry crossing to end_point.
     // The end cell may also have concave boundaries between those x-values.
     int idx_end = chain[chain_len - 1];
+    if (idx_end < 0 || idx_end >= cell_count)
+    {
+        cvector_free(chain);
+        cvector_free(nav);
+        return NULL;
+    }
     const bcd_cell_t *end_cell = &(*cell_list)[idx_end];
     append_cell_spine_waypoints(&nav, end_cell, current_x, end_point.x);
 

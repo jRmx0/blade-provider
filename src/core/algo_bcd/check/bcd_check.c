@@ -1,6 +1,7 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 #include "bcd_check.h"
 #include "../../../../dependencies/cJSON/cJSON.h"
@@ -298,6 +299,12 @@ static void bcd_reverse_vertices(point_t *vertices, uint32_t vertex_count)
 	}
 }
 
+static bool bcd_same_point(point_t a, point_t b)
+{
+	const float eps = 1e-6f;
+	return fabsf(a.x - b.x) <= eps && fabsf(a.y - b.y) <= eps;
+}
+
 static bool bcd_parse_polygon(
 	const cJSON *polygon_json,
 	polygon_t *polygon,
@@ -349,15 +356,40 @@ static bool bcd_parse_polygon(
 		parsed_vertices[index].y = (float)y->valuedouble;
 	}
 
-	polygon_winding_t detected_winding = bcd_detect_winding(parsed_vertices, (uint32_t)vertex_count);
+	// Compact consecutive duplicate vertices to avoid degenerate zero-length
+	// edges that can break BCD event/cell assumptions downstream.
+	uint32_t compact_count = 0;
+	for (int index = 0; index < vertex_count; ++index)
+	{
+		point_t p = parsed_vertices[index];
+		if (compact_count == 0 || !bcd_same_point(parsed_vertices[compact_count - 1], p))
+		{
+			parsed_vertices[compact_count++] = p;
+		}
+	}
+
+	// Drop duplicated closing point if first==last after compaction.
+	if (compact_count > 1 && bcd_same_point(parsed_vertices[0], parsed_vertices[compact_count - 1]))
+	{
+		compact_count--;
+	}
+
+	if (compact_count < 3)
+	{
+		va_free(parsed_vertices);
+		bcd_set_result(result, false, invalid_code, invalid_message);
+		return false;
+	}
+
+	polygon_winding_t detected_winding = bcd_detect_winding(parsed_vertices, compact_count);
 	if (detected_winding != POLYGON_WINDING_UNKNOWN && detected_winding != winding)
 	{
-		bcd_reverse_vertices(parsed_vertices, (uint32_t)vertex_count);
+		bcd_reverse_vertices(parsed_vertices, compact_count);
 	}
 
 	polygon->winding = winding;
 	polygon->vertices = parsed_vertices;
-	polygon->vertex_count = (uint32_t)vertex_count;
+	polygon->vertex_count = compact_count;
 	polygon->edges = NULL;
 	polygon->edge_count = 0;
 

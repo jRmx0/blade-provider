@@ -15,6 +15,15 @@ int compute_bcd_motion(cvector_vector_type(bcd_cell_t) * cell_list,
                        float step_size,
                        point_t end_point)
 {
+    if (cell_list == NULL || *cell_list == NULL ||
+        path_list == NULL || *path_list == NULL ||
+        motion_plan == NULL)
+    {
+        return -2;
+    }
+
+    int cell_count = (int)cvector_size(*cell_list);
+
     int begin_path_pos = 0;
     point_t begin_point = {0};
     bool compute_nav = false;
@@ -23,14 +32,20 @@ int compute_bcd_motion(cvector_vector_type(bcd_cell_t) * cell_list,
     size_t i;
     for (i = 0; i < cvector_size(*path_list); ++i)
     {
-        if ((*cell_list)[(*path_list)[i]].cleaned == true)
+        int path_cell_index = (*path_list)[i];
+        if (path_cell_index < 0 || path_cell_index >= cell_count)
+        {
+            return -3;
+        }
+
+        if ((*cell_list)[path_cell_index].cleaned == true)
         {
             continue;
         }
 
         cvector_vector_type(point_t) ox = NULL;
         ox = compute_boustrophedon_motion((const cvector_vector_type(bcd_cell_t) *)cell_list,
-                                          (*path_list)[i],
+                                          path_cell_index,
                                           step_size);
         if (ox == NULL)
         {
@@ -65,7 +80,7 @@ int compute_bcd_motion(cvector_vector_type(bcd_cell_t) * cell_list,
 
         cvector_push_back(motion_plan->section, curr_section);
 
-        (*cell_list)[(*path_list)[i]].cleaned = true;
+        (*cell_list)[path_cell_index].cleaned = true;
 
         any_section = true;
         begin_path_pos = (int)i;

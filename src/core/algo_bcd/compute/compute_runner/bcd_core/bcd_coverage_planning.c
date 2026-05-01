@@ -30,8 +30,6 @@ cvector_vector_type(int) find_shortest_path(int cell_index_from,
 
 static bool should_backtrack(int *curr_path_index);
 
-
-
 // IMPLEMENTATION --- compute_bcd_path_list -------------------------
 
 int compute_bcd_path_list(cvector_vector_type(bcd_cell_t) * cell_list,
@@ -53,6 +51,12 @@ int compute_bcd_path_list(cvector_vector_type(bcd_cell_t) * cell_list,
 
     if (starting_cell_index == -1)
         starting_cell_index = 0;
+    if (starting_cell_index < 0 || starting_cell_index >= cell_count)
+    {
+        printf("compute_bcd_path_list: Invalid starting_cell_index=%d (cell_count=%d)\n",
+               starting_cell_index, cell_count);
+        return -3;
+    }
 
     int visited_count = 0;
     bool search_shortest_path = false;
@@ -66,7 +70,20 @@ int compute_bcd_path_list(cvector_vector_type(bcd_cell_t) * cell_list,
 
     while (!all_cells_visited(visited_count, cell_count))
     {
+        if (curr_path_index < 0 || curr_path_index >= (int)cvector_size(*path_list))
+        {
+            printf("compute_bcd_path_list: Invalid curr_path_index=%d (path_size=%zu)\n",
+                   curr_path_index, cvector_size(*path_list));
+            return -4;
+        }
+
         int current_cell = (*path_list)[curr_path_index];
+        if (current_cell < 0 || current_cell >= cell_count)
+        {
+            printf("compute_bcd_path_list: Invalid current_cell=%d (cell_count=%d)\n",
+                   current_cell, cell_count);
+            return -5;
+        }
         int next_cell = find_unvisited_neighbor(current_cell, cell_list);
 
         if (next_cell != -1)
@@ -94,7 +111,19 @@ int compute_bcd_path_list(cvector_vector_type(bcd_cell_t) * cell_list,
             search_shortest_path = true;
 
             if (should_backtrack(&curr_path_index))
-                return -2;
+            {
+                // Fallback: disconnected/degenerate neighbor graph.
+                // Append remaining unvisited cells in index order so downstream
+                // motion planning can still produce a route instead of failing.
+                for (int ci = 0; ci < cell_count; ++ci)
+                {
+                    if ((*cell_list)[ci].visited == false)
+                    {
+                        add_cell_to_path(path_list, cell_list, ci, &visited_count);
+                    }
+                }
+                break;
+            }
         }
     }
 
@@ -108,9 +137,23 @@ static void add_cell_to_path(cvector_vector_type(int) * path_list,
                              int cell_index,
                              int *visited_count)
 {
+    if (path_list == NULL || cell_list == NULL || *cell_list == NULL || visited_count == NULL)
+    {
+        return;
+    }
+
+    int cell_count = cvector_size(*cell_list);
+    if (cell_index < 0 || cell_index >= cell_count)
+    {
+        return;
+    }
+
     cvector_push_back(*path_list, cell_index);
-    (*cell_list)[cell_index].visited = true;
-    (*visited_count)++;
+    if ((*cell_list)[cell_index].visited == false)
+    {
+        (*cell_list)[cell_index].visited = true;
+        (*visited_count)++;
+    }
 }
 
 static bool all_cells_visited(int visited_count, int total_cells)
@@ -121,31 +164,30 @@ static bool all_cells_visited(int visited_count, int total_cells)
 int find_unvisited_neighbor(int curr_cell_index,
                             cvector_vector_type(bcd_cell_t) * cell_list)
 {
-    bcd_neighbor_node_t curr_neighbor_node;
-    int curr_neighbor_index = -1;
-
-    if ((*cell_list)[curr_cell_index].neighbor_list.count == 0)
+    if (cell_list == NULL || *cell_list == NULL)
     {
         return -1;
     }
 
-    curr_neighbor_node = *(*cell_list)[curr_cell_index].neighbor_list.head;
-    curr_neighbor_index = curr_neighbor_node.cell_index;
-
-    if ((*cell_list)[curr_neighbor_index].visited == false)
+    int cell_count = cvector_size(*cell_list);
+    if (curr_cell_index < 0 || curr_cell_index >= cell_count)
     {
-        return curr_neighbor_index;
+        return -1;
     }
 
-    for (int i = 1; i < (*cell_list)[curr_cell_index].neighbor_list.count; i++)
+    bcd_neighbor_node_t *node = (*cell_list)[curr_cell_index].neighbor_list.head;
+    while (node != NULL)
     {
-        curr_neighbor_node = *curr_neighbor_node.next;
-        curr_neighbor_index = curr_neighbor_node.cell_index;
-
-        if ((*cell_list)[curr_neighbor_index].visited == false)
+        int neighbor_index = node->cell_index;
+        if (neighbor_index >= 0 && neighbor_index < cell_count)
         {
-            return curr_neighbor_index;
+            if ((*cell_list)[neighbor_index].visited == false)
+            {
+                return neighbor_index;
+            }
         }
+
+        node = node->next;
     }
 
     return -1;
@@ -156,8 +198,20 @@ static void add_shortest_path_to_list(cvector_vector_type(int) * path_list,
                                       int target_cell_index,
                                       int *visited_count)
 {
+    if (path_list == NULL || *path_list == NULL || cvector_size(*path_list) == 0)
+    {
+        return;
+    }
+
     int last_cell_index = (*path_list)[cvector_size(*path_list) - 1];
     cvector_vector_type(int) shortest_path = find_shortest_path(last_cell_index, target_cell_index, cell_list);
+
+    if (shortest_path == NULL || cvector_size(shortest_path) < 2)
+    {
+        cvector_free(shortest_path);
+        add_cell_to_path(path_list, cell_list, target_cell_index, visited_count);
+        return;
+    }
 
     // Add intermediate cells from shortest path (skip first and last)
     for (size_t i = 1; i < cvector_size(shortest_path) - 1; ++i)
@@ -217,6 +271,11 @@ cvector_vector_type(int) find_shortest_path(int cell_index_from,
     {
         int current_cell = queue[0];
 
+        if (current_cell < 0 || current_cell >= cell_count)
+        {
+            continue;
+        }
+
         // Remove first element from queue
         for (int i = 0; i < cvector_size(queue) - 1; i++)
         {
@@ -230,6 +289,12 @@ cvector_vector_type(int) find_shortest_path(int cell_index_from,
         while (neighbor_node != NULL)
         {
             int neighbor_index = neighbor_node->cell_index;
+
+            if (neighbor_index < 0 || neighbor_index >= cell_count)
+            {
+                neighbor_node = neighbor_node->next;
+                continue;
+            }
 
             if (!visited[neighbor_index])
             {

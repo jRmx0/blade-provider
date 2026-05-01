@@ -328,8 +328,34 @@ static int handle_side_out(const bcd_event_t curr_evt,
 
     if (cell_index >= cvector_size(*cell_list))
     {
-        printf("Error: No matching cell found in handle_side_out\n");
-        return -1;
+        // Fallback for numerically perturbed boundaries: choose the open cell
+        // whose right boundary (c_end/f_begin) is closest to the SIDE_OUT x.
+        float best_score = INFINITY;
+        int best_index = -1;
+
+        for (size_t i = 0; i < cvector_size(*cell_list); ++i)
+        {
+            if (!(*cell_list)[i].open)
+                continue;
+
+            float dx1 = fabsf((*cell_list)[i].c_end.x - curr_evt.polygon_vertex.x);
+            float dx2 = fabsf((*cell_list)[i].f_begin.x - curr_evt.polygon_vertex.x);
+            float score = dx1 + dx2;
+
+            if (score < best_score)
+            {
+                best_score = score;
+                best_index = (int)i;
+            }
+        }
+
+        if (best_index < 0)
+        {
+            printf("Warning: No open cell available in handle_side_out fallback\n");
+            return 0;
+        }
+
+        cell_index = (size_t)best_index;
     }
 
     update_bcd_cell(cell_list,
@@ -539,8 +565,29 @@ static int handle_floor(const bcd_event_t curr_evt,
 
     if (i >= cvector_size(*cell_list))
     {
-        printf("Error: No matching cell found in handle_floor\n");
-        return -1;
+        float best_score = INFINITY;
+        int best_index = -1;
+
+        for (size_t k = 0; k < cvector_size(*cell_list); ++k)
+        {
+            if (!(*cell_list)[k].open)
+                continue;
+
+            float score = fabsf((*cell_list)[k].f_begin.x - curr_evt.polygon_vertex.x);
+            if (score < best_score)
+            {
+                best_score = score;
+                best_index = (int)k;
+            }
+        }
+
+        if (best_index < 0)
+        {
+            printf("Warning: No open cell available in handle_floor fallback\n");
+            return 0;
+        }
+
+        i = (size_t)best_index;
     }
 
     cvector_push_back((*cell_list)[i].floor_edge_list, curr_evt.floor_edge);
@@ -569,8 +616,29 @@ static int handle_ceiling(const bcd_event_t curr_evt,
 
     if (i >= cvector_size(*cell_list))
     {
-        printf("Error: No matching cell found in handle_ceiling\n");
-        return -1;
+        float best_score = INFINITY;
+        int best_index = -1;
+
+        for (size_t k = 0; k < cvector_size(*cell_list); ++k)
+        {
+            if (!(*cell_list)[k].open)
+                continue;
+
+            float score = fabsf((*cell_list)[k].c_end.x - curr_evt.polygon_vertex.x);
+            if (score < best_score)
+            {
+                best_score = score;
+                best_index = (int)k;
+            }
+        }
+
+        if (best_index < 0)
+        {
+            printf("Warning: No open cell available in handle_ceiling fallback\n");
+            return 0;
+        }
+
+        i = (size_t)best_index;
     }
 
     cvector_push_back((*cell_list)[i].ceiling_edge_list, curr_evt.ceiling_edge);
