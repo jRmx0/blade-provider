@@ -487,9 +487,21 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 			point_t ep_from = last_sec->ox[cvector_size(last_sec->ox) - 1];
 			point_t ep_to = active_env->end_point;
 
-			cvector_free(last_sec->nav);
-			last_sec->nav = find_free_space_path(ep_from, ep_to, env, env->path_width / 2.0f);
-			if (last_sec->nav == NULL)
+			cvector_vector_type(point_t) existing_nav = last_sec->nav;
+			cvector_vector_type(point_t) replacement_nav =
+				find_free_space_path(ep_from, ep_to, env, env->path_width / 2.0f);
+			if (replacement_nav != NULL)
+			{
+				cvector_free(existing_nav);
+				last_sec->nav = replacement_nav;
+			}
+			else if (!has_headland && existing_nav != NULL && cvector_size(existing_nav) > 0)
+			{
+				// Headland disabled: keep the cell-spine transit produced by
+				// compute_bcd_motion when VG A* replacement cannot be found.
+				last_sec->nav = existing_nav;
+			}
+			else
 			{
 				if (has_headland)
 					free_headland(&headland);
