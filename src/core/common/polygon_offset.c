@@ -64,6 +64,66 @@ static bool is_reflex_vertex(point_t prev, point_t curr, point_t next,
         return cross > 0.0f;
 }
 
+/*
+ * Returns a robust fallback point for reflex/degenerate corners.
+ *
+ * The fallback direction is the bisector-like direction (n1 + n2). Its
+ * distance from curr is chosen so that projections on both adjacent normals
+ * are at least `offset` whenever possible, preserving the minimum headland
+ * edge clearance from both incident edges.
+ */
+static point_t reflex_fallback_offset_point(point_t curr, point_t n1, point_t n2, float offset)
+{
+    float fx = n1.x + n2.x;
+    float fy = n1.y + n2.y;
+    float flen = sqrtf(fx * fx + fy * fy);
+
+    if (flen < 1e-6f)
+    {
+        // Normals nearly cancel (or one is degenerate): use any valid normal.
+        float n1len = sqrtf(n1.x * n1.x + n1.y * n1.y);
+        float n2len = sqrtf(n2.x * n2.x + n2.y * n2.y);
+        if (n1len >= 1e-6f)
+        {
+            fx = n1.x;
+            fy = n1.y;
+            flen = n1len;
+        }
+        else if (n2len >= 1e-6f)
+        {
+            fx = n2.x;
+            fy = n2.y;
+            flen = n2len;
+        }
+    }
+
+    point_t fallback = curr;
+    if (flen >= 1e-6f)
+    {
+        float dirx = fx / flen;
+        float diry = fy / flen;
+
+        // Required distance along fallback direction to keep minimum edge
+        // clearance of `offset` from both adjacent edges.
+        float dot1 = dirx * n1.x + diry * n1.y;
+        float dot2 = dirx * n2.x + diry * n2.y;
+
+        float min_pos_dot = 1e30f;
+        if (dot1 > 1e-6f && dot1 < min_pos_dot)
+            min_pos_dot = dot1;
+        if (dot2 > 1e-6f && dot2 < min_pos_dot)
+            min_pos_dot = dot2;
+
+        float scale = offset;
+        if (min_pos_dot < 1e29f)
+            scale = offset / min_pos_dot;
+
+        fallback.x = curr.x + dirx * scale;
+        fallback.y = curr.y + diry * scale;
+    }
+    return fallback;
+}
+
 // IMPLEMENTATION --- compute_polygon_vertex_offset ---------------------
 
 cvector_vector_type(point_t) compute_polygon_vertex_offset(
@@ -116,9 +176,9 @@ cvector_vector_type(point_t) compute_polygon_vertex_offset(
 
             if (fabsf(denom) < 1e-9f)
             {
-                // Parallel edges — emit midpoint as fallback.
-                point_t mid = {(p1.x + p2.x) * 0.5f, (p1.y + p2.y) * 0.5f};
-                cvector_push_back(result, mid);
+                // Parallel edges — use distance-preserving fallback.
+                point_t fallback = reflex_fallback_offset_point(curr, n1, n2, offset);
+                cvector_push_back(result, fallback);
             }
             else
             {
@@ -128,9 +188,9 @@ cvector_vector_type(point_t) compute_polygon_vertex_offset(
                 float dy = isect.y - curr.y;
                 if (dx * dx + dy * dy > max_miter * max_miter)
                 {
-                    // Intersection too far away — clamp to midpoint.
-                    point_t mid = {(p1.x + p2.x) * 0.5f, (p1.y + p2.y) * 0.5f};
-                    cvector_push_back(result, mid);
+                    // Intersection too far away — use distance-preserving fallback.
+                    point_t fallback = reflex_fallback_offset_point(curr, n1, n2, offset);
+                    cvector_push_back(result, fallback);
                 }
                 else
                 {

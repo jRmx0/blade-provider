@@ -22,7 +22,10 @@
  *
  * At reflex (concave) corners the intersection of the two adjacent offset edge
  * lines is emitted as a single point in all cases. If the intersection is too
- * far away or the adjacent edges are parallel, the midpoint fallback is used.
+ * far away or the adjacent edges are parallel, a directionally robust fallback
+ * point is used with distance chosen to preserve at least `offset` clearance
+ * from both adjacent edges whenever possible (instead of collapsing toward the
+ * original corner).
  *
  * Returns a newly-allocated cvector of offset points. The caller is
  * responsible for freeing it with cvector_free(). Returns NULL on allocation
