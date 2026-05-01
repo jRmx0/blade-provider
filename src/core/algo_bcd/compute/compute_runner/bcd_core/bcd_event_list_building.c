@@ -228,34 +228,19 @@ static int find_common_event(const polygon_t polygon,
     polygon_type_t polygon_type;
     polygon_type = polygon.winding == POLYGON_WINDING_CW ? BOUNDARY : OBSTACLE;
 
-    bool boundary_has_side_in = false;
-    if (polygon_type == BOUNDARY && event_list != NULL && event_list->bcd_events != NULL)
-    {
-        for (int ei = 0; ei < event_list->length; ++ei)
-        {
-            if (event_list->bcd_events[ei].polygon_type == BOUNDARY &&
-                event_list->bcd_events[ei].bcd_event_type == BCD_SIDE_IN)
-            {
-                boundary_has_side_in = true;
-                break;
-            }
-        }
-    }
-
     if (polygon_type == OBSTACLE && in_event(polygon.edges[terminating], polygon.edges[emanating]))
     {
         event_type = BCD_IN;
         floor_edge_index = terminating;
         ceiling_edge_index = emanating;
     }
-    else if (side_in_event(polygon.edges[terminating], polygon.edges[emanating]) &&
-             !(polygon_type == BOUNDARY && boundary_has_side_in))
+    else if (side_in_event(polygon.edges[terminating], polygon.edges[emanating]))
     {
         event_type = BCD_SIDE_IN;
         floor_edge_index = terminating;
         ceiling_edge_index = emanating;
     }
-    else if (polygon_type == OBSTACLE && out_event(polygon.edges[emanating], polygon.edges[terminating]))
+    else if (out_event(polygon.edges[emanating], polygon.edges[terminating]))
     {
         event_type = BCD_OUT;
         floor_edge_index = emanating;
