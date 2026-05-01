@@ -1,9 +1,9 @@
-#ifndef BCD_POLYGON_OFFSET_H
-#define BCD_POLYGON_OFFSET_H
+#ifndef POLYGON_OFFSET_H
+#define POLYGON_OFFSET_H
 
 #include <stdint.h>
-#include "../../../../../../dependencies/cvector/cvector.h"
-#include "../../../internal.h"
+#include "../core_types.h"
+#include "../../../dependencies/cvector/cvector.h"
 
 /**
  * Computes an inward/outward vertex offset for a polygon using a bisector
@@ -41,4 +41,4 @@ int build_offset_polygon(
     polygon_winding_t winding,
     polygon_t *out_polygon);
 
-#endif // BCD_POLYGON_OFFSET_H
+#endif // POLYGON_OFFSET_H

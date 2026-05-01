@@ -1,8 +1,8 @@
 #include <math.h>
 #include <stdint.h>
-#include "bcd_polygon_offset.h"
-#include "../../../../../../dependencies/allocator/allocator.h"
-#include "../../../../../../dependencies/cvector/cvector.h"
+#include "polygon_offset.h"
+#include "../../../dependencies/allocator/allocator.h"
+#include "../../../dependencies/cvector/cvector.h"
 
 // IMPLEMENTATION --- helpers -------------------------------------------
 

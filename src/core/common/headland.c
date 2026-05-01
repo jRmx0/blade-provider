@@ -2,10 +2,10 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
-#include "bcd_headland.h"
-#include "bcd_polygon_offset.h"
-#include "../../../../../../dependencies/cvector/cvector.h"
-#include "../../../../../../dependencies/allocator/allocator.h"
+#include "headland.h"
+#include "polygon_offset.h"
+#include "../../../dependencies/cvector/cvector.h"
+#include "../../../dependencies/allocator/allocator.h"
 
 // IMPLEMENTATION --- geometry helpers ----------------------------------
 
@@ -495,15 +495,15 @@ static int trace_polygon_headland(
     return 0;
 }
 
-// IMPLEMENTATION --- compute_bcd_headland ------------------------------
+// IMPLEMENTATION --- compute_headland ----------------------------------
 
-int compute_bcd_headland(const input_environment_t *env,
-                         bcd_headland_t *headland)
+int compute_headland(const input_environment_t *env,
+                     headland_t *headland)
 {
     if (env == NULL || headland == NULL)
         return -1;
 
-    memset(headland, 0, sizeof(bcd_headland_t));
+    memset(headland, 0, sizeof(headland_t));
 
     uint32_t total_polys = 1 + env->obstacle_count;
     float half_width = env->path_width / 2.0f;
@@ -626,7 +626,7 @@ int compute_bcd_headland(const input_environment_t *env,
     // (inside zone offset, outside all obstacle offsets) to guarantee the path
     // avoids all obstacles regardless of the field geometry.
     // The last section's nav (headland → first coverage point) is filled later
-    // in bcd_runner.c once the BCD motion plan is available.
+    // in the algorithm runner once the coverage motion plan is available.
     {
         int sec_count = (int)cvector_size(headland->sections);
         for (int i = 0; i < sec_count - 1; ++i)
@@ -683,9 +683,9 @@ int compute_bcd_headland(const input_environment_t *env,
         }
     }
 
-    // --- Build reduced geometry polygons for BCD ---
+    // --- Build reduced geometry polygons for coverage planning ---
     //
-    // The BCD area boundary must be offset inward (zone) / outward (obstacles)
+    // The coverage area boundary must be offset inward (zone) / outward (obstacles)
     // by bcd_shrink from the original polygon edges.
     //
     // headland_coverage_offset is measured from the headland path centreline
@@ -707,7 +707,7 @@ int compute_bcd_headland(const input_environment_t *env,
                                       &headland->shrunken_zone);
         if (rc != 0)
         {
-            printf("compute_bcd_headland: failed to build shrunken zone polygon (%d)\n", rc);
+            printf("compute_headland: failed to build shrunken zone polygon (%d)\n", rc);
         }
         cvector_free(bcd_zone_verts);
     }
@@ -730,7 +730,7 @@ int compute_bcd_headland(const input_environment_t *env,
                                                   &headland->expanded_obstacles[k]);
                     if (rc != 0)
                     {
-                        printf("compute_bcd_headland: failed to build expanded obstacle %u polygon (%d)\n", k, rc);
+                        printf("compute_headland: failed to build expanded obstacle %u polygon (%d)\n", k, rc);
                     }
                     cvector_free(bcd_obs_verts);
                 }
@@ -795,7 +795,7 @@ int compute_bcd_headland(const input_environment_t *env,
                 // Check: vertex outside shrunken zone → escape.
                 if (!vg_point_in_polygon(v, zone_cv))
                 {
-                    printf("compute_bcd_headland: expanded obstacle %u escapes shrunken zone (vertex %u)\n", k, vi);
+                    printf("compute_headland: expanded obstacle %u escapes shrunken zone (vertex %u)\n", k, vi);
                     geometry_rc = -11;
                     break;
                 }
@@ -807,7 +807,7 @@ int compute_bcd_headland(const input_environment_t *env,
                         continue;
                     if (vg_point_in_polygon(v, obs_cvs[j]))
                     {
-                        printf("compute_bcd_headland: expanded obstacles %u and %u overlap\n", k, j);
+                        printf("compute_headland: expanded obstacles %u and %u overlap\n", k, j);
                         geometry_rc = -10;
                     }
                 }
@@ -827,9 +827,9 @@ int compute_bcd_headland(const input_environment_t *env,
     return geometry_rc;
 }
 
-// IMPLEMENTATION --- free_bcd_headland ---------------------------------
+// IMPLEMENTATION --- free_headland -------------------------------------
 
-void free_bcd_headland(bcd_headland_t *headland)
+void free_headland(headland_t *headland)
 {
     if (headland == NULL)
         return;
