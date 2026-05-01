@@ -221,7 +221,14 @@ static int find_common_event(const polygon_t polygon,
     int emanating = vertex_index;
     int terminating = (vertex_index + polygon.vertex_count - 1) % polygon.vertex_count;
 
-    if (in_event(polygon.edges[terminating], polygon.edges[emanating]))
+    // Determine polygon type up-front so we can guard obstacle-only event
+    // types (BCD_IN / BCD_OUT) from being emitted for boundary polygons.
+    // Boundary bevel vertices have a nearly-horizontal edge that satisfies
+    // in_event() geometrically, but must fall through to floor_or_ceiling_event().
+    polygon_type_t polygon_type;
+    polygon_type = polygon.winding == POLYGON_WINDING_CW ? BOUNDARY : OBSTACLE;
+
+    if (polygon_type == OBSTACLE && in_event(polygon.edges[terminating], polygon.edges[emanating]))
     {
         event_type = BCD_IN;
         floor_edge_index = terminating;
@@ -233,7 +240,7 @@ static int find_common_event(const polygon_t polygon,
         floor_edge_index = terminating;
         ceiling_edge_index = emanating;
     }
-    else if (out_event(polygon.edges[emanating], polygon.edges[terminating]))
+    else if (polygon_type == OBSTACLE && out_event(polygon.edges[emanating], polygon.edges[terminating]))
     {
         event_type = BCD_OUT;
         floor_edge_index = emanating;
@@ -265,9 +272,6 @@ static int find_common_event(const polygon_t polygon,
     }
 
     bcd_event_t common_event;
-
-    polygon_type_t polygon_type;
-    polygon_type = polygon.winding == POLYGON_WINDING_CW ? BOUNDARY : OBSTACLE;
 
     common_event = fill_bcd_event(polygon_type,
                                   polygon.vertices[vertex_index],

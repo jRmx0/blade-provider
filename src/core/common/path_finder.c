@@ -351,12 +351,12 @@ cvector_vector_type(point_t) find_free_space_path(
 
     nav_polys[0] = compute_polygon_vertex_offset(
         env->boundary.vertices, env->boundary.vertex_count,
-        POLYGON_WINDING_CW, offset);
+        POLYGON_WINDING_CW, offset, false);
 
     for (uint32_t k = 0; k < env->obstacle_count; ++k)
         nav_polys[k + 1] = compute_polygon_vertex_offset(
             env->obstacles[k].vertices, env->obstacles[k].vertex_count,
-            POLYGON_WINDING_CCW, offset);
+            POLYGON_WINDING_CCW, offset, false);
 
     cvector_vector_type(point_t) result = free_space_astar(from, to, nav_polys, nav_total);
 

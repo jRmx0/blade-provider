@@ -55,11 +55,13 @@ static bool is_reflex_vertex(point_t prev, point_t curr, point_t next,
 {
     float cross = (curr.x - prev.x) * (next.y - prev.y) - (curr.y - prev.y) * (next.x - prev.x);
 
-    // In screen coords (Y-down), positive cross = CW turn on screen.
-    // CW polygon: CW turn (cross > 0) = convex → reflex when cross < 0.
-    // CCW polygon: CCW turn (cross < 0) = convex → reflex when cross > 0.
+    // In screen coords (Y-down), the CW boundary case is inverted compared to
+    // the previous assumption: sharp zone corners (declared CW) were being
+    // misclassified as reflex, which suppressed bevel emission.
+    // Keep CCW behaviour (obstacles) unchanged since it already produces the
+    // expected offset boundary.
     if (winding == POLYGON_WINDING_CW)
-        return cross < 0.0f;
+        return cross > 0.0f;
     else
         return cross > 0.0f;
 }
@@ -70,7 +72,8 @@ cvector_vector_type(point_t) compute_polygon_vertex_offset(
     const point_t *vertices,
     uint32_t count,
     polygon_winding_t winding,
-    float offset)
+    float offset,
+    bool allow_bevel)
 {
     if (vertices == NULL || count < 3 || offset <= 0.0f)
         return NULL;
@@ -160,7 +163,56 @@ cvector_vector_type(point_t) compute_polygon_vertex_offset(
                 float dot = bux * n1.x + buy * n1.y;
                 float scale = (dot > 1e-6f) ? (offset / dot) : max_miter;
                 if (scale > max_miter)
+                {
+                    if (allow_bevel)
+                    {
+                        // Sharp convex corner: emit two bevel vertices clipped to the
+                        // bevel cut plane (perpendicular to the bisector at
+                        // offset from curr).  Each bevel point lies on its adjacent
+                        // offset-edge line, so both offset edges are at the correct
+                        // inward distance and the bevel edge itself is offset from
+                        // curr (same as other offset edges).
+                        //
+                        // Edge directions derived from normals (in screen Y-down,
+                        // inward CCW-rotate means d = (n.y, -n.x)):
+                        float d1x = n1.y, d1y = -n1.x;
+                        float d2x = n2.y, d2y = -n2.x;
+
+                        const float bevel_plane_distance = offset;
+
+                        // dot(bisector, n2) analogous to existing dot = dot(bisector, n1)
+                        float dot2 = bux * n2.x + buy * n2.y;
+
+                        // dot(edge_direction, bisector) for each edge
+                        float d1b = d1x * bux + d1y * buy;
+                        float d2b = d2x * bux + d2y * buy;
+
+                        // Start at the unclamped bevel endpoints (on the offset edge lines)
+                        point_t bevel_a = {curr.x + n1.x * offset, curr.y + n1.y * offset};
+                        point_t bevel_b = {curr.x + n2.x * offset, curr.y + n2.y * offset};
+
+                        // Walk each point along its edge direction to the cut plane
+                        if (fabsf(d1b) > 1e-6f)
+                        {
+                            float t1 = (bevel_plane_distance - offset * dot) / d1b;
+                            bevel_a.x += t1 * d1x;
+                            bevel_a.y += t1 * d1y;
+                        }
+                        if (fabsf(d2b) > 1e-6f)
+                        {
+                            float t2 = (bevel_plane_distance - offset * dot2) / d2b;
+                            bevel_b.x += t2 * d2x;
+                            bevel_b.y += t2 * d2y;
+                        }
+
+                        cvector_push_back(result, bevel_a);
+                        cvector_push_back(result, bevel_b);
+                        continue;
+                    }
+
+                    // Bevel disabled: clamp miter to max_miter.
                     scale = max_miter;
+                }
 
                 offset_pt.x = curr.x + bux * scale;
                 offset_pt.y = curr.y + buy * scale;

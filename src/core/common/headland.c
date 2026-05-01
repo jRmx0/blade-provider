@@ -295,16 +295,17 @@ int compute_headland(const input_environment_t *env,
     if (offset_polys == NULL)
         return -2;
 
-    // Compute offset polygons
+    // Compute offset polygons — bevel enabled so the headland path rounds
+    // sharp convex corners rather than cutting them with a truncated miter.
     offset_polys[0] = compute_polygon_vertex_offset(
         env->boundary.vertices, env->boundary.vertex_count,
-        POLYGON_WINDING_CW, half_width);
+        POLYGON_WINDING_CW, half_width, true);
 
     for (uint32_t k = 0; k < env->obstacle_count; ++k)
     {
         offset_polys[k + 1] = compute_polygon_vertex_offset(
             env->obstacles[k].vertices, env->obstacles[k].vertex_count,
-            POLYGON_WINDING_CCW, half_width);
+            POLYGON_WINDING_CCW, half_width, true);
     }
 
     // headland_generated flags (slot 0 = zone, slot k+1 = obstacle k)
@@ -479,9 +480,12 @@ int compute_headland(const input_environment_t *env,
     // tracing and A* transit — they must not be reused here.
     float bcd_shrink = half_width + env->headland_coverage_offset;
 
+    // BCD input polygons use allow_bevel=true: bevel vertices at sharp zone
+    // corners are correctly classified as BCD_FLOOR/BCD_CEILING by the guarded
+    // find_common_event (BCD_IN/BCD_OUT are restricted to obstacle polygons).
     cvector_vector_type(point_t) bcd_zone_verts = compute_polygon_vertex_offset(
         env->boundary.vertices, env->boundary.vertex_count,
-        POLYGON_WINDING_CW, bcd_shrink);
+        POLYGON_WINDING_CW, bcd_shrink, true);
     if (bcd_zone_verts != NULL)
     {
         int rc = build_offset_polygon(bcd_zone_verts, POLYGON_WINDING_CW,
@@ -504,7 +508,7 @@ int compute_headland(const input_environment_t *env,
             {
                 cvector_vector_type(point_t) bcd_obs_verts = compute_polygon_vertex_offset(
                     env->obstacles[k].vertices, env->obstacles[k].vertex_count,
-                    POLYGON_WINDING_CCW, bcd_shrink);
+                    POLYGON_WINDING_CCW, bcd_shrink, true);
                 if (bcd_obs_verts != NULL)
                 {
                     int rc = build_offset_polygon(bcd_obs_verts, POLYGON_WINDING_CCW,

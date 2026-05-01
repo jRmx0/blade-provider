@@ -255,6 +255,49 @@ static int bcd_build_edges(polygon_t *polygon)
 	return 0;
 }
 
+static polygon_winding_t bcd_detect_winding(const point_t *vertices, uint32_t vertex_count)
+{
+	if (vertices == NULL || vertex_count < 3)
+	{
+		return POLYGON_WINDING_UNKNOWN;
+	}
+
+	double area2 = 0.0;
+	for (uint32_t index = 0; index < vertex_count; ++index)
+	{
+		uint32_t next_index = (index + 1u) % vertex_count;
+		area2 += (double)vertices[index].x * (double)vertices[next_index].y -
+				 (double)vertices[index].y * (double)vertices[next_index].x;
+	}
+
+	// Screen coordinates (Y-down): positive signed area means clockwise order.
+	if (area2 > 0.0)
+	{
+		return POLYGON_WINDING_CW;
+	}
+	if (area2 < 0.0)
+	{
+		return POLYGON_WINDING_CCW;
+	}
+
+	return POLYGON_WINDING_UNKNOWN;
+}
+
+static void bcd_reverse_vertices(point_t *vertices, uint32_t vertex_count)
+{
+	if (vertices == NULL || vertex_count < 2)
+	{
+		return;
+	}
+
+	for (uint32_t left = 0, right = vertex_count - 1; left < right; ++left, --right)
+	{
+		point_t tmp = vertices[left];
+		vertices[left] = vertices[right];
+		vertices[right] = tmp;
+	}
+}
+
 static bool bcd_parse_polygon(
 	const cJSON *polygon_json,
 	polygon_t *polygon,
@@ -304,6 +347,12 @@ static bool bcd_parse_polygon(
 
 		parsed_vertices[index].x = (float)x->valuedouble;
 		parsed_vertices[index].y = (float)y->valuedouble;
+	}
+
+	polygon_winding_t detected_winding = bcd_detect_winding(parsed_vertices, (uint32_t)vertex_count);
+	if (detected_winding != POLYGON_WINDING_UNKNOWN && detected_winding != winding)
+	{
+		bcd_reverse_vertices(parsed_vertices, (uint32_t)vertex_count);
 	}
 
 	polygon->winding = winding;

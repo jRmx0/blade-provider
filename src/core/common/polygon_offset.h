@@ -2,6 +2,7 @@
 #define POLYGON_OFFSET_H
 
 #include <stdint.h>
+#include <stdbool.h>
 #include "../core_types.h"
 #include "../../../dependencies/cvector/cvector.h"
 
@@ -12,12 +13,16 @@
  * For CW polygons (zones), a positive offset shrinks the polygon inward.
  * For CCW polygons (obstacles), a positive offset expands the polygon outward.
  *
- * At sharp convex corners the miter length is clamped to 4 * offset to avoid
- * extreme spikes. At reflex (concave) corners the intersection of the two
- * adjacent offset edge lines is emitted as a single point, filling the
- * concavity rather than notching it. If the intersection is too far away or
- * the adjacent edges are parallel, the midpoint of the two edge-normal offsets
- * is used as a fallback. The output vertex count always equals the input count.
+ * At sharp convex corners the behaviour depends on allow_bevel:
+ *   - false (default for BCD input): miter length is clamped to 4 * offset.
+ *     Output vertex count always equals input count, preserving BCD invariants.
+ *   - true  (headland path tracing): a bevel join is emitted instead — two
+ *     separate offset-edge endpoints replace the single miter point. Output
+ *     vertex count may exceed input count by the number of bevelled corners.
+ *
+ * At reflex (concave) corners the intersection of the two adjacent offset edge
+ * lines is emitted as a single point in all cases. If the intersection is too
+ * far away or the adjacent edges are parallel, the midpoint fallback is used.
  *
  * Returns a newly-allocated cvector of offset points. The caller is
  * responsible for freeing it with cvector_free(). Returns NULL on allocation
@@ -27,7 +32,8 @@ cvector_vector_type(point_t) compute_polygon_vertex_offset(
     const point_t *vertices,
     uint32_t count,
     polygon_winding_t winding,
-    float offset);
+    float offset,
+    bool allow_bevel);
 
 /**
  * Converts a cvector of offset vertices into a polygon_t (vertices and edges
