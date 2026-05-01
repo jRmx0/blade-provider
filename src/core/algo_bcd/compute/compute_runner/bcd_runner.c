@@ -467,30 +467,9 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 	if (rc != 0)
 	{
 		printf("coverage_path_planning: BCD motion computation failed (code %d)\n", rc);
-
-		// Fallback for disconnected/degenerate path graphs:
-		// retry motion planning using only the first path cell.
-		if (cvector_size(path_list) > 1)
-		{
-			free_bcd_motion(&motion_plan);
-			cvector_set_size(path_list, 1);
-			rc = compute_bcd_motion(&cell_list,
-									(const cvector_vector_type(int) *)&path_list,
-									&motion_plan,
-									active_env->path_width - active_env->path_overlap,
-									active_env->end_point);
-			if (rc == 0)
-			{
-				printf("coverage_path_planning: motion fallback succeeded with first cell only\n");
-			}
-		}
-
-		if (rc != 0)
-		{
-			if (has_headland)
-				free_headland(&headland);
-			return err_cleanup(&event_list, &cell_list, &path_list, &motion_plan, rc);
-		}
+		if (has_headland)
+			free_headland(&headland);
+		return err_cleanup(&event_list, &cell_list, &path_list, &motion_plan, rc);
 	}
 	log_bcd_motion(motion_plan);
 

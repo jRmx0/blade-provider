@@ -221,14 +221,21 @@ static int find_common_event(const polygon_t polygon,
     int emanating = vertex_index;
     int terminating = (vertex_index + polygon.vertex_count - 1) % polygon.vertex_count;
 
-    // Determine polygon type up-front so we can guard obstacle-only event
-    // types (BCD_IN / BCD_OUT) from being emitted for boundary polygons.
-    // Boundary bevel vertices have a nearly-horizontal edge that satisfies
-    // in_event() geometrically, but must fall through to floor_or_ceiling_event().
     polygon_type_t polygon_type;
     polygon_type = polygon.winding == POLYGON_WINDING_CW ? BOUNDARY : OBSTACLE;
 
-    if (polygon_type == OBSTACLE && in_event(polygon.edges[terminating], polygon.edges[emanating]))
+    // Allow BCD_IN for boundary polygons only when both adjacent vertices are
+    // strictly to the RIGHT of the current vertex — a true concave/reflex
+    // vertex that splits the sweep into two cells.  Bevel-inserted vertices
+    // always have at least one neighbor to their left, so they never reach
+    // this branch and correctly fall through to floor_or_ceiling_event().
+    int prev_index = (vertex_index + (int)polygon.vertex_count - 1) % (int)polygon.vertex_count;
+    int next_index = (vertex_index + 1) % (int)polygon.vertex_count;
+    bool both_neighbors_right =
+        polygon.vertices[prev_index].x > polygon.vertices[vertex_index].x &&
+        polygon.vertices[next_index].x > polygon.vertices[vertex_index].x;
+
+    if ((polygon_type == OBSTACLE || both_neighbors_right) && in_event(polygon.edges[terminating], polygon.edges[emanating]))
     {
         event_type = BCD_IN;
         floor_edge_index = terminating;

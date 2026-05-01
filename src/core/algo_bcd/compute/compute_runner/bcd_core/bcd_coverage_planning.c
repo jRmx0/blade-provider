@@ -112,17 +112,8 @@ int compute_bcd_path_list(cvector_vector_type(bcd_cell_t) * cell_list,
 
             if (should_backtrack(&curr_path_index))
             {
-                // Fallback: disconnected/degenerate neighbor graph.
-                // Append remaining unvisited cells in index order so downstream
-                // motion planning can still produce a route instead of failing.
-                for (int ci = 0; ci < cell_count; ++ci)
-                {
-                    if ((*cell_list)[ci].visited == false)
-                    {
-                        add_cell_to_path(path_list, cell_list, ci, &visited_count);
-                    }
-                }
-                break;
+                printf("compute_bcd_path_list: backtracking exhausted, cell graph may be disconnected\n");
+                return -2;
             }
         }
     }
