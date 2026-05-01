@@ -473,6 +473,39 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 	}
 	log_bcd_motion(motion_plan);
 
+	// --- Last coverage point → end_point transit ---
+	// compute_bcd_motion sets the last section's nav via compute_connection_motion
+	// (cell-spine).  Replace it with a VG A* path so that end_point values that
+	// lie outside the BCD cells are handled correctly and obstacle crossing is
+	// explicitly avoided — consistent with how start_point transit is handled.
+	if (motion_plan.section != NULL && cvector_size(motion_plan.section) > 0)
+	{
+		int last_idx = (int)cvector_size(motion_plan.section) - 1;
+		cell_motion_plan_t *last_sec = &motion_plan.section[last_idx];
+		if (last_sec->ox != NULL && cvector_size(last_sec->ox) > 0)
+		{
+			point_t ep_from = last_sec->ox[cvector_size(last_sec->ox) - 1];
+			point_t ep_to = active_env->end_point;
+
+			cvector_free(last_sec->nav);
+			last_sec->nav = find_free_space_path(ep_from, ep_to, env, env->path_width / 2.0f);
+			if (last_sec->nav == NULL)
+			{
+				if (has_headland)
+					free_headland(&headland);
+				free_bcd_event_list(&event_list);
+				free_bcd_cell_list(&cell_list);
+				cvector_free(path_list);
+				free_bcd_motion(&motion_plan);
+				cJSON *err = cJSON_CreateObject();
+				cJSON_AddStringToObject(err, "status", "error");
+				cJSON_AddStringToObject(err, "code", "no_end_transit_path");
+				cJSON_AddStringToObject(err, "message", "No collision-free path could be found from the last coverage point to the end point.");
+				return err;
+			}
+		}
+	}
+
 	// --- Headland → first coverage point transit ---
 	// The last headland section's nav must point to the first coverage waypoint.
 	// This can only be computed here because motion_plan is not available inside
