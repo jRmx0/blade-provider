@@ -58,23 +58,71 @@ static bool vg_point_in_polygon(point_t p,
  * inside the zone offset polygon (slot 0) and outside all obstacle offset
  * polygons (slots 1+).
  *
- * Two complementary checks are used:
+ * Four complementary checks are used:
  *
- *   1. Midpoint-in-obstacle: catches chords that pass through a convex
- *      obstacle polygon without crossing its edges (e.g. a chord between two
- *      non-adjacent obstacle-offset vertices).  Only obstacle slots are tested
- *      because points on the zone boundary make the zone PIP test unreliable.
+ *   1a. Midpoint-in-zone: the test point is nudged 1e-4 of the way toward the
+ *       zone centroid so that boundary-midpoints (zone-edge segments) are not
+ *       falsely rejected, while segments whose midpoint is genuinely outside
+ *       the zone — including the "closer-vertex-on-the-other-side" shortcut
+ *       where p or q is outside the zone offset polygon and the segment ends
+ *       at a zone corner vertex without properly crossing any edge — are
+ *       correctly rejected.
  *
- *   2. No proper edge crossings: detects any segment that exits the zone or
- *      crosses into/out-of an obstacle.
+ *   1b. Midpoint-in-obstacle: catches chords that pass through a convex
+ *       obstacle polygon without crossing its edges.
+ *
+ *   2.  No proper edge crossings: detects any segment that exits the zone or
+ *       crosses into/out-of an obstacle.
+ *
+ *   3.  Zone-vertex passage: the proper-crossing check intentionally ignores
+ *       vertex-touches so that valid visibility edges that share a zone vertex
+ *       are not rejected.  This creates a gap for segments that clip through a
+ *       concave zone offset vertex V — lying collinearly between p and q with
+ *       V's zone neighbours on opposite sides of line p→q.  When an immediate
+ *       neighbour is itself collinear, we walk outward until the first
+ *       non-collinear vertex in each direction is found.
  */
 static bool vg_segment_is_free(point_t p, point_t q,
                                const cvector_vector_type(point_t) * offset_polys,
                                uint32_t total_polys)
 {
+    float pq_x = q.x - p.x;
+    float pq_y = q.y - p.y;
+    float pq_len_sq = pq_x * pq_x + pq_y * pq_y;
+
     point_t mid = {(p.x + q.x) * 0.5f, (p.y + q.y) * 0.5f};
 
-    // Midpoint must be outside every obstacle offset polygon.
+    // Check 1a: nudged midpoint must be inside the zone offset polygon.
+    if (total_polys > 0 && offset_polys[0] != NULL)
+    {
+        const cvector_vector_type(point_t) zverts0 = offset_polys[0];
+        uint32_t zn0 = (uint32_t)cvector_size(zverts0);
+        if (zn0 > 0)
+        {
+            // Compute vertex-average centroid (good enough for convex / mildly
+            // non-convex zone offset polygons).
+            float cx = 0.0f, cy = 0.0f;
+            for (uint32_t vi = 0; vi < zn0; ++vi)
+            {
+                cx += zverts0[vi].x;
+                cy += zverts0[vi].y;
+            }
+            cx /= (float)zn0;
+            cy /= (float)zn0;
+
+            // Nudge 0.01 % of the way toward the centroid so a midpoint that
+            // lands exactly on a zone edge is pulled strictly inside, avoiding
+            // ray-casting boundary ambiguity.
+            const float nudge = 1e-4f;
+            point_t test_mid = {
+                mid.x + nudge * (cx - mid.x),
+                mid.y + nudge * (cy - mid.y)};
+            if (!vg_point_in_polygon(test_mid, zverts0))
+                return false;
+        }
+    }
+
+    // Check 1b: midpoint must be outside every obstacle offset polygon.
     for (uint32_t pi = 1; pi < total_polys; ++pi)
     {
         if (offset_polys[pi] == NULL)
@@ -83,7 +131,7 @@ static bool vg_segment_is_free(point_t p, point_t q,
             return false;
     }
 
-    // Segment must not properly cross any polygon boundary edge.
+    // Check 2: segment must not properly cross any polygon boundary edge.
     for (uint32_t pi = 0; pi < total_polys; ++pi)
     {
         const cvector_vector_type(point_t) verts = offset_polys[pi];
@@ -96,6 +144,65 @@ static bool vg_segment_is_free(point_t p, point_t q,
                 return false;
         }
     }
+
+    // Check 3: zone-vertex passage (slot 0 only).
+    // For each zone offset vertex V strictly between p and q on the segment:
+    //   Walk outward in each direction around the zone polygon to find the
+    //   first non-collinear neighbour (handles collinear-edge runs where an
+    //   immediate neighbour also lies on the segment line, giving c = 0).
+    //   If those two non-collinear neighbours are on opposite sides of line
+    //   p→q the zone boundary genuinely crosses the segment at V → reject.
+    if (total_polys > 0 && offset_polys[0] != NULL && pq_len_sq > 1e-12f)
+    {
+        const cvector_vector_type(point_t) zverts = offset_polys[0];
+        uint32_t zn = (uint32_t)cvector_size(zverts);
+        float eps_cross_sq = 1e-6f * pq_len_sq;
+
+        for (uint32_t vi = 0; vi < zn; ++vi)
+        {
+            point_t V = zverts[vi];
+
+            // Skip vertices coinciding with or beyond a segment endpoint.
+            float dp = (V.x - p.x) * pq_x + (V.y - p.y) * pq_y;
+            if (dp <= 0.0f || dp >= pq_len_sq)
+                continue;
+
+            // Collinearity: |cross(pq, pV)|² ≤ 1e-6 · |pq|²  (≈ 1 mm lateral).
+            float cross = pq_x * (V.y - p.y) - pq_y * (V.x - p.x);
+            if (cross * cross > eps_cross_sq)
+                continue;
+
+            // Walk backwards to find the first non-collinear predecessor.
+            float c_prev = 0.0f;
+            for (uint32_t step = 1; step <= zn; ++step)
+            {
+                point_t Vs = zverts[(vi + zn - step) % zn];
+                float c = pq_x * (Vs.y - p.y) - pq_y * (Vs.x - p.x);
+                if (c * c > eps_cross_sq)
+                {
+                    c_prev = c;
+                    break;
+                }
+            }
+
+            // Walk forwards to find the first non-collinear successor.
+            float c_next = 0.0f;
+            for (uint32_t step = 1; step <= zn; ++step)
+            {
+                point_t Vs = zverts[(vi + step) % zn];
+                float c = pq_x * (Vs.y - p.y) - pq_y * (Vs.x - p.x);
+                if (c * c > eps_cross_sq)
+                {
+                    c_next = c;
+                    break;
+                }
+            }
+
+            if (c_prev * c_next < 0.0f)
+                return false;
+        }
+    }
+
     return true;
 }
 
