@@ -55,13 +55,11 @@ static bool is_reflex_vertex(point_t prev, point_t curr, point_t next,
 {
     float cross = (curr.x - prev.x) * (next.y - prev.y) - (curr.y - prev.y) * (next.x - prev.x);
 
-    // In screen coords (Y-down), the CW boundary case is inverted compared to
-    // the previous assumption: sharp zone corners (declared CW) were being
-    // misclassified as reflex, which suppressed bevel emission.
-    // Keep CCW behaviour (obstacles) unchanged since it already produces the
-    // expected offset boundary.
+    // In screen coords (Y-down):
+    //  - CW polygon convex turns have cross > 0, so reflex is cross < 0.
+    //  - CCW polygon convex turns have cross < 0, so reflex is cross > 0.
     if (winding == POLYGON_WINDING_CW)
-        return cross > 0.0f;
+        return cross < 0.0f;
     else
         return cross > 0.0f;
 }
