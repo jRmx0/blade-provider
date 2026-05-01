@@ -13,12 +13,12 @@
  * For CW polygons (zones), a positive offset shrinks the polygon inward.
  * For CCW polygons (obstacles), a positive offset expands the polygon outward.
  *
- * At sharp convex corners the behaviour depends on allow_bevel:
- *   - false (default for BCD input): miter length is clamped to 4 * offset.
- *     Output vertex count always equals input count, preserving BCD invariants.
- *   - true  (headland path tracing): a bevel join is emitted instead — two
- *     separate offset-edge endpoints replace the single miter point. Output
- *     vertex count may exceed input count by the number of bevelled corners.
+ * At sharp convex corners the behaviour depends on allow_bevel and winding:
+ *   - false: miter length is clamped to 4 * offset.
+ *   - true + CCW polygon (obstacle): a bevel join is emitted instead — two
+ *     separate offset-edge endpoints replace the single miter point.
+ *   - true + CW polygon (zone): convex sharp corners stay single-vertex via
+ *     clamped miter (no bevel).
  *
  * At reflex (concave) corners, the default is to emit the intersection of the
  * two adjacent offset edge lines as a single point. If that intersection is

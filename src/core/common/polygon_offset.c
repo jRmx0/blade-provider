@@ -298,14 +298,16 @@ cvector_vector_type(point_t) compute_polygon_vertex_offset(
                 float scale = (dot > 1e-6f) ? (offset / dot) : max_miter;
                 if (scale > max_miter)
                 {
-                    if (allow_bevel)
+                    if (allow_bevel && winding == POLYGON_WINDING_CCW)
                     {
-                        // Sharp convex corner: emit a clipped bevel join.
+                        // Sharp convex obstacle outer corner: emit a clipped
+                        // bevel join.
                         if (emit_bevel_join(curr, n1, n2, offset, &result))
                             continue;
                     }
 
-                    // Bevel disabled: clamp miter to max_miter.
+                    // CW zone outside corners intentionally stay single-vertex
+                    // (clamped miter) even in bevel-enabled mode.
                     scale = max_miter;
                 }
 
