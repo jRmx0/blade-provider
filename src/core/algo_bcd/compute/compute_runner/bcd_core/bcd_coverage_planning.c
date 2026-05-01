@@ -98,11 +98,6 @@ int compute_bcd_path_list(cvector_vector_type(bcd_cell_t) * cell_list,
         }
     }
 
-    add_shortest_path_to_list(path_list,
-                              cell_list,
-                              starting_cell_index,
-                              &visited_count);
-
     return 0;
 }
 

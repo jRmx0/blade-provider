@@ -74,14 +74,15 @@ int compute_bcd_motion(cvector_vector_type(bcd_cell_t) * cell_list,
     }
 
     // Generate the closing nav: last coverage end → end_point.
-    // path_list already encodes the return route: compute_bcd_path_list appends
-    // a shortest-path back to starting_cell_index at the tail of path_list.
-    // Slicing forward from begin_path_pos to path_list.size()-1 gives the
-    // correct cell-visit-order return journey without reversing anything.
+    // path_list ends at the last coverage cell (no return tail).
+    // begin_path_pos points to that same last cell, so
+    // compute_connection_motion executes the single-cell spine branch
+    // (begin_point → medial-axis spine → end_point within the last cell).
+    // bcd_runner.c overrides this nav with a VG A* path to the true end_point.
     if (any_section && cvector_size(motion_plan->section) > 0)
     {
         int last_section_idx = (int)cvector_size(motion_plan->section) - 1;
-        int path_list_end = (int)cvector_size(*path_list) - 1;
+        int path_list_end = begin_path_pos;
 
         cvector_vector_type(point_t) return_nav =
             compute_connection_motion((const cvector_vector_type(bcd_cell_t) *)cell_list,
