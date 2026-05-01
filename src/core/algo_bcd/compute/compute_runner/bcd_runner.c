@@ -10,9 +10,11 @@
 #include "bcd_core/bcd_motion_planning.h"
 #include "bcd_core/bcd_geometry.h"
 #include "../../../common/headland.h"
+#include "../../../common/path_finder.h"
 #include "../../preprocess/bcd_preprocess.h"
 
 #include "../../../common/polygon_offset.c"
+#include "../../../common/path_finder.c"
 #include "../../../common/headland.c"
 
 static void log_event_list(const bcd_event_list_t *event_list);
@@ -372,10 +374,13 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 
 			const char *err_code =
 				(hrc == -10) ? "obstacles_too_close" : (hrc == -11) ? "obstacle_too_close_to_boundary"
+												   : (hrc == -3)	? "no_headland_transit_path"
 																	: "headland_failed";
 			const char *err_msg =
-				(hrc == -10) ? "Two or more obstacles are too close to each other: their expanded headland boundaries overlap. Reduce Path Width, Headland Coverage Offset, or increase the distance between obstacles." : (hrc == -11) ? "An obstacle is too close to the zone boundary: its expanded headland boundary escapes the shrunken zone. Reduce Path Width, Headland Coverage Offset, or move the obstacle away from the boundary."
-																																																										: "Headland generation failed.";
+				(hrc == -10)   ? "Two or more obstacles are too close to each other: their expanded headland boundaries overlap. Reduce Path Width, Headland Coverage Offset, or increase the distance between obstacles."
+				: (hrc == -11) ? "An obstacle is too close to the zone boundary: its expanded headland boundary escapes the shrunken zone. Reduce Path Width, Headland Coverage Offset, or move the obstacle away from the boundary."
+				: (hrc == -3)  ? "No collision-free path could be found between headland sections. The field geometry may be too complex or obstacles too close together."
+							   : "Headland generation failed.";
 
 			cJSON *err = cJSON_CreateObject();
 			cJSON_AddStringToObject(err, "status", "error");
@@ -471,18 +476,16 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 	// --- Headland → first coverage point transit ---
 	// The last headland section's nav must point to the first coverage waypoint.
 	// This can only be computed here because motion_plan is not available inside
-	// compute_bcd_headland.
+	// compute_headland.
 	//
 	// from_pt lies on the headland boundary, not inside any BCD cell, so
 	// compute_connection_motion is not appropriate here — it degrades to a
 	// direct line when from_pt falls outside the first cell's x-range.
 	//
-	// Instead, reuse the same visibility-graph A* used for inter-section
-	// headland transit: rebuild temporary offset-polygon cvectors from the
-	// stored shrunken_zone and expanded_obstacles geometry (both are already
-	// the exact offset polygons that define the headland free-space), then
-	// route through them.  headland_astar is available here because
-	// bcd_headland.c is #included directly into this translation unit.
+	// find_free_space_path uses the same half_width offset free-space as
+	// compute_headland used for inter-section transit.  shrunken_zone is at
+	// (path_width - path_overlap) — the BCD area boundary — which is larger than
+	// the headland ring, so half_width is used rather than shrunken_zone.
 	if (has_headland && headland.sections != NULL)
 	{
 		int hl_count = (int)cvector_size(headland.sections);
@@ -496,46 +499,14 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 				point_t from_pt = last_hs->path[cvector_size(last_hs->path) - 1];
 				point_t to_pt = motion_plan.section[0].ox[0];
 
-				// Build temporary offset-polygon cvectors at half_width (the headland
-				// strip offset) from the original env vertices.  headland.shrunken_zone
-				// is now at (path_width - path_overlap) — the BCD area boundary — which
-				// is larger than the headland ring, so from_pt (on the headland boundary)
-				// would lie outside it and A* would fail.  Using half_width keeps the
-				// free-space identical to what compute_bcd_headland used internally.
-				float hl_half = env->path_width / 2.0f;
-				uint32_t nav_total = 1 + env->obstacle_count;
-				cvector_vector_type(point_t) *nav_polys =
-					(cvector_vector_type(point_t) *)va_calloc(nav_total,
-															  sizeof(cvector_vector_type(point_t)));
-
-				cvector_vector_type(point_t) hl_nav = NULL;
-
-				if (nav_polys != NULL)
+				// Route from the last headland waypoint to the first coverage waypoint.
+				// Uses half_width offset free-space (same as compute_headland internally).
+				last_hs->nav = find_free_space_path(from_pt, to_pt, env, env->path_width / 2.0f);
+				if (last_hs->nav == NULL)
 				{
-					nav_polys[0] = compute_polygon_vertex_offset(
-						env->boundary.vertices, env->boundary.vertex_count,
-						POLYGON_WINDING_CW, hl_half);
-
-					for (uint32_t k = 0; k < env->obstacle_count; ++k)
-						nav_polys[k + 1] = compute_polygon_vertex_offset(
-							env->obstacles[k].vertices, env->obstacles[k].vertex_count,
-							POLYGON_WINDING_CCW, hl_half);
-
-					hl_nav = headland_astar(from_pt, to_pt, nav_polys, nav_total);
-
-					for (uint32_t p = 0; p < nav_total; ++p)
-						cvector_free(nav_polys[p]);
-					va_free(nav_polys);
+					free_headland(&headland);
+					return err_cleanup(&event_list, &cell_list, &path_list, &motion_plan, -3);
 				}
-
-				if (hl_nav == NULL)
-				{
-					// Fallback: direct 2-point path.
-					cvector_push_back(hl_nav, from_pt);
-					cvector_push_back(hl_nav, to_pt);
-				}
-
-				last_hs->nav = hl_nav;
 			}
 		}
 	}
@@ -547,8 +518,8 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 
 	if (has_headland)
 	{
-		// Route from start_point to the first headland waypoint via headland_astar.
-		// Uses the same hl_half offset free-space as the headland → coverage transit.
+		// Route from start_point to the first headland waypoint.
+		// Uses half_width offset free-space (same as compute_headland internally).
 		if (headland.sections != NULL && cvector_size(headland.sections) > 0)
 		{
 			headland_section_t *first_hs = &headland.sections[0];
@@ -557,35 +528,11 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 				point_t sp_from = env->start_point;
 				point_t sp_to = first_hs->path[0];
 
-				float hl_half = env->path_width / 2.0f;
-				uint32_t sp_nav_total = 1 + env->obstacle_count;
-				cvector_vector_type(point_t) *sp_nav_polys =
-					(cvector_vector_type(point_t) *)va_calloc(sp_nav_total,
-															  sizeof(cvector_vector_type(point_t)));
-
-				if (sp_nav_polys != NULL)
-				{
-					sp_nav_polys[0] = compute_polygon_vertex_offset(
-						env->boundary.vertices, env->boundary.vertex_count,
-						POLYGON_WINDING_CW, hl_half);
-
-					for (uint32_t k = 0; k < env->obstacle_count; ++k)
-						sp_nav_polys[k + 1] = compute_polygon_vertex_offset(
-							env->obstacles[k].vertices, env->obstacles[k].vertex_count,
-							POLYGON_WINDING_CCW, hl_half);
-
-					start_nav = headland_astar(sp_from, sp_to, sp_nav_polys, sp_nav_total);
-
-					for (uint32_t p = 0; p < sp_nav_total; ++p)
-						cvector_free(sp_nav_polys[p]);
-					va_free(sp_nav_polys);
-				}
-
+				start_nav = find_free_space_path(sp_from, sp_to, env, env->path_width / 2.0f);
 				if (start_nav == NULL)
 				{
-					// Fallback: direct 2-point path.
-					cvector_push_back(start_nav, sp_from);
-					cvector_push_back(start_nav, sp_to);
+					free_headland(&headland);
+					return err_cleanup(&event_list, &cell_list, &path_list, &motion_plan, -3);
 				}
 			}
 		}
