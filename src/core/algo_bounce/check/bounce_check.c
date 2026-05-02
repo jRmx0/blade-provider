@@ -1,0 +1,338 @@
+#include <ctype.h>
+#include <string.h>
+#include "../../../dependencies/cJSON/cJSON.h"
+#include "../internal.h"
+
+static void bounce_init_environment(input_environment_t *environment)
+{
+	if (environment != NULL)
+	{
+		environment->boundary.vertices = NULL;
+		environment->boundary.vertex_count = 0;
+		environment->obstacles = NULL;
+		environment->obstacle_count = 0;
+	}
+}
+
+static void bounce_set_result(bounce_check_result_t *result, bool ok, const char *code, const char *message)
+{
+	if (result != NULL)
+	{
+		result->ok = ok;
+		result->code = code;
+		result->message = message;
+	}
+}
+
+static void bounce_parse_float_value(const cJSON *value_item, const char *field_name, float *output, bounce_check_result_t *result)
+{
+	if (value_item == NULL || !cJSON_IsNumber(value_item))
+	{
+		bounce_set_result(result, false, "invalid_number", field_name);
+		return;
+	}
+	*output = (float)value_item->valuedouble;
+}
+
+static void bounce_expect_float_parameter(const cJSON *parameters, const char *name, float *output, bounce_check_result_t *result)
+{
+	cJSON *param = cJSON_GetObjectItemCaseSensitive(parameters, name);
+	if (param == NULL)
+	{
+		bounce_set_result(result, false, "missing_parameter", name);
+		return;
+	}
+	bounce_parse_float_value(param, name, output, result);
+}
+
+static void bounce_parse_bool_value(const cJSON *value_item, const char *field_name, bool *output, bounce_check_result_t *result)
+{
+	if (value_item == NULL || !cJSON_IsBool(value_item))
+	{
+		bounce_set_result(result, false, "invalid_boolean", field_name);
+		return;
+	}
+	*output = cJSON_IsTrue(value_item);
+}
+
+static void bounce_expect_bool_parameter(const cJSON *parameters, const char *name, bool *output, bounce_check_result_t *result)
+{
+	cJSON *param = cJSON_GetObjectItemCaseSensitive(parameters, name);
+	if (param == NULL)
+	{
+		bounce_set_result(result, false, "missing_parameter", name);
+		return;
+	}
+	bounce_parse_bool_value(param, name, output, result);
+}
+
+static void bounce_parse_point_object(const cJSON *point_item, const char *field_name, point_t *output, bounce_check_result_t *result)
+{
+	if (point_item == NULL || !cJSON_IsObject(point_item))
+	{
+		bounce_set_result(result, false, "invalid_object", field_name);
+		return;
+	}
+
+	cJSON *x_item = cJSON_GetObjectItemCaseSensitive(point_item, "x");
+	cJSON *y_item = cJSON_GetObjectItemCaseSensitive(point_item, "y");
+
+	if (x_item == NULL || !cJSON_IsNumber(x_item))
+	{
+		bounce_set_result(result, false, "invalid_point_x", field_name);
+		return;
+	}
+
+	if (y_item == NULL || !cJSON_IsNumber(y_item))
+	{
+		bounce_set_result(result, false, "invalid_point_y", field_name);
+		return;
+	}
+
+	output->x = (float)x_item->valuedouble;
+	output->y = (float)y_item->valuedouble;
+}
+
+static void bounce_parse_polygon_vertices(const cJSON *vertices_array, polygon_t *polygon)
+{
+	if (vertices_array == NULL || !cJSON_IsArray(vertices_array))
+	{
+		polygon->vertices = NULL;
+		polygon->vertex_count = 0;
+		return;
+	}
+
+	uint32_t count = (uint32_t)cJSON_GetArraySize(vertices_array);
+	if (count == 0)
+	{
+		polygon->vertices = NULL;
+		polygon->vertex_count = 0;
+		return;
+	}
+
+	polygon->vertices = (point_t *)malloc(count * sizeof(point_t));
+	if (polygon->vertices == NULL)
+	{
+		polygon->vertex_count = 0;
+		return;
+	}
+
+	polygon->vertex_count = count;
+	for (uint32_t i = 0; i < count; i++)
+	{
+		cJSON *vertex_item = cJSON_GetArrayItem(vertices_array, (int)i);
+		if (vertex_item != NULL && cJSON_IsObject(vertex_item))
+		{
+			cJSON *x_item = cJSON_GetObjectItemCaseSensitive(vertex_item, "x");
+			cJSON *y_item = cJSON_GetObjectItemCaseSensitive(vertex_item, "y");
+
+			if (cJSON_IsNumber(x_item) && cJSON_IsNumber(y_item))
+			{
+				polygon->vertices[i].x = (float)x_item->valuedouble;
+				polygon->vertices[i].y = (float)y_item->valuedouble;
+			}
+		}
+	}
+}
+
+bool bounce_check_request_json(const char *request_json, input_environment_t *environment, bounce_check_result_t *result)
+{
+	cJSON *root = NULL;
+	bounce_init_environment(environment);
+
+	if (request_json == NULL)
+	{
+		bounce_set_result(result, false, "null_request", "Request JSON cannot be null.");
+		return false;
+	}
+
+	root = cJSON_Parse(request_json);
+	if (root == NULL)
+	{
+		bounce_set_result(result, false, "invalid_json", "Failed to parse request JSON.");
+		return false;
+	}
+
+	// Validate startPoint
+	cJSON *start_point = cJSON_GetObjectItemCaseSensitive(root, "startPoint");
+	if (start_point == NULL)
+	{
+		cJSON_Delete(root);
+		bounce_set_result(result, false, "missing_startPoint", "startPoint field is required.");
+		return false;
+	}
+
+	bounce_parse_point_object(start_point, "startPoint", &environment->boundary.vertices, result);
+	if (!result->ok)
+	{
+		cJSON_Delete(root);
+		free_polygon(&environment->boundary);
+		return false;
+	}
+
+	// Validate boundary
+	cJSON *boundary = cJSON_GetObjectItemCaseSensitive(root, "boundary");
+	if (boundary == NULL)
+	{
+		cJSON_Delete(root);
+		free_polygon(&environment->boundary);
+		bounce_set_result(result, false, "missing_boundary", "boundary field is required.");
+		return false;
+	}
+
+	cJSON *boundary_vertices = cJSON_GetObjectItemCaseSensitive(boundary, "vertices");
+	if (boundary_vertices == NULL)
+	{
+		cJSON_Delete(root);
+		free_polygon(&environment->boundary);
+		bounce_set_result(result, false, "missing_boundary_vertices", "boundary.vertices field is required.");
+		return false;
+	}
+
+	bounce_parse_polygon_vertices(boundary_vertices, &environment->boundary);
+	if (environment->boundary.vertices == NULL)
+	{
+		cJSON_Delete(root);
+		bounce_set_result(result, false, "invalid_boundary_vertices", "boundary.vertices must be a non-empty array.");
+		return false;
+	}
+
+	// Validate obstacles
+	cJSON *obstacles = cJSON_GetObjectItemCaseSensitive(root, "obstacles");
+	if (obstacles == NULL)
+	{
+		cJSON_Delete(root);
+		free_polygon(&environment->boundary);
+		bounce_set_result(result, false, "missing_obstacles", "obstacles field is required.");
+		return false;
+	}
+
+	if (!cJSON_IsArray(obstacles))
+	{
+		cJSON_Delete(root);
+		free_polygon(&environment->boundary);
+		bounce_set_result(result, false, "invalid_obstacles", "obstacles must be an array.");
+		return false;
+	}
+
+	uint32_t obstacle_count = (uint32_t)cJSON_GetArraySize(obstacles);
+	if (obstacle_count == 0)
+	{
+		environment->obstacles = NULL;
+		environment->obstacle_count = 0;
+	}
+	else
+	{
+		environment->obstacles = (polygon_t *)malloc(obstacle_count * sizeof(polygon_t));
+		if (environment->obstacles == NULL)
+		{
+			cJSON_Delete(root);
+			free_polygon(&environment->boundary);
+			bounce_set_result(result, false, "allocation_failed", "Failed to allocate obstacles array.");
+			return false;
+		}
+
+		environment->obstacle_count = obstacle_count;
+
+		for (uint32_t i = 0; i < obstacle_count; i++)
+		{
+			cJSON *obstacle_item = cJSON_GetArrayItem(obstacles, (int)i);
+			if (obstacle_item == NULL || !cJSON_IsObject(obstacle_item))
+			{
+				cJSON_Delete(root);
+				free_polygon(&environment->boundary);
+				for (uint32_t j = 0; j < i; j++)
+				{
+					free_polygon(&environment->obstacles[j]);
+				}
+				free(environment->obstacles);
+				environment->obstacles = NULL;
+				bounce_set_result(result, false, "invalid_obstacle", "obstacles[i] must be an object.");
+				return false;
+			}
+
+			cJSON *vertices_item = cJSON_GetObjectItemCaseSensitive(obstacle_item, "vertices");
+			if (vertices_item == NULL)
+			{
+				cJSON_Delete(root);
+				free_polygon(&environment->boundary);
+				for (uint32_t j = 0; j < i; j++)
+				{
+					free_polygon(&environment->obstacles[j]);
+				}
+				free(environment->obstacles);
+				environment->obstacles = NULL;
+				bounce_set_result(result, false, "missing_obstacle_vertices", "obstacles[i].vertices field is required.");
+				return false;
+			}
+
+			bounce_parse_polygon_vertices(vertices_item, &environment->obstacles[i]);
+		}
+	}
+
+	// Validate zones
+	cJSON *zones = cJSON_GetObjectItemCaseSensitive(root, "zones");
+	if (zones == NULL)
+	{
+		cJSON_Delete(root);
+		free_polygon(&environment->boundary);
+		for (uint32_t i = 0; i < environment->obstacle_count; i++)
+		{
+			free_polygon(&environment->obstacles[i]);
+		}
+		free(environment->obstacles);
+		environment->obstacles = NULL;
+		bounce_set_result(result, false, "missing_zones", "zones field is required.");
+		return false;
+	}
+
+	if (!cJSON_IsArray(zones))
+	{
+		cJSON_Delete(root);
+		free_polygon(&environment->boundary);
+		for (uint32_t i = 0; i < environment->obstacle_count; i++)
+		{
+			free_polygon(&environment->obstacles[i]);
+		}
+		free(environment->obstacles);
+		environment->obstacles = NULL;
+		bounce_set_result(result, false, "invalid_zones", "zones must be an array.");
+		return false;
+	}
+
+	// Validate parameters (if present)
+	cJSON *parameters = cJSON_GetObjectItemCaseSensitive(root, "parameters");
+	if (parameters != NULL && cJSON_IsObject(parameters))
+	{
+		// Path Width parameter
+		cJSON *path_width = cJSON_GetObjectItemCaseSensitive(parameters, "pathWidth");
+		if (path_width != NULL && cJSON_IsNumber(path_width))
+		{
+			// Path Width is optional, just parse if present
+		}
+
+		// Headland parameter
+		cJSON *headland = cJSON_GetObjectItemCaseSensitive(parameters, "headland");
+		if (headland != NULL && cJSON_IsBool(headland))
+		{
+			// Headland is optional, just parse if present
+		}
+	}
+	else if (parameters == NULL)
+	{
+		cJSON_Delete(root);
+		free_polygon(&environment->boundary);
+		for (uint32_t i = 0; i < environment->obstacle_count; i++)
+		{
+			free_polygon(&environment->obstacles[i]);
+		}
+		free(environment->obstacles);
+		environment->obstacles = NULL;
+		bounce_set_result(result, false, "missing_parameters", "parameters field is required.");
+		return false;
+	}
+
+	cJSON_Delete(root);
+	bounce_set_result(result, true, NULL, NULL);
+	return true;
+}
