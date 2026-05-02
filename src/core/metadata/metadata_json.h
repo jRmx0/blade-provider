@@ -14,7 +14,9 @@ static inline void metadata_add_parameter(
     const char *section,
     const char *app_handler,
     int has_min_value,
-    double min_value)
+    double min_value,
+    int has_max_value,
+    double max_value)
 {
     cJSON *parameter = cJSON_CreateObject();
 
@@ -41,6 +43,11 @@ static inline void metadata_add_parameter(
     if (has_min_value)
     {
         cJSON_AddNumberToObject(parameter, "minValue", min_value);
+    }
+
+    if (has_max_value)
+    {
+        cJSON_AddNumberToObject(parameter, "maxValue", max_value);
     }
 
     if (section != NULL)

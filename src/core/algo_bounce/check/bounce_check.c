@@ -2,6 +2,7 @@
 #include <string.h>
 #include "../../../dependencies/cJSON/cJSON.h"
 #include "../internal.h"
+#include "bounce_check.h"
 
 static void bounce_init_environment(input_environment_t *environment)
 {
@@ -308,6 +309,25 @@ bool bounce_check_request_json(const char *request_json, input_environment_t *en
 			environment->headland = true;
 		}
 
+		// Bounce Offset parameter (in %, 0-100)
+		cJSON *bounce_offset = cJSON_GetObjectItemCaseSensitive(parameters, "Bounce Offset");
+		if (bounce_offset == NULL)
+			bounce_offset = cJSON_GetObjectItemCaseSensitive(parameters, "bounceOffset");
+
+		if (bounce_offset != NULL && cJSON_IsNumber(bounce_offset))
+		{
+			float val = (float)bounce_offset->valuedouble;
+			if (val < 0.0f)
+				val = 0.0f;
+			if (val > 100.0f)
+				val = 100.0f;
+			environment->bounce_offset = val;
+		}
+		else
+		{
+			environment->bounce_offset = 0.0f;
+		}
+
 		// Initialize other required fields for headland computation
 		environment->path_overlap = 0.0f;
 		environment->headland_coverage_offset = 0.0f;
@@ -318,6 +338,7 @@ bool bounce_check_request_json(const char *request_json, input_environment_t *en
 		// Use defaults if parameters not provided
 		environment->path_width = 15.0f;
 		environment->headland = true;
+		environment->bounce_offset = 0.0f;
 		environment->path_overlap = 0.0f;
 		environment->headland_coverage_offset = 0.0f;
 		environment->track_memory_usage = false;

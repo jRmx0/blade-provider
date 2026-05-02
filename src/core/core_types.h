@@ -56,6 +56,7 @@ typedef struct
     float path_width;
     float path_overlap;
     float headland_coverage_offset;
+    float bounce_offset;
     bool track_memory_usage;
     bool headland;
 
