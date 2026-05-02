@@ -18,6 +18,7 @@
 #include "../../dependencies/cJSON/cJSON.c"
 #include "../../dependencies/allocator/allocator.c"
 #include "algo_bcd/bcd.c"
+#include "algo_bounce/bounce.c"
 
 static cJSON *parse_algorithm_metadata_json(char *algorithm_json)
 {
@@ -81,6 +82,7 @@ char *dispatch_metadata_json(void)
 	cJSON *response = cJSON_CreateObject();
 	cJSON *algorithms = cJSON_CreateArray();
 	cJSON *bcd_algorithm = NULL;
+	cJSON *bounce_algorithm = NULL;
 	if (response == NULL || algorithms == NULL)
 	{
 		cJSON_Delete(response);
@@ -96,8 +98,15 @@ char *dispatch_metadata_json(void)
 		cJSON_Delete(response);
 		return NULL;
 	}
+	bounce_algorithm = parse_algorithm_metadata_json(bounce_get_metadata_json());
+	if (bounce_algorithm == NULL)
+	{
+		cJSON_Delete(response);
+		return NULL;
+	}
 
 	cJSON_AddItemToArray(algorithms, bcd_algorithm);
+	cJSON_AddItemToArray(algorithms, bounce_algorithm);
 
 	char *json = cJSON_PrintUnformatted(response);
 	cJSON_Delete(response);
@@ -116,6 +125,11 @@ char *dispatch_compute_json(const char *request_json)
 	if (algorithm_id == 1)
 	{
 		return bcd_compute(request_json);
+	}
+
+	if (algorithm_id == 2)
+	{
+		return bounce_compute(request_json);
 	}
 
 	return create_dispatch_error_json("unknown_algorithm", "Unknown algorithm requested.");
