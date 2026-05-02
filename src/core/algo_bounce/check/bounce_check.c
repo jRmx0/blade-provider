@@ -153,8 +153,17 @@ bool bounce_check_request_json(const char *request_json, input_environment_t *en
 		return false;
 	}
 
-	// Validate startPoint
-	cJSON *start_point = cJSON_GetObjectItemCaseSensitive(root, "startPoint");
+	// Extract the environment object (blade-terminal wraps all data under "environment")
+	cJSON *env_obj = cJSON_GetObjectItemCaseSensitive(root, "environment");
+	if (env_obj == NULL || !cJSON_IsObject(env_obj))
+	{
+		cJSON_Delete(root);
+		bounce_set_result(result, false, "missing_environment", "environment field is required.");
+		return false;
+	}
+
+	// Validate startPoint within environment
+	cJSON *start_point = cJSON_GetObjectItemCaseSensitive(env_obj, "startPoint");
 	if (start_point == NULL)
 	{
 		cJSON_Delete(root);
@@ -162,30 +171,35 @@ bool bounce_check_request_json(const char *request_json, input_environment_t *en
 		return false;
 	}
 
-	bounce_parse_point_object(start_point, "startPoint", &environment->boundary.vertices, result);
+	bounce_parse_point_object(start_point, "startPoint", &environment->start_point, result);
 	if (!result->ok)
 	{
 		cJSON_Delete(root);
-		free_polygon(&environment->boundary);
 		return false;
 	}
 
-	// Validate boundary
-	cJSON *boundary = cJSON_GetObjectItemCaseSensitive(root, "boundary");
-	if (boundary == NULL)
+	// Validate zones (coverage area boundaries) - use first zone as boundary
+	cJSON *zones = cJSON_GetObjectItemCaseSensitive(env_obj, "zones");
+	if (zones == NULL || !cJSON_IsArray(zones))
 	{
 		cJSON_Delete(root);
-		free_polygon(&environment->boundary);
-		bounce_set_result(result, false, "missing_boundary", "boundary field is required.");
+		bounce_set_result(result, false, "missing_zones", "zones field is required as an array.");
 		return false;
 	}
 
-	cJSON *boundary_vertices = cJSON_GetObjectItemCaseSensitive(boundary, "vertices");
+	cJSON *first_zone = cJSON_GetArrayItem(zones, 0);
+	if (first_zone == NULL || !cJSON_IsObject(first_zone))
+	{
+		cJSON_Delete(root);
+		bounce_set_result(result, false, "invalid_zone", "zones[0] must be an object.");
+		return false;
+	}
+
+	cJSON *boundary_vertices = cJSON_GetObjectItemCaseSensitive(first_zone, "vertices");
 	if (boundary_vertices == NULL)
 	{
 		cJSON_Delete(root);
-		free_polygon(&environment->boundary);
-		bounce_set_result(result, false, "missing_boundary_vertices", "boundary.vertices field is required.");
+		bounce_set_result(result, false, "missing_boundary_vertices", "zones[0].vertices field is required.");
 		return false;
 	}
 
@@ -193,25 +207,17 @@ bool bounce_check_request_json(const char *request_json, input_environment_t *en
 	if (environment->boundary.vertices == NULL)
 	{
 		cJSON_Delete(root);
-		bounce_set_result(result, false, "invalid_boundary_vertices", "boundary.vertices must be a non-empty array.");
+		bounce_set_result(result, false, "invalid_boundary_vertices", "zones[0].vertices must be a non-empty array.");
 		return false;
 	}
 
 	// Validate obstacles
-	cJSON *obstacles = cJSON_GetObjectItemCaseSensitive(root, "obstacles");
-	if (obstacles == NULL)
+	cJSON *obstacles = cJSON_GetObjectItemCaseSensitive(env_obj, "obstacles");
+	if (obstacles == NULL || !cJSON_IsArray(obstacles))
 	{
 		cJSON_Delete(root);
 		free_polygon(&environment->boundary);
-		bounce_set_result(result, false, "missing_obstacles", "obstacles field is required.");
-		return false;
-	}
-
-	if (!cJSON_IsArray(obstacles))
-	{
-		cJSON_Delete(root);
-		free_polygon(&environment->boundary);
-		bounce_set_result(result, false, "invalid_obstacles", "obstacles must be an array.");
+		bounce_set_result(result, false, "missing_obstacles", "obstacles field is required as an array.");
 		return false;
 	}
 
@@ -270,66 +276,51 @@ bool bounce_check_request_json(const char *request_json, input_environment_t *en
 		}
 	}
 
-	// Validate zones
-	cJSON *zones = cJSON_GetObjectItemCaseSensitive(root, "zones");
-	if (zones == NULL)
-	{
-		cJSON_Delete(root);
-		free_polygon(&environment->boundary);
-		for (uint32_t i = 0; i < environment->obstacle_count; i++)
-		{
-			free_polygon(&environment->obstacles[i]);
-		}
-		free(environment->obstacles);
-		environment->obstacles = NULL;
-		bounce_set_result(result, false, "missing_zones", "zones field is required.");
-		return false;
-	}
-
-	if (!cJSON_IsArray(zones))
-	{
-		cJSON_Delete(root);
-		free_polygon(&environment->boundary);
-		for (uint32_t i = 0; i < environment->obstacle_count; i++)
-		{
-			free_polygon(&environment->obstacles[i]);
-		}
-		free(environment->obstacles);
-		environment->obstacles = NULL;
-		bounce_set_result(result, false, "invalid_zones", "zones must be an array.");
-		return false;
-	}
-
-	// Validate parameters (if present)
+	// Validate parameters (top-level, not in environment)
 	cJSON *parameters = cJSON_GetObjectItemCaseSensitive(root, "parameters");
 	if (parameters != NULL && cJSON_IsObject(parameters))
 	{
-		// Path Width parameter
-		cJSON *path_width = cJSON_GetObjectItemCaseSensitive(parameters, "pathWidth");
+		// Path Width parameter (in meters, will be used for coverage spacing)
+		cJSON *path_width = cJSON_GetObjectItemCaseSensitive(parameters, "Path Width");
+		if (path_width == NULL)
+			path_width = cJSON_GetObjectItemCaseSensitive(parameters, "pathWidth");
+
 		if (path_width != NULL && cJSON_IsNumber(path_width))
 		{
-			// Path Width is optional, just parse if present
+			environment->path_width = (float)path_width->valuedouble;
+		}
+		else
+		{
+			environment->path_width = 15.0f;
 		}
 
-		// Headland parameter
-		cJSON *headland = cJSON_GetObjectItemCaseSensitive(parameters, "headland");
+		// Headland parameter (boolean: whether to enable headland computation)
+		cJSON *headland = cJSON_GetObjectItemCaseSensitive(parameters, "Headland");
+		if (headland == NULL)
+			headland = cJSON_GetObjectItemCaseSensitive(parameters, "headland");
+
 		if (headland != NULL && cJSON_IsBool(headland))
 		{
-			// Headland is optional, just parse if present
+			environment->headland = cJSON_IsTrue(headland);
 		}
-	}
-	else if (parameters == NULL)
-	{
-		cJSON_Delete(root);
-		free_polygon(&environment->boundary);
-		for (uint32_t i = 0; i < environment->obstacle_count; i++)
+		else
 		{
-			free_polygon(&environment->obstacles[i]);
+			environment->headland = true;
 		}
-		free(environment->obstacles);
-		environment->obstacles = NULL;
-		bounce_set_result(result, false, "missing_parameters", "parameters field is required.");
-		return false;
+
+		// Initialize other required fields for headland computation
+		environment->path_overlap = 0.0f;
+		environment->headland_coverage_offset = 0.0f;
+		environment->track_memory_usage = false;
+	}
+	else
+	{
+		// Use defaults if parameters not provided
+		environment->path_width = 15.0f;
+		environment->headland = true;
+		environment->path_overlap = 0.0f;
+		environment->headland_coverage_offset = 0.0f;
+		environment->track_memory_usage = false;
 	}
 
 	cJSON_Delete(root);
