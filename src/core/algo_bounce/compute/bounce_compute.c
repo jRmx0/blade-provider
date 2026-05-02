@@ -114,84 +114,90 @@ char *bounce_run_compute(const char *input_environment_json)
         cJSON *layer = cJSON_CreateObject();
         if (layer != NULL)
         {
-            cJSON_AddStringToObject(layer, "name", "Coverage");
-            cJSON *segments_arr = cJSON_CreateArray();
-            if (segments_arr != NULL)
-                cJSON_AddItemToObject(layer, "segments", segments_arr);
+            cJSON_AddStringToObject(layer, "source", "coveragePathPlan.coverage");
+            cJSON *list_arr = cJSON_CreateArray();
+            if (list_arr != NULL)
+                cJSON_AddItemToObject(layer, "list", list_arr);
             cJSON_AddItemToArray(debug_layers, layer);
         }
     }
 
     // Expanded Obstacles layer (from headland computation)
-    if (environment.headland && headland.expanded_obstacles != NULL && headland.expanded_obstacle_count > 0)
     {
         cJSON *layer = cJSON_CreateObject();
         if (layer != NULL)
         {
-            cJSON_AddStringToObject(layer, "name", "Expanded Obstacles");
-            cJSON *polygons_arr = cJSON_CreateArray();
-            if (polygons_arr != NULL)
+            cJSON_AddStringToObject(layer, "source", "headlandExpandedObstacleBorders");
+            cJSON *list_arr = cJSON_CreateArray();
+            if (list_arr != NULL)
             {
-                for (uint32_t i = 0; i < headland.expanded_obstacle_count; i++)
+                if (environment.headland && headland.expanded_obstacles != NULL && headland.expanded_obstacle_count > 0)
                 {
-                    cJSON *poly = cJSON_CreateObject();
-                    if (poly != NULL)
+                    for (uint32_t i = 0; i < headland.expanded_obstacle_count; i++)
                     {
-                        cJSON *vertices = cJSON_CreateArray();
-                        if (vertices != NULL)
+                        cJSON *entry = cJSON_CreateObject();
+                        if (entry != NULL)
                         {
-                            for (uint32_t j = 0; j < headland.expanded_obstacles[i].vertex_count; j++)
+                            cJSON_AddNumberToObject(entry, "id", (double)(i + 1));
+                            cJSON *vertices = cJSON_CreateArray();
+                            if (vertices != NULL)
                             {
-                                cJSON *point = cJSON_CreateObject();
-                                if (point != NULL)
+                                for (uint32_t j = 0; j < headland.expanded_obstacles[i].vertex_count; j++)
                                 {
-                                    cJSON_AddNumberToObject(point, "x", headland.expanded_obstacles[i].vertices[j].x);
-                                    cJSON_AddNumberToObject(point, "y", headland.expanded_obstacles[i].vertices[j].y);
-                                    cJSON_AddItemToArray(vertices, point);
+                                    cJSON *point = cJSON_CreateObject();
+                                    if (point != NULL)
+                                    {
+                                        cJSON_AddNumberToObject(point, "x", headland.expanded_obstacles[i].vertices[j].x);
+                                        cJSON_AddNumberToObject(point, "y", headland.expanded_obstacles[i].vertices[j].y);
+                                        cJSON_AddItemToArray(vertices, point);
+                                    }
                                 }
+                                cJSON_AddItemToObject(entry, "vertices", vertices);
                             }
-                            cJSON_AddItemToObject(poly, "vertices", vertices);
+                            cJSON_AddItemToArray(list_arr, entry);
                         }
-                        cJSON_AddItemToArray(polygons_arr, poly);
                     }
                 }
-                cJSON_AddItemToObject(layer, "polygons", polygons_arr);
+                cJSON_AddItemToObject(layer, "list", list_arr);
             }
             cJSON_AddItemToArray(debug_layers, layer);
         }
     }
 
     // Shrunken Zones layer (from headland computation)
-    if (environment.headland && headland.shrunken_zone.vertices != NULL && headland.shrunken_zone.vertex_count > 0)
     {
         cJSON *layer = cJSON_CreateObject();
         if (layer != NULL)
         {
-            cJSON_AddStringToObject(layer, "name", "Shrunken Zones");
-            cJSON *polygons_arr = cJSON_CreateArray();
-            if (polygons_arr != NULL)
+            cJSON_AddStringToObject(layer, "source", "headlandShrunkenZoneBorder");
+            cJSON *list_arr = cJSON_CreateArray();
+            if (list_arr != NULL)
             {
-                cJSON *poly = cJSON_CreateObject();
-                if (poly != NULL)
+                if (environment.headland && headland.shrunken_zone.vertices != NULL && headland.shrunken_zone.vertex_count > 0)
                 {
-                    cJSON *vertices = cJSON_CreateArray();
-                    if (vertices != NULL)
+                    cJSON *entry = cJSON_CreateObject();
+                    if (entry != NULL)
                     {
-                        for (uint32_t j = 0; j < headland.shrunken_zone.vertex_count; j++)
+                        cJSON_AddNumberToObject(entry, "id", 1);
+                        cJSON *vertices = cJSON_CreateArray();
+                        if (vertices != NULL)
                         {
-                            cJSON *point = cJSON_CreateObject();
-                            if (point != NULL)
+                            for (uint32_t j = 0; j < headland.shrunken_zone.vertex_count; j++)
                             {
-                                cJSON_AddNumberToObject(point, "x", headland.shrunken_zone.vertices[j].x);
-                                cJSON_AddNumberToObject(point, "y", headland.shrunken_zone.vertices[j].y);
-                                cJSON_AddItemToArray(vertices, point);
+                                cJSON *point = cJSON_CreateObject();
+                                if (point != NULL)
+                                {
+                                    cJSON_AddNumberToObject(point, "x", headland.shrunken_zone.vertices[j].x);
+                                    cJSON_AddNumberToObject(point, "y", headland.shrunken_zone.vertices[j].y);
+                                    cJSON_AddItemToArray(vertices, point);
+                                }
                             }
+                            cJSON_AddItemToObject(entry, "vertices", vertices);
                         }
-                        cJSON_AddItemToObject(poly, "vertices", vertices);
+                        cJSON_AddItemToArray(list_arr, entry);
                     }
-                    cJSON_AddItemToArray(polygons_arr, poly);
                 }
-                cJSON_AddItemToObject(layer, "polygons", polygons_arr);
+                cJSON_AddItemToObject(layer, "list", list_arr);
             }
             cJSON_AddItemToArray(debug_layers, layer);
         }
