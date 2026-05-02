@@ -18,6 +18,9 @@
 
 static char *bounce_create_error_json(const char *code, const char *message)
 {
+    const char *safe_code = (code != NULL && code[0] != '\0') ? code : "bounce_error";
+    const char *safe_message = (message != NULL && message[0] != '\0') ? message : "Bounce compute failed.";
+
     cJSON *response = cJSON_CreateObject();
     if (response == NULL)
     {
@@ -25,8 +28,8 @@ static char *bounce_create_error_json(const char *code, const char *message)
     }
 
     cJSON_AddStringToObject(response, "status", "error");
-    cJSON_AddStringToObject(response, "code", code);
-    cJSON_AddStringToObject(response, "message", message);
+    cJSON_AddStringToObject(response, "code", safe_code);
+    cJSON_AddStringToObject(response, "message", safe_message);
 
     char *json = cJSON_PrintUnformatted(response);
     cJSON_Delete(response);
@@ -36,7 +39,11 @@ static char *bounce_create_error_json(const char *code, const char *message)
 char *bounce_run_compute(const char *input_environment_json)
 {
     input_environment_t environment;
-    bounce_check_result_t check_result;
+    bounce_check_result_t check_result = {
+        .ok = true,
+        .code = NULL,
+        .message = NULL,
+    };
 
     if (!bounce_check_request_json(input_environment_json, &environment, &check_result))
     {

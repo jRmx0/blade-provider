@@ -140,6 +140,7 @@ bool bounce_check_request_json(const char *request_json, input_environment_t *en
 {
 	cJSON *root = NULL;
 	bounce_init_environment(environment);
+	bounce_set_result(result, true, NULL, NULL);
 
 	if (request_json == NULL)
 	{
@@ -343,7 +344,9 @@ bool bounce_check_request_json(const char *request_json, input_environment_t *en
 		// Bounce Offset parameter (in %, 0-100)
 		cJSON *bounce_offset = cJSON_GetObjectItemCaseSensitive(parameters, "Bounce Offset");
 		if (bounce_offset == NULL)
-			bounce_offset = cJSON_GetObjectItemCaseSensitive(parameters, "bounceOffset");
+			bounce_offset = cJSON_GetObjectItemCaseSensitive(parameters, "Random Bounce Offset");
+		if (bounce_offset == NULL)
+			bounce_offset = cJSON_GetObjectItemCaseSensitive(parameters, "randomBounceOffset");
 
 		if (bounce_offset != NULL && cJSON_IsNumber(bounce_offset))
 		{
@@ -363,6 +366,23 @@ bool bounce_check_request_json(const char *request_json, input_environment_t *en
 		environment->path_overlap = 0.0f;
 		environment->headland_coverage_offset = 0.0f;
 		environment->track_memory_usage = false;
+
+		// Validate: at least one of target_coverage or target_distance must be non-zero
+		if (environment->target_coverage < 0.001f && environment->target_distance < 0.001f)
+		{
+			cJSON_Delete(root);
+			free_polygon(&environment->boundary);
+			if (environment->obstacles != NULL)
+			{
+				for (uint32_t i = 0; i < environment->obstacle_count; i++)
+				{
+					free_polygon(&environment->obstacles[i]);
+				}
+				free(environment->obstacles);
+			}
+			bounce_set_result(result, false, "invalid_parameters", "Target Coverage or Target Distance must be non-zero.");
+			return false;
+		}
 	}
 	else
 	{
