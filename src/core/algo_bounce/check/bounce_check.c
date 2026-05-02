@@ -294,7 +294,38 @@ bool bounce_check_request_json(const char *request_json, input_environment_t *en
 		{
 			environment->path_width = 15.0f;
 		}
+		// Target Coverage parameter (in %, 0-100)
+		cJSON *target_coverage = cJSON_GetObjectItemCaseSensitive(parameters, "Target Coverage");
+		if (target_coverage == NULL)
+			target_coverage = cJSON_GetObjectItemCaseSensitive(parameters, "targetCoverage");
 
+		if (target_coverage != NULL && cJSON_IsNumber(target_coverage))
+		{
+			float val = (float)target_coverage->valuedouble;
+			if (val < 0.0f)
+				val = 0.0f;
+			if (val > 100.0f)
+				val = 100.0f;
+			environment->target_coverage = val;
+		}
+		else
+		{
+			environment->target_coverage = 0.0f;
+		}
+
+		// Target Distance parameter
+		cJSON *target_distance = cJSON_GetObjectItemCaseSensitive(parameters, "Target Distance");
+		if (target_distance == NULL)
+			target_distance = cJSON_GetObjectItemCaseSensitive(parameters, "targetDistance");
+
+		if (target_distance != NULL && cJSON_IsNumber(target_distance))
+		{
+			environment->target_distance = (float)target_distance->valuedouble;
+		}
+		else
+		{
+			environment->target_distance = 0.0f;
+		}
 		// Headland parameter (boolean: whether to enable headland computation)
 		cJSON *headland = cJSON_GetObjectItemCaseSensitive(parameters, "Headland");
 		if (headland == NULL)
@@ -339,6 +370,8 @@ bool bounce_check_request_json(const char *request_json, input_environment_t *en
 		environment->path_width = 15.0f;
 		environment->headland = true;
 		environment->bounce_offset = 0.0f;
+		environment->target_coverage = 0.0f;
+		environment->target_distance = 0.0f;
 		environment->path_overlap = 0.0f;
 		environment->headland_coverage_offset = 0.0f;
 		environment->track_memory_usage = false;
