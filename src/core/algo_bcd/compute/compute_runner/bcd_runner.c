@@ -336,6 +336,71 @@ static cJSON *serialize_result_json(const bcd_event_list_t *event_list,
 		cJSON_AddItemToArray(layers_arr, visit_layer);
 	}
 
+	/* ---- Shrunken Zone Border (id=13, source="headlandShrunkenZoneBorder") ---- */
+	{
+		cJSON *zone_layer = cJSON_CreateObject();
+		cJSON_AddNumberToObject(zone_layer, "id", 13);
+		cJSON_AddStringToObject(zone_layer, "source", "headlandShrunkenZoneBorder");
+		cJSON *zone_data_arr = cJSON_CreateArray();
+		cJSON_AddItemToObject(zone_layer, "list", zone_data_arr);
+
+		if (headland && headland->shrunken_zone.vertices && headland->shrunken_zone.vertex_count > 0)
+		{
+			cJSON *entry = cJSON_CreateObject();
+			cJSON_AddNumberToObject(entry, "id", 1);
+
+			cJSON *vertices = cJSON_CreateArray();
+			for (uint32_t i = 0; i < headland->shrunken_zone.vertex_count; ++i)
+			{
+				cJSON *jpt = cJSON_CreateObject();
+				cJSON_AddNumberToObject(jpt, "x", headland->shrunken_zone.vertices[i].x);
+				cJSON_AddNumberToObject(jpt, "y", headland->shrunken_zone.vertices[i].y);
+				cJSON_AddItemToArray(vertices, jpt);
+			}
+			cJSON_AddItemToObject(entry, "vertices", vertices);
+
+			cJSON_AddItemToArray(zone_data_arr, entry);
+		}
+
+		cJSON_AddItemToArray(layers_arr, zone_layer);
+	}
+
+	/* ---- Expanded Obstacle Borders (id=14, source="headlandExpandedObstacleBorders") ---- */
+	{
+		cJSON *obs_layer = cJSON_CreateObject();
+		cJSON_AddNumberToObject(obs_layer, "id", 14);
+		cJSON_AddStringToObject(obs_layer, "source", "headlandExpandedObstacleBorders");
+		cJSON *obs_data_arr = cJSON_CreateArray();
+		cJSON_AddItemToObject(obs_layer, "list", obs_data_arr);
+
+		if (headland && headland->expanded_obstacles && headland->expanded_obstacle_count > 0)
+		{
+			for (uint32_t k = 0; k < headland->expanded_obstacle_count; ++k)
+			{
+				const polygon_t *obs = &headland->expanded_obstacles[k];
+				if (obs->vertices == NULL || obs->vertex_count == 0)
+					continue;
+
+				cJSON *entry = cJSON_CreateObject();
+				cJSON_AddNumberToObject(entry, "id", (double)(k + 1));
+
+				cJSON *vertices = cJSON_CreateArray();
+				for (uint32_t i = 0; i < obs->vertex_count; ++i)
+				{
+					cJSON *jpt = cJSON_CreateObject();
+					cJSON_AddNumberToObject(jpt, "x", obs->vertices[i].x);
+					cJSON_AddNumberToObject(jpt, "y", obs->vertices[i].y);
+					cJSON_AddItemToArray(vertices, jpt);
+				}
+				cJSON_AddItemToObject(entry, "vertices", vertices);
+
+				cJSON_AddItemToArray(obs_data_arr, entry);
+			}
+		}
+
+		cJSON_AddItemToArray(layers_arr, obs_layer);
+	}
+
 	/* ---- performance is injected by bcd_run_compute after all
 	 * compute data and environment polygons have been freed, so
 	 * the working-set drop from those releases is captured first. ---- */
