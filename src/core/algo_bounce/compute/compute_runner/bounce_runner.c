@@ -11,9 +11,8 @@
  *   5. Repeat steps 2-4 until a stop condition is met.
  *   6. Serialize and return the coverage path result.
  *
- * Stop condition: stop when EITHER target_distance OR target_coverage is reached
- * (whichever comes first). A max-iteration guard prevents infinite loops while
- * step implementations are still stubbed.
+ * Stop condition: stop when the first configured target is reached among
+ * target_distance, target_coverage, and max_iterations.
  *
  * Dependencies: bounce_runner.h, step modules
  */

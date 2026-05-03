@@ -489,23 +489,6 @@ bool bounce_check_request_json(const char *request_json, input_environment_t *en
 		environment->path_overlap = 0.0f;
 		environment->headland_coverage_offset = 0.0f;
 		environment->track_memory_usage = false;
-
-		// Validate: at least one of target_coverage or target_distance must be non-zero
-		if (environment->target_coverage < 0.001f && environment->target_distance < 0.001f)
-		{
-			cJSON_Delete(root);
-			free_polygon(&environment->boundary);
-			if (environment->obstacles != NULL)
-			{
-				for (uint32_t i = 0; i < environment->obstacle_count; i++)
-				{
-					free_polygon(&environment->obstacles[i]);
-				}
-				va_free(environment->obstacles);
-			}
-			bounce_set_result(result, false, "invalid_parameters", "Target Coverage or Target Distance must be non-zero.");
-			return false;
-		}
 	}
 	else
 	{
@@ -520,6 +503,26 @@ bool bounce_check_request_json(const char *request_json, input_environment_t *en
 		environment->path_overlap = 0.0f;
 		environment->headland_coverage_offset = 0.0f;
 		environment->track_memory_usage = false;
+	}
+
+	// Validate: at least one stop target must be configured.
+	// Multiple stop targets are allowed; processing stops when the first target is reached.
+	if (environment->target_coverage < 0.001f &&
+		environment->target_distance < 0.001f &&
+		environment->max_iterations == 0u)
+	{
+		cJSON_Delete(root);
+		free_polygon(&environment->boundary);
+		if (environment->obstacles != NULL)
+		{
+			for (uint32_t i = 0; i < environment->obstacle_count; i++)
+			{
+				free_polygon(&environment->obstacles[i]);
+			}
+			va_free(environment->obstacles);
+		}
+		bounce_set_result(result, false, "invalid_parameters", "At least one stop target must be set: Target Coverage, Target Distance, or Max Iterations.");
+		return false;
 	}
 
 	cJSON_Delete(root);
