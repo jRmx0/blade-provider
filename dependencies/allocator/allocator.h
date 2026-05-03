@@ -40,7 +40,7 @@ void *va_malloc(size_t size);
  * @param ptr Pointer returned by va_malloc / va_calloc / va_realloc,
  *            or NULL.
  */
-void  va_free(void *ptr);
+void va_free(void *ptr);
 
 /**
  * @brief Allocate a zero-initialised array of @p count × @p size bytes.
@@ -158,7 +158,7 @@ char *va_strndup(const char *str, size_t n);
  * @param size Number of bytes to decommit.
  * @return Non-zero on success, zero on failure.
  */
-int   va_decommit(void *ptr, size_t size);
+int va_decommit(void *ptr, size_t size);
 
 /**
  * @brief Change the access-protection flags of a memory region.
@@ -173,7 +173,7 @@ int   va_decommit(void *ptr, size_t size);
  *                    NULL if the previous value is not needed.
  * @return Non-zero on success, zero on failure.
  */
-int   va_protect(void *ptr, size_t size, DWORD flags, DWORD *old_protect);
+int va_protect(void *ptr, size_t size, DWORD flags, DWORD *old_protect);
 
 /* ---- memory usage query ---- */
 
@@ -186,6 +186,48 @@ int   va_protect(void *ptr, size_t size, DWORD flags, DWORD *old_protect);
  */
 long get_mem_usage(void);
 
+/* ---- stage markers ---- */
+
+/**
+ * @brief A labelled boundary in the tracking sample stream.
+ *
+ * sample_index is the zero-based index into the tracking array at the
+ * moment the marker was recorded.  label is a string literal (not owned
+ * by the allocator).
+ */
+typedef struct
+{
+    size_t sample_index;
+    const char *label;
+} va_stage_marker_t;
+
+/**
+ * @brief Record a working-set snapshot and attach a stage label to it.
+ *
+ * No-op when tracking is disabled.  At most VA_TRACKING_MAX_MARKERS
+ * markers are stored; extras are silently dropped.
+ *
+ * @param label Stage name (must be a string literal or otherwise outlive
+ *              the tracking session).
+ */
+void va_tracking_mark(const char *label);
+
+/**
+ * @brief Return the array of stage markers recorded so far.
+ * @return Pointer to the first marker, or NULL if none exist.
+ */
+const va_stage_marker_t *va_get_stage_markers(void);
+
+/**
+ * @brief Return the number of stage markers recorded so far.
+ */
+size_t va_get_stage_marker_count(void);
+
+/**
+ * @brief Clear all recorded stage markers.
+ */
+void va_free_stage_markers(void);
+
 /* ---- tracking API ---- */
 
 /**
@@ -194,7 +236,7 @@ long get_mem_usage(void);
  * Recording is enabled by default at program start.  Each allocator
  * call appends one sample to the internal tracking vector.
  */
-void   va_tracking_enable(void);
+void va_tracking_enable(void);
 
 /**
  * @brief Disable working-set snapshot recording.
@@ -202,13 +244,13 @@ void   va_tracking_enable(void);
  * While disabled, allocator calls still perform their work but do not
  * append samples to the tracking vector.
  */
-void   va_tracking_disable(void);
+void va_tracking_disable(void);
 
 /**
  * @brief Return non-zero if tracking is currently enabled.
  * @return 1 if enabled, 0 if disabled.
  */
-int    va_tracking_is_enabled(void);
+int va_tracking_is_enabled(void);
 
 /**
  * @brief Capture the current working-set size as the baseline.
@@ -217,14 +259,14 @@ int    va_tracking_is_enabled(void);
  * this baseline (sample = working_set − baseline).  Call this once
  * before the code under measurement to normalise the series.
  */
-void   va_tracking_set_baseline(void);
+void va_tracking_set_baseline(void);
 
 /**
  * @brief Return the baseline working-set size captured by the most
  *        recent call to va_tracking_set_baseline().
  * @return Baseline in bytes, or 0 if no baseline has been set.
  */
-long   va_get_baseline(void);
+long va_get_baseline(void);
 
 /**
  * @brief Return a pointer to the raw tracking sample array.
@@ -237,7 +279,7 @@ long   va_get_baseline(void);
  *
  * @return Pointer to the first sample, or NULL if no samples exist.
  */
-long  *va_get_tracking_data(void);
+long *va_get_tracking_data(void);
 
 /**
  * @brief Return the number of samples currently in the tracking vector.
@@ -249,7 +291,7 @@ size_t va_get_tracking_count(void);
  * @brief Return the most recently recorded tracking sample.
  * @return Last sample value in bytes, or 0 if the vector is empty.
  */
-long   va_get_last_tracking_value(void);
+long va_get_last_tracking_value(void);
 
 /**
  * @brief Release the memory used by the internal tracking vector and
@@ -259,7 +301,7 @@ long   va_get_last_tracking_value(void);
  * va_get_tracking_count() returns 0.  Recording continues normally if
  * tracking is still enabled.
  */
-void   va_free_tracking_data(void);
+void va_free_tracking_data(void);
 
 /**
  * @note The defines below redirect the cvector library to use this
@@ -267,9 +309,9 @@ void   va_free_tracking_data(void);
  * (before any inclusion of cvector.h) so that the internal tracking
  * vector is itself backed by VirtualAlloc/VirtualFree.
  */
-#define cvector_clib_malloc  va_malloc
-#define cvector_clib_free    va_free
-#define cvector_clib_calloc  va_calloc
+#define cvector_clib_malloc va_malloc
+#define cvector_clib_free va_free
+#define cvector_clib_calloc va_calloc
 #define cvector_clib_realloc va_realloc
 
 #endif /* ALLOCATOR_H_ */

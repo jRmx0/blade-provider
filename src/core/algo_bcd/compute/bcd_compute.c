@@ -112,6 +112,7 @@ char *bcd_run_compute(const char *input_environment_json)
 	if (track_memory_usage)
 	{
 		va_free_tracking_data();
+		va_free_stage_markers();
 		va_tracking_enable();
 		va_tracking_set_baseline();
 	}
@@ -126,6 +127,8 @@ char *bcd_run_compute(const char *input_environment_json)
 		long *samples = va_get_tracking_data();
 		size_t count = va_get_tracking_count();
 		long baseline = va_get_baseline();
+		const va_stage_marker_t *markers = va_get_stage_markers();
+		size_t marker_count = va_get_stage_marker_count();
 		va_tracking_disable();
 
 		/* Only attach performance to successful results. */
@@ -140,6 +143,22 @@ char *bcd_run_compute(const char *input_environment_json)
 			for (size_t i = 0; i < count; ++i)
 				cJSON_AddItemToArray(val_arr, cJSON_CreateNumber((double)samples[i] / BYTES_PER_KB));
 			cJSON_AddItemToObject(metric, "value", val_arr);
+
+			/* stages — nested inside metric id=1 so that each label maps
+			 * directly to a sampleIndex within that metric's value array. */
+			if (markers != NULL && marker_count > 0)
+			{
+				cJSON *stages_arr = cJSON_CreateArray();
+				for (size_t i = 0; i < marker_count; ++i)
+				{
+					cJSON *jstage = cJSON_CreateObject();
+					cJSON_AddStringToObject(jstage, "label", markers[i].label);
+					cJSON_AddNumberToObject(jstage, "sampleIndex", (double)markers[i].sample_index);
+					cJSON_AddItemToArray(stages_arr, jstage);
+				}
+				cJSON_AddItemToObject(metric, "stages", stages_arr);
+			}
+
 			cJSON_AddItemToArray(metrics_arr, metric);
 
 			/* id=2 Baseline Memory Usage — absolute working-set floor in KB
@@ -152,6 +171,7 @@ char *bcd_run_compute(const char *input_environment_json)
 			cJSON_AddItemToObject(root, "performance", perf);
 		}
 		va_free_tracking_data();
+		va_free_stage_markers();
 	}
 
 	va_tracking_enable();

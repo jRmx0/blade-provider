@@ -5,6 +5,7 @@
 #include "bcd_runner.h"
 #include "../../../../../dependencies/cJSON/cJSON.h"
 #include "../../../../../dependencies/cvector/cvector.h"
+#include "../../../../../dependencies/allocator/allocator.h"
 #include "bcd_core/bcd_event_list_building.h"
 #include "bcd_core/bcd_cell_computation.h"
 #include "bcd_core/bcd_coverage_planning.h"
@@ -432,6 +433,7 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 
 	if (env->headland)
 	{
+		va_tracking_mark("headland");
 		int hrc = compute_headland(env, &headland);
 		if (hrc != 0)
 		{
@@ -478,6 +480,7 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 		}
 	}
 
+	va_tracking_mark("preprocess");
 	int rc = bcd_preprocess_environment(active_env, 0.0f);
 	if (rc != 0)
 	{
@@ -487,6 +490,7 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 		return err_cleanup(&event_list, NULL, NULL, NULL, rc);
 	}
 
+	va_tracking_mark("event_list");
 	rc = build_bcd_event_list(active_env, &event_list);
 	if (rc != 0)
 	{
@@ -497,6 +501,7 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 	}
 	printf("coverage_path_planning: successfully generated %d events\n", event_list.length);
 	cvector_vector_type(bcd_cell_t) cell_list = NULL;
+	va_tracking_mark("cells");
 	rc = compute_bcd_cells(&event_list, &cell_list);
 	if (rc != 0)
 	{
@@ -509,6 +514,7 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 	// log_bcd_cell_list((const cvector_vector_type(bcd_cell_t) *) &cell_list);
 
 	cvector_vector_type(int) path_list = NULL;
+	va_tracking_mark("path");
 	int starting_cell_index = bcd_find_starting_cell(
 		(const cvector_vector_type(bcd_cell_t) *)&cell_list,
 		active_env->start_point);
@@ -524,6 +530,7 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 	// log_bcd_path_list((const cvector_vector_type(int) *)&path_list);
 
 	bcd_motion_plan_t motion_plan = {0};
+	va_tracking_mark("motion");
 	rc = compute_bcd_motion(&cell_list,
 							(const cvector_vector_type(int) *)&path_list,
 							&motion_plan,
@@ -538,6 +545,7 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 	}
 	log_bcd_motion(motion_plan);
 
+	va_tracking_mark("transit");
 	// --- Last coverage point → end_point transit ---
 	// compute_bcd_motion sets the last section's nav via compute_connection_motion
 	// (cell-spine).  Replace it with a VG A* path so that end_point values that

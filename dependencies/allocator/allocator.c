@@ -30,7 +30,8 @@ void *va_malloc(size_t size)
 
 void va_free(void *ptr)
 {
-    if (ptr) VirtualFree(ptr, 0, MEM_RELEASE);
+    if (ptr)
+        VirtualFree(ptr, 0, MEM_RELEASE);
     record_op();
 }
 
@@ -45,10 +46,12 @@ void *va_calloc(size_t count, size_t size)
 
 void *va_realloc(void *ptr, size_t new_size)
 {
-    if (!ptr) return va_malloc(new_size);
+    if (!ptr)
+        return va_malloc(new_size);
 
     void *new_ptr = VirtualAlloc(NULL, new_size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
-    if (!new_ptr) return NULL;
+    if (!new_ptr)
+        return NULL;
     /* Snapshot 1 — peak: both the old and new regions are simultaneously
      * resident, so working set is at its highest point. */
     record_op();
@@ -97,10 +100,12 @@ void *va_memmove(void *dst, const void *src, size_t size)
 
 char *va_strdup(const char *str)
 {
-    if (!str) return NULL;
+    if (!str)
+        return NULL;
     size_t len = strlen(str) + 1;
     char *dst = VirtualAlloc(NULL, len, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
-    if (!dst) return NULL;
+    if (!dst)
+        return NULL;
     memcpy(dst, str, len);
     record_op(); /* combined alloc + touch */
     return dst;
@@ -108,10 +113,12 @@ char *va_strdup(const char *str)
 
 char *va_strndup(const char *str, size_t n)
 {
-    if (!str) return NULL;
+    if (!str)
+        return NULL;
     size_t len = strnlen(str, n);
     char *dst = VirtualAlloc(NULL, len + 1, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
-    if (!dst) return NULL;
+    if (!dst)
+        return NULL;
     memcpy(dst, str, len);
     dst[len] = '\0';
     record_op(); /* combined alloc + touch */
@@ -133,7 +140,8 @@ int va_protect(void *ptr, size_t size, DWORD flags, DWORD *old_protect)
 {
     DWORD old = 0;
     int ok = VirtualProtect(ptr, size, flags, &old) != 0;
-    if (old_protect) *old_protect = old;
+    if (old_protect)
+        *old_protect = old;
     record_op();
     return ok;
 }
@@ -154,9 +162,9 @@ long get_mem_usage(void)
  * Tracking state
  * -------------------------------------------------------------------------- */
 
-static cvector(long) g_tracking_vec     = NULL;
-static int           g_tracking_enabled = 1;
-static long          g_baseline         = 0;
+static cvector(long) g_tracking_vec = NULL;
+static int g_tracking_enabled = 1;
+static long g_baseline = 0;
 
 /**
  * @brief Append a working-set snapshot to the tracking vector.
@@ -193,9 +201,9 @@ static void record_op(void)
  * Tracking API
  * -------------------------------------------------------------------------- */
 
-void va_tracking_enable(void)  { g_tracking_enabled = 1; }
+void va_tracking_enable(void) { g_tracking_enabled = 1; }
 void va_tracking_disable(void) { g_tracking_enabled = 0; }
-int  va_tracking_is_enabled(void) { return g_tracking_enabled; }
+int va_tracking_is_enabled(void) { return g_tracking_enabled; }
 
 void va_tracking_set_baseline(void)
 {
@@ -203,9 +211,9 @@ void va_tracking_set_baseline(void)
     g_baseline = (usage >= 0) ? usage : 0;
 }
 
-long va_get_baseline(void)         { return g_baseline; }
+long va_get_baseline(void) { return g_baseline; }
 
-long *va_get_tracking_data(void)   { return g_tracking_vec; }
+long *va_get_tracking_data(void) { return g_tracking_vec; }
 size_t va_get_tracking_count(void) { return cvector_size(g_tracking_vec); }
 
 long va_get_last_tracking_value(void)
@@ -219,3 +227,30 @@ void va_free_tracking_data(void)
     cvector_free(g_tracking_vec);
     g_tracking_vec = NULL;
 }
+
+/* --------------------------------------------------------------------------
+ * Stage markers
+ * -------------------------------------------------------------------------- */
+
+#define VA_TRACKING_MAX_MARKERS 32
+
+static va_stage_marker_t g_markers[VA_TRACKING_MAX_MARKERS];
+static size_t g_marker_count = 0;
+
+void va_tracking_mark(const char *label)
+{
+    if (!g_tracking_enabled)
+        return;
+    /* Take a snapshot at the stage boundary first. */
+    record_op();
+    if (g_marker_count >= VA_TRACKING_MAX_MARKERS)
+        return;
+    size_t count = cvector_size(g_tracking_vec);
+    g_markers[g_marker_count].sample_index = count > 0 ? count - 1 : 0;
+    g_markers[g_marker_count].label = label;
+    g_marker_count++;
+}
+
+const va_stage_marker_t *va_get_stage_markers(void) { return g_marker_count > 0 ? g_markers : NULL; }
+size_t va_get_stage_marker_count(void) { return g_marker_count; }
+void va_free_stage_markers(void) { g_marker_count = 0; }
