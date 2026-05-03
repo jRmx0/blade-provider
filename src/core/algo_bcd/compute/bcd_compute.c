@@ -94,39 +94,27 @@ char *bcd_run_compute(const char *input_environment_json)
 {
 	bool track_memory_usage = bcd_prefetch_track_flag(input_environment_json);
 
-	if (track_memory_usage)
-	{
-		/* Hook cJSON so its internal allocations go through VirtualAlloc and
-		 * are captured alongside the cvector tracking samples. */
-		cJSON_Hooks hooks = {va_malloc, va_free};
-		cJSON_InitHooks(&hooks);
-
-		va_free_tracking_data();
-		va_tracking_enable();
-		va_tracking_set_baseline();
-	}
-	else
-	{
-		va_tracking_disable();
-		va_free_tracking_data();
-	}
+	/* Parse phase runs with tracking disabled. cJSON and env-struct allocations
+	 * are excluded from the tracked window; only the compute pipeline is measured. */
+	va_tracking_disable();
+	va_free_tracking_data();
 
 	input_environment_t environment;
 	bcd_check_result_t check_result;
 	if (!bcd_check_request_json(input_environment_json, &environment, &check_result))
 	{
 		va_tracking_enable();
-		if (track_memory_usage)
-			cJSON_InitHooks(NULL);
 		return bcd_create_error_json(check_result.code, check_result.message);
 	}
 
-	/* Unhook cJSON before the compute pipeline so serialize_result_json
-	 * builds the result tree with CRT allocations. Only BCD algorithm
-	 * data (cvectors, polygon arrays, check parse) appears in the
-	 * working-set arc; serialization overhead is excluded. */
+	/* Baseline is set after parse with env structs already resident.
+	 * Tracking window covers only the compute pipeline. */
 	if (track_memory_usage)
-		cJSON_InitHooks(NULL);
+	{
+		va_free_tracking_data();
+		va_tracking_enable();
+		va_tracking_set_baseline();
+	}
 
 	cJSON *root = coverage_path_planning_process(&environment);
 	free_input_environment(&environment);
