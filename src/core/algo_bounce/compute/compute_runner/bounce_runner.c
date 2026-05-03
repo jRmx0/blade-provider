@@ -27,8 +27,6 @@
 #include <string.h>
 #include <stdio.h>
 
-#define BOUNCE_MAX_ITERATIONS 10000
-
 // ---------------------------------------------------------------------------
 // Context lifecycle
 // ---------------------------------------------------------------------------
@@ -265,6 +263,7 @@ cJSON *bounce_run_pipeline(input_environment_t *environment)
 {
     bounce_pipeline_context_t ctx;
     bounce_context_init(&ctx, environment);
+    uint32_t max_iterations = environment->max_iterations;
 
     // --- Step 1: Apply headland (once, before the loop) ---
     bounce_step_status_t hl_status = bounce_apply_headland(environment, &ctx);
@@ -288,7 +287,7 @@ cJSON *bounce_run_pipeline(input_environment_t *environment)
 
     // --- Steps 2-5: Main loop ---
     while (!bounce_targets_reached(&ctx, environment) &&
-           ctx.metrics.iteration < BOUNCE_MAX_ITERATIONS)
+           (max_iterations == 0u || ctx.metrics.iteration < (int)max_iterations))
     {
         ctx.metrics.iteration++;
 

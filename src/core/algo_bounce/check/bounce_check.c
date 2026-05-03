@@ -16,6 +16,7 @@ static void bounce_init_environment(input_environment_t *environment)
 		environment->bounce_offset = 0.0f;
 		environment->target_coverage = 0.0f;
 		environment->target_distance = 0.0f;
+		environment->max_iterations = 0u;
 		environment->track_memory_usage = false;
 		environment->headland = false;
 		environment->start_point.x = 0.0f;
@@ -461,6 +462,29 @@ bool bounce_check_request_json(const char *request_json, input_environment_t *en
 			environment->starting_angle = -1.0f; // random
 		}
 
+		// Max Iterations parameter (positive integer; 0 means "no explicit cap")
+		cJSON *max_iterations_param = cJSON_GetObjectItemCaseSensitive(parameters, "Max Iterations");
+		if (max_iterations_param == NULL)
+			max_iterations_param = cJSON_GetObjectItemCaseSensitive(parameters, "maxIterations");
+		if (max_iterations_param != NULL && cJSON_IsNumber(max_iterations_param))
+		{
+			double raw = max_iterations_param->valuedouble;
+			if (raw > 0.0)
+			{
+				if (raw > 1000000.0)
+					raw = 1000000.0;
+				environment->max_iterations = (uint32_t)raw;
+			}
+			else
+			{
+				environment->max_iterations = 0u;
+			}
+		}
+		else
+		{
+			environment->max_iterations = 0u;
+		}
+
 		// Initialize other required fields for headland computation
 		environment->path_overlap = 0.0f;
 		environment->headland_coverage_offset = 0.0f;
@@ -491,6 +515,7 @@ bool bounce_check_request_json(const char *request_json, input_environment_t *en
 		environment->bounce_offset = 0.0f;
 		environment->target_coverage = 0.0f;
 		environment->target_distance = 0.0f;
+		environment->max_iterations = 0u;
 		environment->starting_angle = -1.0f;
 		environment->path_overlap = 0.0f;
 		environment->headland_coverage_offset = 0.0f;

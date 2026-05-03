@@ -59,6 +59,7 @@ typedef struct
     float bounce_offset;
     float target_coverage;
     float target_distance;
+    uint32_t max_iterations;
     bool track_memory_usage;
     bool headland;
     float starting_angle; // Initial travel direction in degrees [0, 360]; -1 = pick randomly.
