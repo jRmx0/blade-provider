@@ -28,14 +28,41 @@
 #define M_PI 3.14159265358979323846
 #endif
 
+#define BOUNCE_ANGLE_MAX_ATTEMPTS 32
+#define BOUNCE_ANGLE_MIN_OUTWARD_DOT 0.05f
+
+static float bounce_random_unit(void)
+{
+    return (float)rand() / (float)RAND_MAX;
+}
+
+static float bounce_normalize_angle(float angle)
+{
+    const float two_pi = 2.0f * (float)M_PI;
+    while (angle < 0.0f)
+    {
+        angle += two_pi;
+    }
+    while (angle >= two_pi)
+    {
+        angle -= two_pi;
+    }
+    return angle;
+}
+
 bounce_step_status_t bounce_pick_angle(bounce_pipeline_context_t *ctx)
 {
+    if (ctx == NULL || ctx->active_env == NULL)
+    {
+        return BOUNCE_STEP_FAIL;
+    }
+
     float angle;
 
     if (!ctx->has_hit_normal)
     {
         // First iteration: pick a fully random starting direction in [0, 2π).
-        angle = ((float)rand() / (float)RAND_MAX) * 2.0f * (float)M_PI;
+        angle = bounce_random_unit() * 2.0f * (float)M_PI;
     }
     else
     {
@@ -56,13 +83,36 @@ bounce_step_status_t bounce_pick_angle(bounce_pipeline_context_t *ctx)
         // bounce_offset is in [0, 100]; map to [0, π/2] radians max deviation.
         float max_offset_rad = (ctx->active_env->bounce_offset / 100.0f) *
                                ((float)M_PI / 2.0f);
-        float noise = (((float)rand() / (float)RAND_MAX) * 2.0f - 1.0f) *
-                      max_offset_rad;
 
-        angle = base_angle + noise;
+        bool found_valid = false;
+        angle = base_angle;
+
+        for (int attempt = 0; attempt < BOUNCE_ANGLE_MAX_ATTEMPTS; ++attempt)
+        {
+            float noise = (bounce_random_unit() * 2.0f - 1.0f) * max_offset_rad;
+            float candidate = base_angle + noise;
+
+            float cdx = cosf(candidate);
+            float cdy = sinf(candidate);
+
+            // Must point away from the surface just hit.
+            float outward = cdx * nx + cdy * ny;
+            if (outward > BOUNCE_ANGLE_MIN_OUTWARD_DOT)
+            {
+                angle = candidate;
+                found_valid = true;
+                break;
+            }
+        }
+
+        if (!found_valid)
+        {
+            // Fallback to pure reflection (always physically valid for bounce).
+            angle = base_angle;
+        }
     }
 
-    ctx->current_angle = angle;
+    ctx->current_angle = bounce_normalize_angle(angle);
     ctx->angle_initialized = true;
 
     return BOUNCE_STEP_OK;

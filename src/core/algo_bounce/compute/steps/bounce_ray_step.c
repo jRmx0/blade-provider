@@ -32,6 +32,8 @@
 #define BOUNCE_RAY_TMIN 1e-4f
 // Parallelism threshold for the cross-product denominator.
 #define BOUNCE_RAY_EPSILON 1e-6f
+// Tiny forward shift for cast origin to avoid edge re-entry artifacts.
+#define BOUNCE_RAY_ORIGIN_BIAS 1e-3f
 
 /**
  * Compute the intersection of ray (origin + t * dir) with segment [A, B].
@@ -128,6 +130,15 @@ bounce_step_status_t bounce_cast_ray(
         cosf(ctx->current_angle),
         sinf(ctx->current_angle)};
 
+    // If we are starting exactly on a previously hit edge, nudge the cast
+    // origin slightly in the travel direction to avoid selecting the wrong
+    // crossing due to numerical ambiguity around t ~= 0.
+    if (ctx->has_hit_normal)
+    {
+        origin.x += dir.x * BOUNCE_RAY_ORIGIN_BIAS;
+        origin.y += dir.y * BOUNCE_RAY_ORIGIN_BIAS;
+    }
+
     const input_environment_t *env = ctx->active_env;
 
     float best_t = FLT_MAX;
@@ -169,7 +180,7 @@ bounce_step_status_t bounce_cast_ray(
         return BOUNCE_STEP_RETRY;
     }
 
-    segment_out->start = origin;
+    segment_out->start = ctx->current_position;
     segment_out->end.x = origin.x + best_t * dir.x;
     segment_out->end.y = origin.y + best_t * dir.y;
 
