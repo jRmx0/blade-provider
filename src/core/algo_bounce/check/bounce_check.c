@@ -443,6 +443,24 @@ bool bounce_check_request_json(const char *request_json, input_environment_t *en
 			environment->bounce_offset = 0.0f;
 		}
 
+		// Starting Angle parameter (degrees [0, 360]; omit to pick randomly)
+		cJSON *starting_angle_param = cJSON_GetObjectItemCaseSensitive(parameters, "Starting Angle");
+		if (starting_angle_param == NULL)
+			starting_angle_param = cJSON_GetObjectItemCaseSensitive(parameters, "startingAngle");
+		if (starting_angle_param != NULL && cJSON_IsNumber(starting_angle_param))
+		{
+			float val = (float)starting_angle_param->valuedouble;
+			if (val < 0.0f)
+				val = 0.0f;
+			if (val > 360.0f)
+				val = 360.0f;
+			environment->starting_angle = val;
+		}
+		else
+		{
+			environment->starting_angle = -1.0f; // random
+		}
+
 		// Initialize other required fields for headland computation
 		environment->path_overlap = 0.0f;
 		environment->headland_coverage_offset = 0.0f;
@@ -473,6 +491,7 @@ bool bounce_check_request_json(const char *request_json, input_environment_t *en
 		environment->bounce_offset = 0.0f;
 		environment->target_coverage = 0.0f;
 		environment->target_distance = 0.0f;
+		environment->starting_angle = -1.0f;
 		environment->path_overlap = 0.0f;
 		environment->headland_coverage_offset = 0.0f;
 		environment->track_memory_usage = false;

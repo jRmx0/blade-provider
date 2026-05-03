@@ -4,12 +4,13 @@
  * Step 4: Updates cumulative path metrics after a segment is committed.
  *
  * - Increments ctx->metrics.total_distance by the Euclidean segment length.
- * - Updates ctx->metrics.estimated_coverage based on the swept area vs.
- *   total active environment area.
+ * - Updates ctx->metrics.estimated_coverage using a grid-based capsule method:
+ *   An AOI cell grid is built lazily from the original full environment on the
+ *   first call. For each segment, cells within (path_width / 2) of the segment
+ *   line are marked covered (capsule footprint). Each cell is counted at most
+ *   once. estimated_coverage = (covered_cells / valid_cells) * 100.
  *
- * TODO: Implement polygon-clipped area estimation for accurate coverage.
- *       Current stub accumulates distance only; coverage stays at 0 until
- *       real geometry is wired.
+ * Cell size = path_width / 6, auto-scaled to stay within a 1 M cell budget.
  */
 
 #ifndef BOUNCE_METRICS_STEP_H

@@ -59,6 +59,11 @@ static void bounce_context_free(bounce_pipeline_context_t *ctx)
         free_headland(&ctx->headland);
         ctx->has_headland = false;
     }
+    if (ctx->coverage_grid.cells != NULL)
+    {
+        va_free(ctx->coverage_grid.cells);
+        ctx->coverage_grid.cells = NULL;
+    }
 }
 
 // ---------------------------------------------------------------------------

@@ -61,6 +61,7 @@ typedef struct
     float target_distance;
     bool track_memory_usage;
     bool headland;
+    float starting_angle; // Initial travel direction in degrees [0, 360]; -1 = pick randomly.
 
     point_t start_point;
     point_t end_point;

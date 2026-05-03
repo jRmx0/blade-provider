@@ -48,6 +48,22 @@ typedef struct
 } bounce_metrics_t;
 
 // ---------------------------------------------------------------------------
+// Coverage grid
+// ---------------------------------------------------------------------------
+
+typedef struct
+{
+    float origin_x;         // X of grid origin (boundary bbox min_x)
+    float origin_y;         // Y of grid origin (boundary bbox min_y)
+    float cell_size;        // Side length of each square cell
+    uint32_t cols;          // Number of columns
+    uint32_t rows;          // Number of rows
+    uint32_t valid_count;   // AOI cells (inside boundary, outside obstacles)
+    uint32_t covered_count; // AOI cells hit by at least one segment footprint
+    uint8_t *cells;         // cells[row*cols+col]: bit0=valid, bit1=covered
+} bounce_coverage_grid_t;
+
+// ---------------------------------------------------------------------------
 // Pipeline context
 // ---------------------------------------------------------------------------
 
@@ -79,6 +95,10 @@ typedef struct
 
     // --- Metrics ---
     bounce_metrics_t metrics;
+
+    // --- Coverage grid (built lazily on first bounce_update_metrics call) ---
+    bounce_coverage_grid_t coverage_grid;
+    bool coverage_grid_ready;
 } bounce_pipeline_context_t;
 
 // ---------------------------------------------------------------------------

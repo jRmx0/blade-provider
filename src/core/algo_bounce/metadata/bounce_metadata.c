@@ -45,6 +45,7 @@ char *bounce_build_metadata_json(void)
     metadata_add_parameter(parameters, 4, "Target Distance", BCD_METADATA_PARAM_TYPE_DECIMAL, NULL, 0, "0", BCD_METADATA_PARAM_SECTION_COVERAGE_PATH, BCD_METADATA_APP_HANDLER_NONE, 1, 0.0, 0, 0.0, 0);
     metadata_add_parameter(parameters, 5, "Headland", BCD_METADATA_PARAM_TYPE_BOOLEAN, NULL, 0, "true", BCD_METADATA_PARAM_SECTION_COVERAGE_PATH, BCD_METADATA_APP_HANDLER_NONE, 0, 0.0, 0, 0.0, 0);
     metadata_add_parameter(parameters, 6, "Seed", BCD_METADATA_PARAM_TYPE_STRING, NULL, 0, "", BCD_METADATA_PARAM_SECTION_COVERAGE_PATH, BCD_METADATA_APP_HANDLER_NONE, 0, 0.0, 0, 0.0, 0);
+    metadata_add_parameter(parameters, 7, "Starting Angle", BCD_METADATA_PARAM_TYPE_DECIMAL, NULL, 0, "", BCD_METADATA_PARAM_SECTION_COVERAGE_PATH, BCD_METADATA_APP_HANDLER_NONE, 1, 0.0, 1, 360.0, 0);
 
     // Coverage layer
     {

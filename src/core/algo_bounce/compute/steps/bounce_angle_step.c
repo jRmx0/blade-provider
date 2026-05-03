@@ -159,8 +159,16 @@ bounce_step_status_t bounce_pick_angle(bounce_pipeline_context_t *ctx)
 
     if (!ctx->has_hit_normal)
     {
-        // First iteration: pick a fully random starting direction in [0, 2π).
-        angle = bounce_random_unit() * 2.0f * (float)M_PI;
+        // First iteration: use the specified starting angle, or pick randomly.
+        if (ctx->original_env->starting_angle >= 0.0f)
+        {
+            // Convert degrees [0, 360] → radians.
+            angle = ctx->original_env->starting_angle * ((float)M_PI / 180.0f);
+        }
+        else
+        {
+            angle = bounce_random_unit() * 2.0f * (float)M_PI;
+        }
     }
     else
     {
