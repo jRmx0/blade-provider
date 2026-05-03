@@ -24,4 +24,10 @@
 char *bounce_build_metadata_json(void);
 char *bounce_run_compute(const char *input_environment_json);
 
+// Internal pipeline entry point.
+// Runs the full Bounce pipeline on a pre-validated environment.
+// Returns a cJSON result object owned by the caller (free with cJSON_Delete).
+// Returns NULL only on catastrophic allocation failure.
+cJSON *bounce_run_pipeline(input_environment_t *environment);
+
 #endif // BOUNCE_INTERNAL_H

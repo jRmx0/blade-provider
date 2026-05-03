@@ -19,7 +19,6 @@
 #include "../../dependencies/allocator/allocator.c"
 #include "algo_bcd/bcd.c"
 #include "algo_bounce/bounce.c"
-#include "algo_bounce/check/bounce_check.c"
 
 static cJSON *parse_algorithm_metadata_json(char *algorithm_json)
 {

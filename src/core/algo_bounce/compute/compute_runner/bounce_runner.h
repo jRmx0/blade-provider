@@ -1,0 +1,88 @@
+/**
+ * bounce_runner.h
+ *
+ * Pipeline context types, step status codes, and the runner entry point for
+ * the Bounce algorithm.
+ *
+ * Shared by bounce_compute.c (orchestrator) and all step modules.
+ */
+
+#ifndef BOUNCE_RUNNER_H
+#define BOUNCE_RUNNER_H
+
+#include "../../internal.h"
+#include "../../../../../dependencies/cJSON/cJSON.h"
+#include "../../../../../dependencies/cvector/cvector.h"
+#include "../../../common/headland.h"
+
+// ---------------------------------------------------------------------------
+// Step status
+// ---------------------------------------------------------------------------
+
+typedef enum
+{
+    BOUNCE_STEP_OK = 0, // Step succeeded; proceed.
+    BOUNCE_STEP_RETRY,  // Transient failure; caller may retry (e.g. re-pick angle).
+    BOUNCE_STEP_FAIL,   // Unrecoverable failure; abort pipeline.
+} bounce_step_status_t;
+
+// ---------------------------------------------------------------------------
+// Segment (one straight coverage line)
+// ---------------------------------------------------------------------------
+
+typedef struct
+{
+    point_t start;
+    point_t end;
+} bounce_segment_t;
+
+// ---------------------------------------------------------------------------
+// Cumulative metrics
+// ---------------------------------------------------------------------------
+
+typedef struct
+{
+    float total_distance;     // Sum of all segment lengths (same units as environment).
+    float estimated_coverage; // Estimated coverage percentage [0, 100].
+    int iteration;            // Current loop iteration count.
+} bounce_metrics_t;
+
+// ---------------------------------------------------------------------------
+// Pipeline context
+// ---------------------------------------------------------------------------
+
+typedef struct
+{
+    // --- Input ---
+    input_environment_t *original_env; // Pre-validated environment passed to the runner.
+
+    // --- Headland state ---
+    headland_t headland;              // Populated when headland is applied.
+    input_environment_t headland_env; // Shallow wrapper pointing at headland geometry.
+    bool has_headland;
+
+    // --- Active environment (points to original_env or headland_env) ---
+    input_environment_t *active_env;
+
+    // --- Loop state ---
+    point_t current_position; // Start of the next segment.
+    float current_angle;      // Direction of travel in radians.
+    bool angle_initialized;   // True once an angle has been set.
+
+    // --- Output ---
+    cvector_vector_type(bounce_segment_t) segments; // Accumulated coverage segments.
+
+    // --- Metrics ---
+    bounce_metrics_t metrics;
+} bounce_pipeline_context_t;
+
+// ---------------------------------------------------------------------------
+// Runner entry point
+// ---------------------------------------------------------------------------
+
+// Runs the full Bounce pipeline on a pre-validated environment.
+// Returns a cJSON result object owned by the caller (free with cJSON_Delete).
+// Returns NULL only on catastrophic allocation failure.
+cJSON *bounce_run_pipeline(input_environment_t *environment);
+
+#endif // BOUNCE_RUNNER_H

@@ -1,7 +1,7 @@
 #include "bounce.h"
 #include "internal.h"
 
-#include "check/bounce_check.h"
+#include "check/bounce_check.c"
 #include "metadata/bounce_metadata.c"
 #include "compute/bounce_compute.c"
 
