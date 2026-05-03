@@ -4,6 +4,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include "../../../../../../dependencies/cvector/cvector.h"
+#include "../../../../../../dependencies/allocator/allocator.h"
 #include "../../../internal.h"
 #include "bcd_event_list_building.h"
 #include "bcd_cell_computation.h"
@@ -696,7 +697,7 @@ static void add_head_cell_neighbor_list(bcd_neighbor_list_t *neighbor_list,
     if (!neighbor_list || cell_index < 0)
         return;
 
-    bcd_neighbor_node_t *new_node = (bcd_neighbor_node_t *)malloc(sizeof(bcd_neighbor_node_t));
+    bcd_neighbor_node_t *new_node = (bcd_neighbor_node_t *)va_malloc(sizeof(bcd_neighbor_node_t));
     if (!new_node)
         return;
 
@@ -725,7 +726,7 @@ static void add_tail_cell_neighbor_list(bcd_neighbor_list_t *neighbor_list,
     if (!neighbor_list || cell_index < 0)
         return;
 
-    bcd_neighbor_node_t *new_node = (bcd_neighbor_node_t *)malloc(sizeof(bcd_neighbor_node_t));
+    bcd_neighbor_node_t *new_node = (bcd_neighbor_node_t *)va_malloc(sizeof(bcd_neighbor_node_t));
     if (!new_node)
         return;
 
@@ -757,7 +758,7 @@ static void free_neighbor_list(bcd_neighbor_list_t *neighbor_list)
     while (current)
     {
         bcd_neighbor_node_t *next = current->next;
-        free(current);
+        va_free(current);
         current = next;
     }
 

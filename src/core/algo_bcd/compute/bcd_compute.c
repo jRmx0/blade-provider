@@ -174,8 +174,6 @@ char *bcd_run_compute(const char *input_environment_json)
 		va_free_stage_markers();
 	}
 
-	va_tracking_enable();
-
 	/* cJSON is no longer hooked; result tree and output string are
 	 * CRT-backed and safe for the caller to free() directly. */
 	char *out = cJSON_PrintUnformatted(root);

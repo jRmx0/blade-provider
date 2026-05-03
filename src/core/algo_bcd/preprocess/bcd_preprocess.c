@@ -8,6 +8,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include "bcd_preprocess.h"
+#include "../../../../dependencies/allocator/allocator.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -26,17 +27,17 @@
 typedef struct
 {
     polygon_t *polygon;
-    int        vertex_index;
-    float      projection;
+    int vertex_index;
+    float projection;
 } vertex_proj_entry_t;
 
 // FORWARD DECLARATIONS --------------------------------------------
 
-static int  collect_projections(input_environment_t *env,
-                                float ax, float ay,
-                                vertex_proj_entry_t *entries);
+static int collect_projections(input_environment_t *env,
+                               float ax, float ay,
+                               vertex_proj_entry_t *entries);
 
-static int  compare_proj_entry(const void *a, const void *b);
+static int compare_proj_entry(const void *a, const void *b);
 
 static void resolve_collision_group(vertex_proj_entry_t *entries,
                                     int group_start, int group_end,
@@ -55,8 +56,8 @@ int bcd_preprocess_environment(input_environment_t *env, float sweep_direction_d
      * sweep_direction_deg = 0  → axis = (1, 0)  → projection = raw x.
      * This matches the current BCD sweep behaviour exactly. */
     float rad = sweep_direction_deg * (float)(M_PI / 180.0);
-    float ax  = cosf(rad);
-    float ay  = sinf(rad);
+    float ax = cosf(rad);
+    float ay = sinf(rad);
 
     /* Count total vertices across boundary and all obstacles. */
     int total = (int)env->boundary.vertex_count;
@@ -68,7 +69,7 @@ int bcd_preprocess_environment(input_environment_t *env, float sweep_direction_d
 
     /* Allocate flat projection array. */
     vertex_proj_entry_t *entries =
-        (vertex_proj_entry_t *)malloc((size_t)total * sizeof(vertex_proj_entry_t));
+        (vertex_proj_entry_t *)va_malloc((size_t)total * sizeof(vertex_proj_entry_t));
     if (!entries)
         return -4;
 
@@ -97,7 +98,7 @@ int bcd_preprocess_environment(input_environment_t *env, float sweep_direction_d
         i = j;
     }
 
-    free(entries);
+    va_free(entries);
     return 0;
 }
 
@@ -112,10 +113,10 @@ static int collect_projections(input_environment_t *env,
     /* Boundary vertices. */
     for (int v = 0; v < (int)env->boundary.vertex_count; v++)
     {
-        point_t *pt          = &env->boundary.vertices[v];
-        entries[idx].polygon      = &env->boundary;
+        point_t *pt = &env->boundary.vertices[v];
+        entries[idx].polygon = &env->boundary;
         entries[idx].vertex_index = v;
-        entries[idx].projection   = pt->x * ax + pt->y * ay;
+        entries[idx].projection = pt->x * ax + pt->y * ay;
         idx++;
     }
 
@@ -125,10 +126,10 @@ static int collect_projections(input_environment_t *env,
         polygon_t *obs = &env->obstacles[i];
         for (int v = 0; v < (int)obs->vertex_count; v++)
         {
-            point_t *pt          = &obs->vertices[v];
-            entries[idx].polygon      = obs;
+            point_t *pt = &obs->vertices[v];
+            entries[idx].polygon = obs;
             entries[idx].vertex_index = v;
-            entries[idx].projection   = pt->x * ax + pt->y * ay;
+            entries[idx].projection = pt->x * ax + pt->y * ay;
             idx++;
         }
     }
@@ -140,8 +141,10 @@ static int compare_proj_entry(const void *a, const void *b)
 {
     const vertex_proj_entry_t *va = (const vertex_proj_entry_t *)a;
     const vertex_proj_entry_t *vb = (const vertex_proj_entry_t *)b;
-    if (va->projection < vb->projection) return -1;
-    if (va->projection > vb->projection) return  1;
+    if (va->projection < vb->projection)
+        return -1;
+    if (va->projection > vb->projection)
+        return 1;
     return 0;
 }
 
@@ -154,11 +157,11 @@ static void resolve_collision_group(vertex_proj_entry_t *entries,
      * sweep axis: 1*nudge, 2*nudge, 3*nudge, … */
     for (int k = group_start + 1; k < group_end; k++)
     {
-        int   rank  = k - group_start; /* 1, 2, 3, … */
+        int rank = k - group_start; /* 1, 2, 3, … */
         float nudge = (float)rank * COLLISION_NUDGE;
 
         polygon_t *poly = entries[k].polygon;
-        int        vi   = entries[k].vertex_index;
+        int vi = entries[k].vertex_index;
 
         poly->vertices[vi].x += nudge * ax;
         poly->vertices[vi].y += nudge * ay;

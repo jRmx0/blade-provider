@@ -433,7 +433,7 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 
 	if (env->headland)
 	{
-		va_tracking_mark("headland");
+		va_tracking_mark("Pakraštys");
 		int hrc = compute_headland(env, &headland);
 		if (hrc != 0)
 		{
@@ -480,7 +480,7 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 		}
 	}
 
-	va_tracking_mark("preprocess");
+	va_tracking_mark("Paruošimas");
 	int rc = bcd_preprocess_environment(active_env, 0.0f);
 	if (rc != 0)
 	{
@@ -490,7 +490,7 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 		return err_cleanup(&event_list, NULL, NULL, NULL, rc);
 	}
 
-	va_tracking_mark("event_list");
+	va_tracking_mark("Įvykiai");
 	rc = build_bcd_event_list(active_env, &event_list);
 	if (rc != 0)
 	{
@@ -501,7 +501,7 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 	}
 	printf("coverage_path_planning: successfully generated %d events\n", event_list.length);
 	cvector_vector_type(bcd_cell_t) cell_list = NULL;
-	va_tracking_mark("cells");
+	va_tracking_mark("Ląstelės");
 	rc = compute_bcd_cells(&event_list, &cell_list);
 	if (rc != 0)
 	{
@@ -514,7 +514,7 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 	// log_bcd_cell_list((const cvector_vector_type(bcd_cell_t) *) &cell_list);
 
 	cvector_vector_type(int) path_list = NULL;
-	va_tracking_mark("path");
+	va_tracking_mark("Ląstelių seka");
 	int starting_cell_index = bcd_find_starting_cell(
 		(const cvector_vector_type(bcd_cell_t) *)&cell_list,
 		active_env->start_point);
@@ -530,7 +530,7 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 	// log_bcd_path_list((const cvector_vector_type(int) *)&path_list);
 
 	bcd_motion_plan_t motion_plan = {0};
-	va_tracking_mark("motion");
+	va_tracking_mark("Padengimo kelias");
 	rc = compute_bcd_motion(&cell_list,
 							(const cvector_vector_type(int) *)&path_list,
 							&motion_plan,
@@ -545,7 +545,7 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 	}
 	log_bcd_motion(motion_plan);
 
-	va_tracking_mark("transit");
+	va_tracking_mark("Maršrutas");
 	// --- Last coverage point → end_point transit ---
 	// compute_bcd_motion sets the last section's nav via compute_connection_motion
 	// (cell-spine).  Replace it with a VG A* path so that end_point values that
@@ -668,9 +668,13 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 		}
 	}
 
+	va_tracking_mark("Serializavimas");
+
 	cJSON *root = serialize_result_json(&event_list, &cell_list, &path_list, &motion_plan,
 										has_headland ? &headland : NULL,
 										start_nav);
+
+	va_tracking_mark("Valymas");
 
 	/* Free compute data after serializing — these va_free calls are tracked,
 	 * so the working-set drop from releasing cell/path/motion/event data

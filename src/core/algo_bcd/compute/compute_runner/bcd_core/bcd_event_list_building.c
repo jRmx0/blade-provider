@@ -4,6 +4,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include "bcd_event_list_building.h"
+#include "../../../../../../dependencies/allocator/allocator.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -122,7 +123,7 @@ static int preallocate_event_list(const input_environment_t *env,
     event_list->capacity = total;
     if (total > 0)
     {
-        event_list->bcd_events = (bcd_event_t *)malloc((size_t)total * sizeof(bcd_event_t));
+        event_list->bcd_events = (bcd_event_t *)va_malloc((size_t)total * sizeof(bcd_event_t));
         if (!event_list->bcd_events)
         {
             event_list->capacity = 0;
@@ -494,7 +495,7 @@ void free_bcd_event_list(bcd_event_list_t *event_list)
 
     if (event_list->bcd_events)
     {
-        free(event_list->bcd_events);
+        va_free(event_list->bcd_events);
     }
     event_list->bcd_events = NULL;
     event_list->length = 0;
