@@ -17,7 +17,7 @@ static inline void metadata_add_parameter(
     double min_value,
     int has_max_value,
     double max_value,
-    int is_ratio)
+    const char *unit_type)
 {
     cJSON *parameter = cJSON_CreateObject();
 
@@ -61,9 +61,9 @@ static inline void metadata_add_parameter(
         cJSON_AddStringToObject(parameter, "appHandler", app_handler);
     }
 
-    if (is_ratio)
+    if (unit_type != NULL)
     {
-        cJSON_AddBoolToObject(parameter, "isRatio", 1);
+        cJSON_AddStringToObject(parameter, "unitType", unit_type);
     }
 
     cJSON_AddItemToArray(parameters, parameter);
