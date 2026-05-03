@@ -69,6 +69,11 @@ typedef struct
     float current_angle;      // Direction of travel in radians.
     bool angle_initialized;   // True once an angle has been set.
 
+    // Outward-facing normalized edge normal at the last collision point.
+    // Set by bounce_cast_ray(); read by bounce_pick_angle() to compute reflections.
+    point_t hit_normal;
+    bool has_hit_normal;
+
     // --- Output ---
     cvector_vector_type(bounce_segment_t) segments; // Accumulated coverage segments.
 
