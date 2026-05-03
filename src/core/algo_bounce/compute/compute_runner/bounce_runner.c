@@ -110,48 +110,56 @@ static cJSON *bounce_serialize_result(const bounce_pipeline_context_t *ctx)
     cJSON_AddItemToObject(root, "coveragePathPlan", coverage_path_plan);
 
     int segment_count = (ctx->segments != NULL) ? (int)cvector_size(ctx->segments) : 0;
-    for (int i = 0; i < segment_count; ++i)
+    if (segment_count > 0)
     {
-        const bounce_segment_t *seg = &ctx->segments[i];
-
         cJSON *jsegment = cJSON_CreateObject();
         cJSON *path_arr = cJSON_CreateArray();
-        if (jsegment == NULL || path_arr == NULL)
+        if (jsegment != NULL && path_arr != NULL)
+        {
+            cJSON_AddNumberToObject(jsegment, "id", 1);
+            cJSON_AddStringToObject(jsegment, "type", "coverage");
+            cJSON_AddItemToObject(jsegment, "path", path_arr);
+
+            // First waypoint = start of the first computed segment.
+            const bounce_segment_t *first = &ctx->segments[0];
+            cJSON *jstart_entry = cJSON_CreateObject();
+            cJSON *jstart_point = cJSON_CreateObject();
+            if (jstart_entry != NULL && jstart_point != NULL)
+            {
+                cJSON_AddNumberToObject(jstart_entry, "id", 1);
+                cJSON_AddNumberToObject(jstart_point, "x", first->start.x);
+                cJSON_AddNumberToObject(jstart_point, "y", first->start.y);
+                cJSON_AddItemToObject(jstart_entry, "point", jstart_point);
+                cJSON_AddItemToArray(path_arr, jstart_entry);
+            }
+
+            // Next waypoints = end point of each bounce segment in order.
+            for (int i = 0; i < segment_count; ++i)
+            {
+                const bounce_segment_t *seg = &ctx->segments[i];
+                cJSON *jentry = cJSON_CreateObject();
+                cJSON *jpoint = cJSON_CreateObject();
+                if (jentry == NULL || jpoint == NULL)
+                {
+                    cJSON_Delete(jentry);
+                    cJSON_Delete(jpoint);
+                    continue;
+                }
+
+                cJSON_AddNumberToObject(jentry, "id", i + 2);
+                cJSON_AddNumberToObject(jpoint, "x", seg->end.x);
+                cJSON_AddNumberToObject(jpoint, "y", seg->end.y);
+                cJSON_AddItemToObject(jentry, "point", jpoint);
+                cJSON_AddItemToArray(path_arr, jentry);
+            }
+
+            cJSON_AddItemToArray(segments_arr, jsegment);
+        }
+        else
         {
             cJSON_Delete(jsegment);
             cJSON_Delete(path_arr);
-            continue;
         }
-
-        cJSON_AddNumberToObject(jsegment, "id", i + 1);
-        cJSON_AddStringToObject(jsegment, "type", "coverage");
-        cJSON_AddItemToObject(jsegment, "path", path_arr);
-
-        // Start waypoint
-        cJSON *jstart_entry = cJSON_CreateObject();
-        cJSON *jstart_point = cJSON_CreateObject();
-        if (jstart_entry != NULL && jstart_point != NULL)
-        {
-            cJSON_AddNumberToObject(jstart_entry, "id", 1);
-            cJSON_AddNumberToObject(jstart_point, "x", seg->start.x);
-            cJSON_AddNumberToObject(jstart_point, "y", seg->start.y);
-            cJSON_AddItemToObject(jstart_entry, "point", jstart_point);
-            cJSON_AddItemToArray(path_arr, jstart_entry);
-        }
-
-        // End waypoint
-        cJSON *jend_entry = cJSON_CreateObject();
-        cJSON *jend_point = cJSON_CreateObject();
-        if (jend_entry != NULL && jend_point != NULL)
-        {
-            cJSON_AddNumberToObject(jend_entry, "id", 2);
-            cJSON_AddNumberToObject(jend_point, "x", seg->end.x);
-            cJSON_AddNumberToObject(jend_point, "y", seg->end.y);
-            cJSON_AddItemToObject(jend_entry, "point", jend_point);
-            cJSON_AddItemToArray(path_arr, jend_entry);
-        }
-
-        cJSON_AddItemToArray(segments_arr, jsegment);
     }
 
     // --- debug ---
