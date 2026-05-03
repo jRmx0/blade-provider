@@ -2,6 +2,7 @@
 #define BOUNCE_CHECK_H
 
 #include "../internal.h"
+#include "../../../dependencies/allocator/allocator.h"
 
 typedef struct
 {
@@ -25,7 +26,7 @@ static inline void bounce_free_input_environment(input_environment_t *env)
         {
             free_polygon(&env->obstacles[i]);
         }
-        free(env->obstacles);
+        va_free(env->obstacles);
         env->obstacles = NULL;
     }
     env->obstacle_count = 0;

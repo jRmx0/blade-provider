@@ -1,6 +1,7 @@
 #include <ctype.h>
 #include <string.h>
 #include "../../../dependencies/cJSON/cJSON.h"
+#include "../../../dependencies/allocator/allocator.h"
 #include "../internal.h"
 #include "bounce_check.h"
 
@@ -8,11 +9,66 @@ static void bounce_init_environment(input_environment_t *environment)
 {
 	if (environment != NULL)
 	{
+		environment->id = 0;
+		environment->path_width = 0.0f;
+		environment->path_overlap = 0.0f;
+		environment->headland_coverage_offset = 0.0f;
+		environment->bounce_offset = 0.0f;
+		environment->target_coverage = 0.0f;
+		environment->target_distance = 0.0f;
+		environment->track_memory_usage = false;
+		environment->headland = false;
+		environment->start_point.x = 0.0f;
+		environment->start_point.y = 0.0f;
+		environment->end_point.x = 0.0f;
+		environment->end_point.y = 0.0f;
+		environment->boundary.winding = POLYGON_WINDING_UNKNOWN;
 		environment->boundary.vertices = NULL;
 		environment->boundary.vertex_count = 0;
+		environment->boundary.edges = NULL;
+		environment->boundary.edge_count = 0;
 		environment->obstacles = NULL;
 		environment->obstacle_count = 0;
 	}
+}
+
+static void bounce_init_polygon(polygon_t *polygon)
+{
+	if (polygon == NULL)
+	{
+		return;
+	}
+
+	polygon->winding = POLYGON_WINDING_UNKNOWN;
+	polygon->vertices = NULL;
+	polygon->vertex_count = 0;
+	polygon->edges = NULL;
+	polygon->edge_count = 0;
+}
+
+static bool bounce_build_polygon_edges(polygon_t *polygon)
+{
+	if (polygon == NULL || polygon->vertices == NULL || polygon->vertex_count < 3)
+	{
+		return false;
+	}
+
+	polygon_edge_t *edges = (polygon_edge_t *)va_malloc((size_t)polygon->vertex_count * sizeof(polygon_edge_t));
+	if (edges == NULL)
+	{
+		return false;
+	}
+
+	for (uint32_t i = 0; i < polygon->vertex_count; ++i)
+	{
+		uint32_t next = (i + 1u) % polygon->vertex_count;
+		edges[i].begin = polygon->vertices[i];
+		edges[i].end = polygon->vertices[next];
+	}
+
+	polygon->edges = edges;
+	polygon->edge_count = polygon->vertex_count;
+	return true;
 }
 
 static void bounce_set_result(bounce_check_result_t *result, bool ok, const char *code, const char *message)
@@ -94,46 +150,57 @@ static void bounce_parse_point_object(const cJSON *point_item, const char *field
 	output->y = (float)y_item->valuedouble;
 }
 
-static void bounce_parse_polygon_vertices(const cJSON *vertices_array, polygon_t *polygon)
+static bool bounce_parse_polygon_vertices(const cJSON *vertices_array, polygon_t *polygon)
 {
+	bounce_init_polygon(polygon);
+
 	if (vertices_array == NULL || !cJSON_IsArray(vertices_array))
 	{
-		polygon->vertices = NULL;
-		polygon->vertex_count = 0;
-		return;
+		return false;
 	}
 
 	uint32_t count = (uint32_t)cJSON_GetArraySize(vertices_array);
-	if (count == 0)
+	if (count < 3)
 	{
-		polygon->vertices = NULL;
-		polygon->vertex_count = 0;
-		return;
+		return false;
 	}
 
-	polygon->vertices = (point_t *)malloc(count * sizeof(point_t));
+	polygon->vertices = (point_t *)va_malloc((size_t)count * sizeof(point_t));
 	if (polygon->vertices == NULL)
 	{
-		polygon->vertex_count = 0;
-		return;
+		return false;
 	}
 
 	polygon->vertex_count = count;
 	for (uint32_t i = 0; i < count; i++)
 	{
 		cJSON *vertex_item = cJSON_GetArrayItem(vertices_array, (int)i);
-		if (vertex_item != NULL && cJSON_IsObject(vertex_item))
+		if (vertex_item == NULL || !cJSON_IsObject(vertex_item))
 		{
-			cJSON *x_item = cJSON_GetObjectItemCaseSensitive(vertex_item, "x");
-			cJSON *y_item = cJSON_GetObjectItemCaseSensitive(vertex_item, "y");
-
-			if (cJSON_IsNumber(x_item) && cJSON_IsNumber(y_item))
-			{
-				polygon->vertices[i].x = (float)x_item->valuedouble;
-				polygon->vertices[i].y = (float)y_item->valuedouble;
-			}
+			free_polygon(polygon);
+			return false;
 		}
+
+		cJSON *x_item = cJSON_GetObjectItemCaseSensitive(vertex_item, "x");
+		cJSON *y_item = cJSON_GetObjectItemCaseSensitive(vertex_item, "y");
+
+		if (!cJSON_IsNumber(x_item) || !cJSON_IsNumber(y_item))
+		{
+			free_polygon(polygon);
+			return false;
+		}
+
+		polygon->vertices[i].x = (float)x_item->valuedouble;
+		polygon->vertices[i].y = (float)y_item->valuedouble;
 	}
+
+	if (!bounce_build_polygon_edges(polygon))
+	{
+		free_polygon(polygon);
+		return false;
+	}
+
+	return true;
 }
 
 bool bounce_check_request_json(const char *request_json, input_environment_t *environment, bounce_check_result_t *result)
@@ -205,8 +272,7 @@ bool bounce_check_request_json(const char *request_json, input_environment_t *en
 		return false;
 	}
 
-	bounce_parse_polygon_vertices(boundary_vertices, &environment->boundary);
-	if (environment->boundary.vertices == NULL)
+	if (!bounce_parse_polygon_vertices(boundary_vertices, &environment->boundary))
 	{
 		cJSON_Delete(root);
 		bounce_set_result(result, false, "invalid_boundary_vertices", "zones[0].vertices must be a non-empty array.");
@@ -231,7 +297,7 @@ bool bounce_check_request_json(const char *request_json, input_environment_t *en
 	}
 	else
 	{
-		environment->obstacles = (polygon_t *)malloc(obstacle_count * sizeof(polygon_t));
+		environment->obstacles = (polygon_t *)va_calloc((size_t)obstacle_count, sizeof(polygon_t));
 		if (environment->obstacles == NULL)
 		{
 			cJSON_Delete(root);
@@ -253,8 +319,9 @@ bool bounce_check_request_json(const char *request_json, input_environment_t *en
 				{
 					free_polygon(&environment->obstacles[j]);
 				}
-				free(environment->obstacles);
+				va_free(environment->obstacles);
 				environment->obstacles = NULL;
+				environment->obstacle_count = 0;
 				bounce_set_result(result, false, "invalid_obstacle", "obstacles[i] must be an object.");
 				return false;
 			}
@@ -268,13 +335,27 @@ bool bounce_check_request_json(const char *request_json, input_environment_t *en
 				{
 					free_polygon(&environment->obstacles[j]);
 				}
-				free(environment->obstacles);
+				va_free(environment->obstacles);
 				environment->obstacles = NULL;
+				environment->obstacle_count = 0;
 				bounce_set_result(result, false, "missing_obstacle_vertices", "obstacles[i].vertices field is required.");
 				return false;
 			}
 
-			bounce_parse_polygon_vertices(vertices_item, &environment->obstacles[i]);
+			if (!bounce_parse_polygon_vertices(vertices_item, &environment->obstacles[i]))
+			{
+				cJSON_Delete(root);
+				free_polygon(&environment->boundary);
+				for (uint32_t j = 0; j <= i; j++)
+				{
+					free_polygon(&environment->obstacles[j]);
+				}
+				va_free(environment->obstacles);
+				environment->obstacles = NULL;
+				environment->obstacle_count = 0;
+				bounce_set_result(result, false, "invalid_obstacle_vertices", "obstacles[i].vertices must be a non-empty array.");
+				return false;
+			}
 		}
 	}
 
@@ -378,7 +459,7 @@ bool bounce_check_request_json(const char *request_json, input_environment_t *en
 				{
 					free_polygon(&environment->obstacles[i]);
 				}
-				free(environment->obstacles);
+				va_free(environment->obstacles);
 			}
 			bounce_set_result(result, false, "invalid_parameters", "Target Coverage or Target Distance must be non-zero.");
 			return false;

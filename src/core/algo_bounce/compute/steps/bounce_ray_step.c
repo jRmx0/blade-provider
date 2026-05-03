@@ -118,6 +118,11 @@ bounce_step_status_t bounce_cast_ray(
     bounce_pipeline_context_t *ctx,
     bounce_segment_t *segment_out)
 {
+    if (ctx == NULL || segment_out == NULL || ctx->active_env == NULL)
+    {
+        return BOUNCE_STEP_FAIL;
+    }
+
     point_t origin = ctx->current_position;
     point_t dir = {
         cosf(ctx->current_angle),
@@ -129,7 +134,7 @@ bounce_step_status_t bounce_cast_ray(
     point_t best_normal = {0.0f, 0.0f};
 
     // --- Test boundary edges ---
-    for (uint32_t i = 0; i < env->boundary.edge_count; ++i)
+    for (uint32_t i = 0; env->boundary.edges != NULL && i < env->boundary.edge_count; ++i)
     {
         point_t A = env->boundary.edges[i].begin;
         point_t B = env->boundary.edges[i].end;
@@ -142,10 +147,10 @@ bounce_step_status_t bounce_cast_ray(
     }
 
     // --- Test obstacle edges ---
-    for (uint32_t k = 0; k < env->obstacle_count; ++k)
+    for (uint32_t k = 0; env->obstacles != NULL && k < env->obstacle_count; ++k)
     {
         const polygon_t *obs = &env->obstacles[k];
-        for (uint32_t i = 0; i < obs->edge_count; ++i)
+        for (uint32_t i = 0; obs->edges != NULL && i < obs->edge_count; ++i)
         {
             point_t A = obs->edges[i].begin;
             point_t B = obs->edges[i].end;
