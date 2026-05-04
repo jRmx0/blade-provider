@@ -64,6 +64,100 @@ static void bounce_context_free(bounce_pipeline_context_t *ctx)
 }
 
 // ---------------------------------------------------------------------------
+// Geometry utilities
+// ---------------------------------------------------------------------------
+
+/**
+ * Ray-casting point-in-polygon test.
+ * Casts a horizontal ray from p in the +X direction and counts boundary
+ * crossings. Returns true when the crossing count is odd (point is inside).
+ *
+ * Edge cases: points exactly on an edge are treated as inside because the
+ * algorithm uses strict < for the lower bound and <= for the upper bound on
+ * Y, which is the standard "top-left" fill convention.
+ */
+static bool bounce_point_in_polygon(point_t p, const polygon_t *polygon)
+{
+    if (polygon->edges == NULL || polygon->edge_count == 0)
+    {
+        return false;
+    }
+
+    int crossings = 0;
+    for (uint32_t i = 0; i < polygon->edge_count; ++i)
+    {
+        point_t A = polygon->edges[i].begin;
+        point_t B = polygon->edges[i].end;
+
+        float minY = A.y < B.y ? A.y : B.y;
+        float maxY = A.y > B.y ? A.y : B.y;
+
+        // The horizontal ray at p.y must cross strictly inside the y-span of
+        // the edge to avoid double-counting shared vertices.
+        if (p.y <= minY || p.y > maxY)
+        {
+            continue;
+        }
+
+        // X coordinate of the edge at y == p.y via linear interpolation.
+        float t = (p.y - A.y) / (B.y - A.y);
+        float xEdge = A.x + t * (B.x - A.x);
+
+        if (xEdge > p.x)
+        {
+            ++crossings;
+        }
+    }
+
+    return (crossings & 1) == 1;
+}
+
+/**
+ * Returns true if p is inside the active environment: inside the boundary
+ * polygon AND outside every obstacle polygon.
+ */
+static bool bounce_point_in_active_env(point_t p, const input_environment_t *env)
+{
+    if (!bounce_point_in_polygon(p, &env->boundary))
+    {
+        return false;
+    }
+    for (uint32_t k = 0; k < env->obstacle_count; ++k)
+    {
+        if (bounce_point_in_polygon(p, &env->obstacles[k]))
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+/**
+ * Simple arithmetic centroid of a polygon's vertices.
+ * Always produces a finite point; for convex polygons it is guaranteed to be
+ * inside the polygon.
+ */
+static point_t bounce_polygon_centroid(const polygon_t *polygon)
+{
+    float cx = 0.0f;
+    float cy = 0.0f;
+
+    if (polygon->vertices == NULL || polygon->vertex_count == 0)
+    {
+        return (point_t){0.0f, 0.0f};
+    }
+
+    for (uint32_t i = 0; i < polygon->vertex_count; ++i)
+    {
+        cx += polygon->vertices[i].x;
+        cy += polygon->vertices[i].y;
+    }
+    cx /= (float)polygon->vertex_count;
+    cy /= (float)polygon->vertex_count;
+    return (point_t){cx, cy};
+}
+
+// ---------------------------------------------------------------------------
 // Stop condition
 // ---------------------------------------------------------------------------
 
@@ -284,11 +378,33 @@ cJSON *bounce_run_pipeline(input_environment_t *environment)
            ctx.current_position.x,
            ctx.current_position.y);
 
+    // Validate that the starting position is inside the active environment.
+    // This can fail when:
+    //   a) headland shrinks the boundary and the original start_point is now
+    //      outside the shrunken zone, or
+    //   b) the caller provided a start_point outside the boundary.
+    // In either case snap to the centroid of the active boundary so that all
+    // subsequent ray casts originate from a known-good interior position.
+    if (!bounce_point_in_active_env(ctx.current_position, ctx.active_env))
+    {
+        point_t centroid = bounce_polygon_centroid(&ctx.active_env->boundary);
+        printf("bounce_run_pipeline: start_point outside active_env — snapping to centroid (%.2f, %.2f)\n",
+               centroid.x, centroid.y);
+        ctx.current_position = centroid;
+    }
+
     // --- Steps 2-5: Main loop ---
+    // Safety cap for consecutive failed ray casts (e.g. origin drifted outside
+    // due to ORIGIN_BIAS nudge near a wall). When hit, snap back to the active
+    // env centroid and reset the hit-normal so the next angle pick is fresh.
+#define BOUNCE_MAX_CONSECUTIVE_RETRIES 32
+    int consecutive_retries = 0;
+
     while (!bounce_targets_reached(&ctx, environment) &&
            (max_iterations == 0u || ctx.metrics.iteration < (int)max_iterations))
     {
-        ctx.metrics.iteration++;
+        // NOTE: ctx.metrics.iteration is incremented only when a segment is
+        // successfully produced below. Retries must not consume the budget.
 
         // --- Step 2: Pick random valid travel angle ---
         bounce_step_status_t angle_status = bounce_pick_angle(&ctx);
@@ -297,10 +413,6 @@ cJSON *bounce_run_pipeline(input_environment_t *environment)
             printf("bounce_run_pipeline: angle selection failed at iteration %d\n",
                    ctx.metrics.iteration);
             break;
-        }
-        if (angle_status == BOUNCE_STEP_RETRY)
-        {
-            continue;
         }
 
         // --- Step 3: Cast ray until collision ---
@@ -314,10 +426,28 @@ cJSON *bounce_run_pipeline(input_environment_t *environment)
         }
         if (ray_status == BOUNCE_STEP_RETRY)
         {
+            ++consecutive_retries;
+            if (consecutive_retries > BOUNCE_MAX_CONSECUTIVE_RETRIES)
+            {
+                // Origin has drifted outside the active environment.
+                // Snap back to a known-good interior point and reset angle state
+                // so the next pick starts fresh rather than reflecting off a
+                // stale normal that may point outward.
+                printf("bounce_run_pipeline: too many retries at iter %d — re-snapping position\n",
+                       ctx.metrics.iteration);
+                ctx.current_position = bounce_polygon_centroid(&ctx.active_env->boundary);
+                ctx.has_hit_normal = false;
+                consecutive_retries = 0;
+            }
             continue;
         }
 
-        // Commit segment and advance current position to the collision point
+        consecutive_retries = 0;
+
+        // Commit segment and advance current position to the collision point.
+        // Only now does the iteration count increment: max_iterations counts
+        // produced segments, not retry attempts.
+        ctx.metrics.iteration++;
         cvector_push_back(ctx.segments, segment);
         ctx.current_position = segment.end;
 

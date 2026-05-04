@@ -90,6 +90,15 @@ typedef struct
     point_t hit_normal;
     bool has_hit_normal;
 
+    // The edge [A, B] that was hit on the previous ray cast.  bounce_cast_ray
+    // skips this edge explicitly so the next ray cannot re-hit the same edge
+    // due to the float-lerp residual in current_position (~0.06 m for Mercator
+    // coordinates), which would otherwise produce a spurious t >> TMIN in
+    // double-precision arithmetic and emit a near-zero backward segment.
+    point_t last_hit_edge_A;
+    point_t last_hit_edge_B;
+    bool has_last_hit_edge;
+
     // --- Output ---
     cvector_vector_type(bounce_segment_t) segments; // Accumulated coverage segments.
 
