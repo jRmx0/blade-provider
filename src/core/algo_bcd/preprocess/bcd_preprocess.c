@@ -18,9 +18,10 @@
  * this threshold along the sweep axis. */
 #define COLLISION_EPSILON 1e-4f
 
-/* Each colliding vertex (after the first in a group) is nudged by a multiple
- * of this step along the sweep axis: rank * COLLISION_NUDGE. */
-#define COLLISION_NUDGE 1e-4f
+/* Guaranteed minimum separation placed between consecutive projections after
+ * resolution.  Using 2× COLLISION_EPSILON ensures the post-nudge gap safely
+ * exceeds the detection threshold even after float32 rounding. */
+#define COLLISION_MIN_SEP (COLLISION_EPSILON * 2.0f)
 
 // TYPES -----------------------------------------------------------
 
@@ -38,10 +39,6 @@ static int collect_projections(input_environment_t *env,
                                vertex_proj_entry_t *entries);
 
 static int compare_proj_entry(const void *a, const void *b);
-
-static void resolve_collision_group(vertex_proj_entry_t *entries,
-                                    int group_start, int group_end,
-                                    float ax, float ay);
 
 static void recompute_adjacent_edges(polygon_t *poly, int vi);
 
@@ -79,23 +76,35 @@ int bcd_preprocess_environment(input_environment_t *env, float sweep_direction_d
     /* Sort by projection along sweep axis. */
     qsort(entries, (size_t)total, sizeof(vertex_proj_entry_t), compare_proj_entry);
 
-    /* Walk sorted array and resolve collision groups. */
-    int i = 0;
-    while (i < total)
+    /* Forward scan: walk sorted entries left-to-right and push any entry whose
+     * projection is too close to the previous one forward by the minimum amount.
+     *
+     * This single O(n) pass resolves arbitrarily long collision chains because:
+     *   - entries are processed in ascending order,
+     *   - entries[i].projection is updated in-place before the (i+1) comparison,
+     *   - so a pushed vertex feeds the correct baseline into the next step.
+     *
+     * COLLISION_MIN_SEP = 2 × COLLISION_EPSILON ensures the resulting gap is
+     * safely above the detection threshold even after float32 rounding. */
+    for (int i = 1; i < total; i++)
     {
-        /* Extend the group as long as projections are within COLLISION_EPSILON
-         * of the group's first entry. */
-        int j = i + 1;
-        while (j < total &&
-               (entries[j].projection - entries[i].projection) < COLLISION_EPSILON)
+        float prev = entries[i - 1].projection;
+        float curr = entries[i].projection;
+
+        if (curr - prev < COLLISION_EPSILON)
         {
-            j++;
+            float target = prev + COLLISION_MIN_SEP;
+            float delta = target - curr;
+
+            polygon_t *poly = entries[i].polygon;
+            int vi = entries[i].vertex_index;
+
+            poly->vertices[vi].x += delta * ax;
+            poly->vertices[vi].y += delta * ay;
+            entries[i].projection = target; /* propagate for next iteration */
+
+            recompute_adjacent_edges(poly, vi);
         }
-
-        if (j - i >= 2)
-            resolve_collision_group(entries, i, j, ax, ay);
-
-        i = j;
     }
 
     va_free(entries);
@@ -146,28 +155,6 @@ static int compare_proj_entry(const void *a, const void *b)
     if (va->projection > vb->projection)
         return 1;
     return 0;
-}
-
-static void resolve_collision_group(vertex_proj_entry_t *entries,
-                                    int group_start, int group_end,
-                                    float ax, float ay)
-{
-    /* The first entry in the group keeps its position.
-     * Each subsequent entry is nudged by rank * COLLISION_NUDGE along the
-     * sweep axis: 1*nudge, 2*nudge, 3*nudge, … */
-    for (int k = group_start + 1; k < group_end; k++)
-    {
-        int rank = k - group_start; /* 1, 2, 3, … */
-        float nudge = (float)rank * COLLISION_NUDGE;
-
-        polygon_t *poly = entries[k].polygon;
-        int vi = entries[k].vertex_index;
-
-        poly->vertices[vi].x += nudge * ax;
-        poly->vertices[vi].y += nudge * ay;
-
-        recompute_adjacent_edges(poly, vi);
-    }
 }
 
 static void recompute_adjacent_edges(polygon_t *poly, int vi)

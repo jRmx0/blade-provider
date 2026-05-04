@@ -433,7 +433,7 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 
 	if (env->headland)
 	{
-		va_tracking_mark("Pakraštys");
+		va_tracking_mark("Galūlaukiai");
 		int hrc = compute_headland(env, &headland);
 		if (hrc != 0)
 		{
