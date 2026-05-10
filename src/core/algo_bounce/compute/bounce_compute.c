@@ -19,7 +19,6 @@
 #include <stdlib.h>
 #include <time.h>
 
-#include "steps/bounce_headland_step.c"
 #include "steps/bounce_angle_step.c"
 #include "steps/bounce_ray_step.c"
 #include "steps/bounce_metrics_step.c"

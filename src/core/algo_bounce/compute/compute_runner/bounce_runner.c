@@ -4,12 +4,11 @@
  * Implements the Bounce pipeline loop.
  *
  * Algorithm steps per iteration:
- *   1. (Once) Apply headland conversion when environment->headland == true.
- *   2. Pick a random valid travel angle.
- *   3. Cast a straight ray from the current position until boundary/obstacle collision.
- *   4. Update cumulative path length and coverage estimate.
- *   5. Repeat steps 2-4 until a stop condition is met.
- *   6. Serialize and return the coverage path result.
+ *   1. Pick a random valid travel angle.
+ *   2. Cast a straight ray from the current position until boundary/obstacle collision.
+ *   3. Update cumulative path length and coverage estimate.
+ *   4. Repeat steps 1-3 until a stop condition is met.
+ *   5. Serialize and return the coverage path result.
  *
  * Stop condition: stop when the first configured target is reached among
  * target_distance, target_coverage, and max_iterations.
@@ -18,7 +17,6 @@
  */
 
 #include "bounce_runner.h"
-#include "../steps/bounce_headland_step.h"
 #include "../steps/bounce_angle_step.h"
 #include "../steps/bounce_ray_step.h"
 #include "../steps/bounce_metrics_step.h"
@@ -35,7 +33,6 @@ static void bounce_context_init(bounce_pipeline_context_t *ctx, input_environmen
     memset(ctx, 0, sizeof(bounce_pipeline_context_t));
     ctx->original_env = env;
     ctx->active_env = env;
-    ctx->has_headland = false;
     ctx->angle_initialized = false;
     ctx->current_position = env->start_point;
     ctx->segments = NULL;
@@ -50,11 +47,6 @@ static void bounce_context_free(bounce_pipeline_context_t *ctx)
     {
         cvector_free(ctx->segments);
         ctx->segments = NULL;
-    }
-    if (ctx->has_headland)
-    {
-        free_headland(&ctx->headland);
-        ctx->has_headland = false;
     }
     if (ctx->coverage_grid.cells != NULL)
     {
@@ -262,89 +254,6 @@ static cJSON *bounce_serialize_result(const bounce_pipeline_context_t *ctx)
         cJSON_AddItemToObject(root, "debug", debug);
     }
 
-    // Headland debug layers (populated only when headland was applied)
-    if (ctx->has_headland && debug_layers != NULL)
-    {
-        // Shrunken zone border (id=13)
-        {
-            cJSON *layer = cJSON_CreateObject();
-            if (layer != NULL)
-            {
-                cJSON_AddNumberToObject(layer, "id", 13);
-                cJSON_AddStringToObject(layer, "source", "headlandShrunkenZoneBorder");
-                cJSON *list = cJSON_CreateArray();
-                if (list != NULL)
-                {
-                    if (ctx->headland.shrunken_zone.vertices != NULL &&
-                        ctx->headland.shrunken_zone.vertex_count > 0)
-                    {
-                        cJSON *entry = cJSON_CreateObject();
-                        cJSON *vertices = cJSON_CreateArray();
-                        if (entry != NULL && vertices != NULL)
-                        {
-                            cJSON_AddNumberToObject(entry, "id", 1);
-                            for (uint32_t j = 0; j < ctx->headland.shrunken_zone.vertex_count; ++j)
-                            {
-                                cJSON *jpt = cJSON_CreateObject();
-                                if (jpt != NULL)
-                                {
-                                    cJSON_AddNumberToObject(jpt, "x", ctx->headland.shrunken_zone.vertices[j].x);
-                                    cJSON_AddNumberToObject(jpt, "y", ctx->headland.shrunken_zone.vertices[j].y);
-                                    cJSON_AddItemToArray(vertices, jpt);
-                                }
-                            }
-                            cJSON_AddItemToObject(entry, "vertices", vertices);
-                            cJSON_AddItemToArray(list, entry);
-                        }
-                    }
-                    cJSON_AddItemToObject(layer, "list", list);
-                }
-                cJSON_AddItemToArray(debug_layers, layer);
-            }
-        }
-
-        // Expanded obstacle borders (id=14)
-        {
-            cJSON *layer = cJSON_CreateObject();
-            if (layer != NULL)
-            {
-                cJSON_AddNumberToObject(layer, "id", 14);
-                cJSON_AddStringToObject(layer, "source", "headlandExpandedObstacleBorders");
-                cJSON *list = cJSON_CreateArray();
-                if (list != NULL)
-                {
-                    for (uint32_t k = 0; k < ctx->headland.expanded_obstacle_count; ++k)
-                    {
-                        const polygon_t *obs = &ctx->headland.expanded_obstacles[k];
-                        if (obs->vertices == NULL || obs->vertex_count == 0)
-                            continue;
-
-                        cJSON *entry = cJSON_CreateObject();
-                        cJSON *vertices = cJSON_CreateArray();
-                        if (entry != NULL && vertices != NULL)
-                        {
-                            cJSON_AddNumberToObject(entry, "id", (double)(k + 1));
-                            for (uint32_t j = 0; j < obs->vertex_count; ++j)
-                            {
-                                cJSON *jpt = cJSON_CreateObject();
-                                if (jpt != NULL)
-                                {
-                                    cJSON_AddNumberToObject(jpt, "x", obs->vertices[j].x);
-                                    cJSON_AddNumberToObject(jpt, "y", obs->vertices[j].y);
-                                    cJSON_AddItemToArray(vertices, jpt);
-                                }
-                            }
-                            cJSON_AddItemToObject(entry, "vertices", vertices);
-                            cJSON_AddItemToArray(list, entry);
-                        }
-                    }
-                    cJSON_AddItemToObject(layer, "list", list);
-                }
-                cJSON_AddItemToArray(debug_layers, layer);
-            }
-        }
-    }
-
     return root;
 }
 
@@ -358,37 +267,14 @@ cJSON *bounce_run_pipeline(input_environment_t *environment)
     bounce_context_init(&ctx, environment);
     uint32_t max_iterations = environment->max_iterations;
 
-    // --- Step 1: Apply headland (once, before the loop) ---
-    bounce_step_status_t hl_status = bounce_apply_headland(environment, &ctx);
-    if (hl_status == BOUNCE_STEP_FAIL)
-    {
-        bounce_context_free(&ctx);
-        cJSON *err = cJSON_CreateObject();
-        if (err != NULL)
-        {
-            cJSON_AddStringToObject(err, "status", "error");
-            cJSON_AddStringToObject(err, "code", "headland_failed");
-            cJSON_AddStringToObject(err, "message", "Bounce headland conversion failed.");
-        }
-        return err;
-    }
-
-    printf("bounce_run_pipeline: headland=%s, start=(%.2f, %.2f)\n",
-           ctx.has_headland ? "applied" : "skipped",
-           ctx.current_position.x,
-           ctx.current_position.y);
-
-    // Validate that the starting position is inside the active environment.
-    // This can fail when:
-    //   a) headland shrinks the boundary and the original start_point is now
-    //      outside the shrunken zone, or
-    //   b) the caller provided a start_point outside the boundary.
-    // In either case snap to the centroid of the active boundary so that all
-    // subsequent ray casts originate from a known-good interior position.
+    // Validate that the starting position is inside the boundary.
+    // If the caller provided a start_point outside the boundary,
+    // snap to the centroid so that all subsequent ray casts originate
+    // from a known-good interior position.
     if (!bounce_point_in_active_env(ctx.current_position, ctx.active_env))
     {
         point_t centroid = bounce_polygon_centroid(&ctx.active_env->boundary);
-        printf("bounce_run_pipeline: start_point outside active_env — snapping to centroid (%.2f, %.2f)\n",
+        printf("bounce_run_pipeline: start_point outside boundary — snapping to centroid (%.2f, %.2f)\n",
                centroid.x, centroid.y);
         ctx.current_position = centroid;
     }
@@ -429,7 +315,7 @@ cJSON *bounce_run_pipeline(input_environment_t *environment)
             ++consecutive_retries;
             if (consecutive_retries > BOUNCE_MAX_CONSECUTIVE_RETRIES)
             {
-                // Origin has drifted outside the active environment.
+                // Origin has drifted outside the boundary due to float-lerp residuals.
                 // Snap back to a known-good interior point and reset angle state
                 // so the next pick starts fresh rather than reflecting off a
                 // stale normal that may point outward.

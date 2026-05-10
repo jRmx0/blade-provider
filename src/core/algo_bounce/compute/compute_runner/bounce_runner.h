@@ -13,7 +13,6 @@
 #include "../../internal.h"
 #include "../../../../../dependencies/cJSON/cJSON.h"
 #include "../../../../../dependencies/cvector/cvector.h"
-#include "../../../common/headland.h"
 
 // ---------------------------------------------------------------------------
 // Step status
@@ -72,12 +71,7 @@ typedef struct
     // --- Input ---
     input_environment_t *original_env; // Pre-validated environment passed to the runner.
 
-    // --- Headland state ---
-    headland_t headland;              // Populated when headland is applied.
-    input_environment_t headland_env; // Shallow wrapper pointing at headland geometry.
-    bool has_headland;
-
-    // --- Active environment (points to original_env or headland_env) ---
+    // --- Active environment ---
     input_environment_t *active_env;
 
     // --- Loop state ---

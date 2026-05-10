@@ -251,8 +251,7 @@ void bounce_update_metrics(bounce_pipeline_context_t *ctx,
     float dy = segment->end.y - segment->start.y;
     ctx->metrics.total_distance += sqrtf(dx * dx + dy * dy);
 
-    // Build the coverage grid once from the original AOI so headland only
-    // constrains path generation, not the denominator of coverage ratio.
+    // Build the coverage grid once from the original AOI.
     if (!ctx->coverage_grid_ready)
     {
         bounce_coverage_grid_build(&ctx->coverage_grid, ctx->original_env);

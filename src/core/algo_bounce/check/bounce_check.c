@@ -11,14 +11,11 @@ static void bounce_init_environment(input_environment_t *environment)
 	{
 		environment->id = 0;
 		environment->path_width = 0.0f;
-		environment->path_overlap = 0.0f;
-		environment->headland_coverage_offset = 0.0f;
 		environment->bounce_offset = 0.0f;
 		environment->target_coverage = 0.0f;
 		environment->target_distance = 0.0f;
 		environment->max_iterations = 0u;
 		environment->track_memory_usage = false;
-		environment->headland = false;
 		environment->start_point.x = 0.0f;
 		environment->start_point.y = 0.0f;
 		environment->end_point.x = 0.0f;
@@ -409,20 +406,6 @@ bool bounce_check_request_json(const char *request_json, input_environment_t *en
 		{
 			environment->target_distance = 0.0f;
 		}
-		// Headland parameter (boolean: whether to enable headland computation)
-		cJSON *headland = cJSON_GetObjectItemCaseSensitive(parameters, "Headland");
-		if (headland == NULL)
-			headland = cJSON_GetObjectItemCaseSensitive(parameters, "headland");
-
-		if (headland != NULL && cJSON_IsBool(headland))
-		{
-			environment->headland = cJSON_IsTrue(headland);
-		}
-		else
-		{
-			environment->headland = true;
-		}
-
 		// Bounce Offset parameter (in %, 0-100)
 		cJSON *bounce_offset = cJSON_GetObjectItemCaseSensitive(parameters, "Bounce Offset");
 		if (bounce_offset == NULL)
@@ -485,23 +468,18 @@ bool bounce_check_request_json(const char *request_json, input_environment_t *en
 			environment->max_iterations = 0u;
 		}
 
-		// Initialize other required fields for headland computation
-		environment->path_overlap = 0.0f;
-		environment->headland_coverage_offset = 0.0f;
+		// Initialize other required fields
 		environment->track_memory_usage = false;
 	}
 	else
 	{
 		// Use defaults if parameters not provided
 		environment->path_width = 15.0f;
-		environment->headland = true;
 		environment->bounce_offset = 0.0f;
 		environment->target_coverage = 0.0f;
 		environment->target_distance = 0.0f;
 		environment->max_iterations = 0u;
 		environment->starting_angle = -1.0f;
-		environment->path_overlap = 0.0f;
-		environment->headland_coverage_offset = 0.0f;
 		environment->track_memory_usage = false;
 	}
 
