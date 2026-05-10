@@ -71,6 +71,10 @@ typedef struct
 
     polygon_t *obstacles;
     uint32_t obstacle_count;
+
+    polygon_t realworld_boundary;
+    polygon_t *realworld_obstacles;
+    uint32_t realworld_obstacle_count;
 } input_environment_t;
 
 // polygon_t lifecycle

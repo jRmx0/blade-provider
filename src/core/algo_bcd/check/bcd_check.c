@@ -27,6 +27,13 @@ static void bcd_init_environment(input_environment_t *environment)
 	environment->start_point.y = 0.0f;
 	environment->end_point.x = 0.0f;
 	environment->end_point.y = 0.0f;
+	environment->realworld_boundary.winding = POLYGON_WINDING_UNKNOWN;
+	environment->realworld_boundary.vertices = NULL;
+	environment->realworld_boundary.vertex_count = 0;
+	environment->realworld_boundary.edges = NULL;
+	environment->realworld_boundary.edge_count = 0;
+	environment->realworld_obstacles = NULL;
+	environment->realworld_obstacle_count = 0;
 }
 
 static void bcd_set_result(bcd_check_result_t *result, bool ok, const char *code, const char *message)
@@ -536,6 +543,17 @@ void free_input_environment(input_environment_t *environment)
 	}
 
 	environment->obstacle_count = 0;
+	free_polygon(&environment->realworld_boundary);
+	if (environment->realworld_obstacles != NULL)
+	{
+		for (uint32_t index = 0; index < environment->realworld_obstacle_count; ++index)
+		{
+			free_polygon(&environment->realworld_obstacles[index]);
+		}
+		va_free(environment->realworld_obstacles);
+		environment->realworld_obstacles = NULL;
+	}
+	environment->realworld_obstacle_count = 0;
 	environment->path_width = 0.0f;
 	environment->path_overlap = 0.0f;
 	environment->id = 0;

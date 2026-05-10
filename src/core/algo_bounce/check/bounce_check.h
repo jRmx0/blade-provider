@@ -30,6 +30,18 @@ static inline void bounce_free_input_environment(input_environment_t *env)
         env->obstacles = NULL;
     }
     env->obstacle_count = 0;
+
+    free_polygon(&env->realworld_boundary);
+    if (env->realworld_obstacles != NULL)
+    {
+        for (uint32_t i = 0; i < env->realworld_obstacle_count; i++)
+        {
+            free_polygon(&env->realworld_obstacles[i]);
+        }
+        va_free(env->realworld_obstacles);
+        env->realworld_obstacles = NULL;
+    }
+    env->realworld_obstacle_count = 0;
 }
 
 #endif // BOUNCE_CHECK_H

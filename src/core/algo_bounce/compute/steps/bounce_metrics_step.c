@@ -4,9 +4,10 @@
  * Step 4: Updates cumulative path metrics after a segment is committed.
  *
  * Coverage ratio method — grid-based capsule marking:
- *   1. On the first call an AOI cell grid is built over the original (full)
- *      environment bounding box. Each cell is valid if its centre lies inside
- *      the original boundary and outside the original obstacles.
+ *   1. On the first call an AOI cell grid is built over the realworld bounding
+ *      box when available, otherwise the transformed environment bounding box.
+ *      Each cell is valid if its centre lies inside the selected boundary and
+ *      outside the selected obstacles.
  *   2. Per segment: every valid cell whose centre is within path_width/2 of
  *      the segment line (capsule footprint) is marked covered. A cell is
  *      counted at most once regardless of how many segments pass over it.
@@ -91,19 +92,34 @@ static void bounce_coverage_grid_build(bounce_coverage_grid_t *grid,
 {
     memset(grid, 0, sizeof(bounce_coverage_grid_t));
 
-    if (env == NULL || env->boundary.vertices == NULL ||
-        env->boundary.vertex_count < 3)
+    if (env == NULL)
+        return;
+
+    const polygon_t *boundary = &env->boundary;
+    const polygon_t *obstacles = env->obstacles;
+    uint32_t obstacle_count = env->obstacle_count;
+
+    if (env->realworld_boundary.vertices != NULL && env->realworld_boundary.vertex_count >= 3)
+        boundary = &env->realworld_boundary;
+
+    if (env->realworld_obstacles != NULL && env->realworld_obstacle_count > 0)
+    {
+        obstacles = env->realworld_obstacles;
+        obstacle_count = env->realworld_obstacle_count;
+    }
+
+    if (boundary->vertices == NULL || boundary->vertex_count < 3)
         return;
 
     // Boundary bounding box.
-    float min_x = env->boundary.vertices[0].x;
+    float min_x = boundary->vertices[0].x;
     float max_x = min_x;
-    float min_y = env->boundary.vertices[0].y;
+    float min_y = boundary->vertices[0].y;
     float max_y = min_y;
-    for (uint32_t i = 1; i < env->boundary.vertex_count; ++i)
+    for (uint32_t i = 1; i < boundary->vertex_count; ++i)
     {
-        float x = env->boundary.vertices[i].x;
-        float y = env->boundary.vertices[i].y;
+        float x = boundary->vertices[i].x;
+        float y = boundary->vertices[i].y;
         if (x < min_x)
             min_x = x;
         if (x > max_x)
@@ -152,18 +168,18 @@ static void bounce_coverage_grid_build(bounce_coverage_grid_t *grid,
                 grid->origin_y + ((float)row + 0.5f) * grid->cell_size};
 
             if (!bounce_metrics_point_in_polygon(center,
-                                                 env->boundary.vertices,
-                                                 env->boundary.vertex_count))
+                                                 boundary->vertices,
+                                                 boundary->vertex_count))
                 continue;
 
             bool blocked = false;
-            for (uint32_t k = 0; !blocked && k < env->obstacle_count; ++k)
+            for (uint32_t k = 0; !blocked && k < obstacle_count; ++k)
             {
-                if (env->obstacles[k].vertices != NULL &&
-                    env->obstacles[k].vertex_count >= 3 &&
+                if (obstacles[k].vertices != NULL &&
+                    obstacles[k].vertex_count >= 3 &&
                     bounce_metrics_point_in_polygon(center,
-                                                    env->obstacles[k].vertices,
-                                                    env->obstacles[k].vertex_count))
+                                                    obstacles[k].vertices,
+                                                    obstacles[k].vertex_count))
                     blocked = true;
             }
             if (blocked)

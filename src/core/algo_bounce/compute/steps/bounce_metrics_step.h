@@ -5,10 +5,11 @@
  *
  * - Increments ctx->metrics.total_distance by the Euclidean segment length.
  * - Updates ctx->metrics.estimated_coverage using a grid-based capsule method:
- *   An AOI cell grid is built lazily from the original full environment on the
- *   first call. For each segment, cells within (path_width / 2) of the segment
- *   line are marked covered (capsule footprint). Each cell is counted at most
- *   once. estimated_coverage = (covered_cells / valid_cells) * 100.
+ *   An AOI cell grid is built lazily from the realworld geometry when present,
+ *   otherwise from the transformed environment on the first call. For each
+ *   segment, cells within (path_width / 2) of the segment line are marked
+ *   covered (capsule footprint). Each cell is counted at most once.
+ *   estimated_coverage = (covered_cells / valid_cells) * 100.
  *
  * Cell size = path_width / 6, auto-scaled to stay within a 1 M cell budget.
  */
