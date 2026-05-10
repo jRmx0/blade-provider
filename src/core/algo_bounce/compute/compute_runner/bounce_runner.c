@@ -23,6 +23,13 @@
 
 #include <string.h>
 #include <stdio.h>
+#include <float.h>
+
+#define BOUNCE_MAX_CONSECUTIVE_RETRIES 32
+#define BOUNCE_MAX_TOTAL_ATTEMPTS 600000
+#define BOUNCE_MAX_SEGMENTS_HARD_CAP 100000
+#define BOUNCE_VALIDATION_DEBUG_EARLY_LIMIT 12
+#define BOUNCE_VALIDATION_DEBUG_PERIOD 5000
 
 // ---------------------------------------------------------------------------
 // Context lifecycle
@@ -125,6 +132,29 @@ static bool bounce_point_in_active_env(point_t p, const input_environment_t *env
 }
 
 /**
+ * Returns true if p is inside the provided geometry set: inside boundary
+ * polygon AND outside every obstacle polygon.
+ */
+static bool bounce_point_in_geometry(point_t p,
+                                     const polygon_t *boundary,
+                                     const polygon_t *obstacles,
+                                     uint32_t obstacle_count)
+{
+    if (boundary == NULL || !bounce_point_in_polygon(p, boundary))
+    {
+        return false;
+    }
+    for (uint32_t k = 0; k < obstacle_count; ++k)
+    {
+        if (obstacles != NULL && bounce_point_in_polygon(p, &obstacles[k]))
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+/**
  * Simple arithmetic centroid of a polygon's vertices.
  * Always produces a finite point; for convex polygons it is guaranteed to be
  * inside the polygon.
@@ -147,6 +177,276 @@ static point_t bounce_polygon_centroid(const polygon_t *polygon)
     cx /= (float)polygon->vertex_count;
     cy /= (float)polygon->vertex_count;
     return (point_t){cx, cy};
+}
+
+/**
+ * Finds a safe point in the active environment (inside boundary and outside
+ * obstacles), preferring points near `preferred`.
+ *
+ * Strategy:
+ *   1) If preferred is already safe, return it.
+ *   2) Grid-sample boundary bounding box (coarse then fine) and pick the
+ *      closest safe sample to preferred.
+ */
+static bool bounce_find_safe_point_in_active_env(const input_environment_t *env,
+                                                 point_t preferred,
+                                                 point_t *out_point)
+{
+    if (env == NULL || out_point == NULL || env->boundary.vertices == NULL || env->boundary.vertex_count < 3)
+    {
+        return false;
+    }
+
+    if (bounce_point_in_active_env(preferred, env))
+    {
+        *out_point = preferred;
+        return true;
+    }
+
+    float min_x = env->boundary.vertices[0].x;
+    float max_x = min_x;
+    float min_y = env->boundary.vertices[0].y;
+    float max_y = min_y;
+    for (uint32_t i = 1; i < env->boundary.vertex_count; ++i)
+    {
+        float x = env->boundary.vertices[i].x;
+        float y = env->boundary.vertices[i].y;
+        if (x < min_x)
+            min_x = x;
+        if (x > max_x)
+            max_x = x;
+        if (y < min_y)
+            min_y = y;
+        if (y > max_y)
+            max_y = y;
+    }
+
+    const int passes[2] = {31, 61};
+    float best_d2 = FLT_MAX;
+    point_t best = preferred;
+    bool found = false;
+
+    for (int p = 0; p < 2; ++p)
+    {
+        int steps = passes[p];
+        float dx = (max_x - min_x) / (float)steps;
+        float dy = (max_y - min_y) / (float)steps;
+        if (dx < 1e-3f)
+            dx = 1.0f;
+        if (dy < 1e-3f)
+            dy = 1.0f;
+
+        for (int iy = 0; iy <= steps; ++iy)
+        {
+            for (int ix = 0; ix <= steps; ++ix)
+            {
+                point_t c = {min_x + (float)ix * dx, min_y + (float)iy * dy};
+                if (!bounce_point_in_active_env(c, env))
+                {
+                    continue;
+                }
+
+                float ddx = c.x - preferred.x;
+                float ddy = c.y - preferred.y;
+                float d2 = ddx * ddx + ddy * ddy;
+                if (!found || d2 < best_d2)
+                {
+                    best = c;
+                    best_d2 = d2;
+                    found = true;
+                }
+            }
+        }
+
+        if (found)
+        {
+            *out_point = best;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+// ---------------------------------------------------------------------------
+// Segment validation against realworld geometry
+// ---------------------------------------------------------------------------
+
+/**
+ * Check if two line segments intersect in their interiors (not at endpoints).
+ *
+ * Segment 1: A + s*(B-A), s in [0,1]
+ * Segment 2 (edge): P + t*(Q-P), t in [0,1]
+ *
+ * Uses parametric form and double-precision cross products to avoid
+ * catastrophic cancellation on large coordinates.
+ *
+ * Returns true if segments intersect in their interiors.
+ */
+static bool segment_intersects_edge(point_t A, point_t B, point_t P, point_t Q)
+{
+    double ABx = (double)B.x - (double)A.x;
+    double ABy = (double)B.y - (double)A.y;
+
+    double PQx = (double)Q.x - (double)P.x;
+    double PQy = (double)Q.y - (double)P.y;
+
+    double APx = (double)P.x - (double)A.x;
+    double APy = (double)P.y - (double)A.y;
+
+    // Cross products for parametric solution
+    double denom = ABx * PQy - ABy * PQx;
+    if (denom < 1e-12 && denom > -1e-12)
+    {
+        return false; // Segments are parallel or collinear
+    }
+
+    // Solve for s (parameter on segment AB) and t (parameter on edge PQ)
+    double s = (APx * PQy - APy * PQx) / denom;
+    double t = (APx * ABy - APy * ABx) / denom;
+
+    // Intersection in interior of both segments (excluding endpoints)
+    // Using strict inequalities: 0 < s < 1 and 0 < t < 1
+    // This avoids false positives at shared vertices.
+    return s > 1e-6 && s < 1.0 - 1e-6 && t > 1e-6 && t < 1.0 - 1e-6;
+}
+
+typedef enum
+{
+    BOUNCE_SEGMENT_VALIDATION_OK = 0,
+    BOUNCE_SEGMENT_VALIDATION_INVALID_GEOMETRY,
+    BOUNCE_SEGMENT_VALIDATION_START_OUTSIDE_BOUNDARY,
+    BOUNCE_SEGMENT_VALIDATION_END_OUTSIDE_BOUNDARY,
+    BOUNCE_SEGMENT_VALIDATION_START_INSIDE_OBSTACLE,
+    BOUNCE_SEGMENT_VALIDATION_END_INSIDE_OBSTACLE,
+    BOUNCE_SEGMENT_VALIDATION_CROSSES_BOUNDARY_EDGE,
+    BOUNCE_SEGMENT_VALIDATION_CROSSES_OBSTACLE_EDGE,
+} bounce_segment_validation_reason_t;
+
+static const char *bounce_segment_validation_reason_str(bounce_segment_validation_reason_t reason)
+{
+    switch (reason)
+    {
+    case BOUNCE_SEGMENT_VALIDATION_OK:
+        return "ok";
+    case BOUNCE_SEGMENT_VALIDATION_INVALID_GEOMETRY:
+        return "invalid_geometry";
+    case BOUNCE_SEGMENT_VALIDATION_START_OUTSIDE_BOUNDARY:
+        return "start_outside_boundary";
+    case BOUNCE_SEGMENT_VALIDATION_END_OUTSIDE_BOUNDARY:
+        return "end_outside_boundary";
+    case BOUNCE_SEGMENT_VALIDATION_START_INSIDE_OBSTACLE:
+        return "start_inside_obstacle";
+    case BOUNCE_SEGMENT_VALIDATION_END_INSIDE_OBSTACLE:
+        return "end_inside_obstacle";
+    case BOUNCE_SEGMENT_VALIDATION_CROSSES_BOUNDARY_EDGE:
+        return "crosses_boundary_edge";
+    case BOUNCE_SEGMENT_VALIDATION_CROSSES_OBSTACLE_EDGE:
+        return "crosses_obstacle_edge";
+    default:
+        return "unknown";
+    }
+}
+
+static bool bounce_validate_segment_with_reason(
+    point_t p1, point_t p2,
+    const polygon_t *boundary,
+    const polygon_t *obstacles,
+    uint32_t obstacle_count,
+    bounce_segment_validation_reason_t *reason_out,
+    uint32_t *obstacle_index_out,
+    uint32_t *edge_index_out)
+{
+    if (reason_out != NULL)
+        *reason_out = BOUNCE_SEGMENT_VALIDATION_OK;
+    if (obstacle_index_out != NULL)
+        *obstacle_index_out = UINT32_MAX;
+    if (edge_index_out != NULL)
+        *edge_index_out = UINT32_MAX;
+
+    if (boundary == NULL || boundary->vertices == NULL || boundary->vertex_count < 3 || boundary->edges == NULL)
+    {
+        if (reason_out != NULL)
+            *reason_out = BOUNCE_SEGMENT_VALIDATION_INVALID_GEOMETRY;
+        return false;
+    }
+
+    if (!bounce_point_in_polygon(p1, boundary))
+    {
+        if (reason_out != NULL)
+            *reason_out = BOUNCE_SEGMENT_VALIDATION_START_OUTSIDE_BOUNDARY;
+        return false;
+    }
+
+    if (!bounce_point_in_polygon(p2, boundary))
+    {
+        if (reason_out != NULL)
+            *reason_out = BOUNCE_SEGMENT_VALIDATION_END_OUTSIDE_BOUNDARY;
+        return false;
+    }
+
+    for (uint32_t k = 0; k < obstacle_count; ++k)
+    {
+        if (obstacles == NULL || obstacles[k].vertices == NULL || obstacles[k].vertex_count < 3)
+        {
+            continue;
+        }
+        if (bounce_point_in_polygon(p1, &obstacles[k]))
+        {
+            if (reason_out != NULL)
+                *reason_out = BOUNCE_SEGMENT_VALIDATION_START_INSIDE_OBSTACLE;
+            if (obstacle_index_out != NULL)
+                *obstacle_index_out = k;
+            return false;
+        }
+        if (bounce_point_in_polygon(p2, &obstacles[k]))
+        {
+            if (reason_out != NULL)
+                *reason_out = BOUNCE_SEGMENT_VALIDATION_END_INSIDE_OBSTACLE;
+            if (obstacle_index_out != NULL)
+                *obstacle_index_out = k;
+            return false;
+        }
+    }
+
+    for (uint32_t i = 0; i < boundary->edge_count; ++i)
+    {
+        if (segment_intersects_edge(p1, p2,
+                                    boundary->edges[i].begin,
+                                    boundary->edges[i].end))
+        {
+            if (reason_out != NULL)
+                *reason_out = BOUNCE_SEGMENT_VALIDATION_CROSSES_BOUNDARY_EDGE;
+            if (edge_index_out != NULL)
+                *edge_index_out = i;
+            return false;
+        }
+    }
+
+    for (uint32_t k = 0; k < obstacle_count; ++k)
+    {
+        if (obstacles == NULL || obstacles[k].vertices == NULL || obstacles[k].vertex_count < 3 || obstacles[k].edges == NULL)
+        {
+            continue;
+        }
+        for (uint32_t i = 0; i < obstacles[k].edge_count; ++i)
+        {
+            if (segment_intersects_edge(p1, p2,
+                                        obstacles[k].edges[i].begin,
+                                        obstacles[k].edges[i].end))
+            {
+                if (reason_out != NULL)
+                    *reason_out = BOUNCE_SEGMENT_VALIDATION_CROSSES_OBSTACLE_EDGE;
+                if (obstacle_index_out != NULL)
+                    *obstacle_index_out = k;
+                if (edge_index_out != NULL)
+                    *edge_index_out = i;
+                return false;
+            }
+        }
+    }
+
+    return true;
 }
 
 // ---------------------------------------------------------------------------
@@ -266,29 +566,63 @@ cJSON *bounce_run_pipeline(input_environment_t *environment)
     bounce_pipeline_context_t ctx;
     bounce_context_init(&ctx, environment);
     uint32_t max_iterations = environment->max_iterations;
+    bool use_realworld_validation =
+        (ctx.active_env->realworld_boundary.vertices != NULL &&
+         ctx.active_env->realworld_boundary.vertex_count >= 3);
 
-    // Validate that the starting position is inside the boundary.
-    // If the caller provided a start_point outside the boundary,
-    // snap to the centroid so that all subsequent ray casts originate
-    // from a known-good interior position.
+    // Validate that the starting position is inside active environment
+    // (inside boundary and outside obstacles). If not, snap to a safe point.
     if (!bounce_point_in_active_env(ctx.current_position, ctx.active_env))
     {
-        point_t centroid = bounce_polygon_centroid(&ctx.active_env->boundary);
-        printf("bounce_run_pipeline: start_point outside boundary — snapping to centroid (%.2f, %.2f)\n",
-               centroid.x, centroid.y);
-        ctx.current_position = centroid;
+        point_t preferred = bounce_polygon_centroid(&ctx.active_env->boundary);
+        point_t safe = preferred;
+        if (bounce_find_safe_point_in_active_env(ctx.active_env, preferred, &safe))
+        {
+            printf("bounce_run_pipeline: start_point invalid (outside boundary or inside obstacle) — snapping to safe point (%.2f, %.2f)\n",
+                   safe.x, safe.y);
+            ctx.current_position = safe;
+        }
+        else
+        {
+            printf("bounce_run_pipeline: unable to find safe start point in environment\n");
+        }
+    }
+
+    // Realworld validation only works when path points and realworld geometry
+    // share the same coordinate frame. If the current point is not inside
+    // realworld while inside active env, treat it as a frame mismatch and
+    // fall back to active-environment validation to avoid retry deadlock.
+    if (use_realworld_validation &&
+        !bounce_point_in_geometry(ctx.current_position,
+                                  &ctx.active_env->realworld_boundary,
+                                  ctx.active_env->realworld_obstacles,
+                                  ctx.active_env->realworld_obstacle_count))
+    {
+        use_realworld_validation = false;
+        printf("bounce_run_pipeline: realworld validation disabled (current position not in realworld geometry); falling back to environment validation\n");
     }
 
     // --- Steps 2-5: Main loop ---
-    // Safety cap for consecutive failed ray casts (e.g. origin drifted outside
-    // due to ORIGIN_BIAS nudge near a wall). When hit, snap back to the active
-    // env centroid and reset the hit-normal so the next angle pick is fresh.
-#define BOUNCE_MAX_CONSECUTIVE_RETRIES 32
+    // Safety caps:
+    // - consecutive retries: recover from local numeric drift
+    // - total attempts: prevents endless retry loops from running forever
+    // - segment hard cap (when max_iterations is unset): bounds peak memory use
     int consecutive_retries = 0;
+    int total_attempts = 0;
 
     while (!bounce_targets_reached(&ctx, environment) &&
-           (max_iterations == 0u || ctx.metrics.iteration < (int)max_iterations))
+           ((max_iterations == 0u)
+                ? (ctx.metrics.iteration < BOUNCE_MAX_SEGMENTS_HARD_CAP)
+                : (ctx.metrics.iteration < (int)max_iterations)))
     {
+        ++total_attempts;
+        if (total_attempts > BOUNCE_MAX_TOTAL_ATTEMPTS)
+        {
+            printf("bounce_run_pipeline: aborting after %d total attempts (memory/loop safety cap)\n",
+                   total_attempts);
+            break;
+        }
+
         // NOTE: ctx.metrics.iteration is incremented only when a segment is
         // successfully produced below. Retries must not consume the budget.
 
@@ -321,7 +655,14 @@ cJSON *bounce_run_pipeline(input_environment_t *environment)
                 // stale normal that may point outward.
                 printf("bounce_run_pipeline: too many retries at iter %d — re-snapping position\n",
                        ctx.metrics.iteration);
-                ctx.current_position = bounce_polygon_centroid(&ctx.active_env->boundary);
+                point_t preferred = bounce_polygon_centroid(&ctx.active_env->boundary);
+                point_t safe = preferred;
+                if (bounce_find_safe_point_in_active_env(ctx.active_env, preferred, &safe))
+                {
+                    ctx.current_position = safe;
+                    printf("bounce_run_pipeline: re-snapped to safe point (%.2f, %.2f)\n",
+                           safe.x, safe.y);
+                }
                 ctx.has_hit_normal = false;
                 consecutive_retries = 0;
             }
@@ -330,9 +671,108 @@ cJSON *bounce_run_pipeline(input_environment_t *environment)
 
         consecutive_retries = 0;
 
+        // --- Step 3b: Validate generated segment stays inside realworld geometry ---
+        // Validates that the entire segment (not just endpoints) stays within realworld
+        // geometry. Realworld geometry is the original, un-transformed zone boundary
+        // and obstacles. This comprehensive check ensures:
+        //   1. Both endpoints are inside the boundary
+        //   2. Both endpoints are outside all obstacles
+        //   3. The segment line doesn't cross the boundary (stays inside zone)
+        //   4. The segment line doesn't cross into obstacles
+        //
+        // Without this check, segments can pass between endpoint-validation but still
+        // traverse outside the zone when the segment crosses a concave or inward-facing
+        // boundary section. This is especially common when realworld and environment
+        // geometries differ (environment is transformed/narrower).
+        bool waypoint_valid = false;
+        bounce_segment_validation_reason_t validation_reason = BOUNCE_SEGMENT_VALIDATION_OK;
+        uint32_t validation_obstacle_idx = UINT32_MAX;
+        uint32_t validation_edge_idx = UINT32_MAX;
+        const polygon_t *validate_boundary = NULL;
+        const polygon_t *validate_obstacles = NULL;
+        uint32_t validate_obstacle_count = 0;
+
+        // Prefer realworld geometry for validation (original, larger boundary).
+        if (use_realworld_validation)
+        {
+            validate_boundary = &ctx.active_env->realworld_boundary;
+            validate_obstacles = ctx.active_env->realworld_obstacles;
+            validate_obstacle_count = ctx.active_env->realworld_obstacle_count;
+
+            // Full segment validation against realworld
+            waypoint_valid = bounce_validate_segment_with_reason(
+                segment.start, segment.end,
+                validate_boundary, validate_obstacles, validate_obstacle_count,
+                &validation_reason, &validation_obstacle_idx, &validation_edge_idx);
+        }
+        else
+        {
+            validate_boundary = &ctx.active_env->boundary;
+            validate_obstacles = ctx.active_env->obstacles;
+            validate_obstacle_count = ctx.active_env->obstacle_count;
+
+            // Fallback: full segment validation against active environment
+            waypoint_valid = bounce_validate_segment_with_reason(
+                segment.start, segment.end,
+                validate_boundary, validate_obstacles, validate_obstacle_count,
+                &validation_reason, &validation_obstacle_idx, &validation_edge_idx);
+        }
+
+        if (!waypoint_valid)
+        {
+            bool print_debug =
+                (total_attempts <= BOUNCE_VALIDATION_DEBUG_EARLY_LIMIT) ||
+                (total_attempts % BOUNCE_VALIDATION_DEBUG_PERIOD == 0);
+
+            if (print_debug)
+            {
+                int obs_idx_print = (validation_obstacle_idx == UINT32_MAX) ? -1 : (int)validation_obstacle_idx;
+                int edge_idx_print = (validation_edge_idx == UINT32_MAX) ? -1 : (int)validation_edge_idx;
+                printf("bounce_run_pipeline: segment validation failed at iter %d attempt %d mode=%s reason=%s start=(%.3f,%.3f) end=(%.3f,%.3f) angle=%.6f obs_idx=%d edge_idx=%d\n",
+                       ctx.metrics.iteration,
+                       total_attempts,
+                       use_realworld_validation ? "realworld" : "environment",
+                       bounce_segment_validation_reason_str(validation_reason),
+                       segment.start.x,
+                       segment.start.y,
+                       segment.end.x,
+                       segment.end.y,
+                       ctx.current_angle,
+                       obs_idx_print,
+                       edge_idx_print);
+            }
+
+            ++consecutive_retries;
+            if (consecutive_retries > BOUNCE_MAX_CONSECUTIVE_RETRIES)
+            {
+                // Too many validation failures indicate position has drifted.
+                // Re-snap to a known-good interior point and reset angle state.
+                printf("bounce_run_pipeline: too many validation failures at iter %d — re-snapping position\n",
+                       ctx.metrics.iteration);
+                point_t preferred = bounce_polygon_centroid(&ctx.active_env->boundary);
+                point_t safe = preferred;
+                if (bounce_find_safe_point_in_active_env(ctx.active_env, preferred, &safe))
+                {
+                    ctx.current_position = safe;
+                    printf("bounce_run_pipeline: validation re-snap to safe point (%.2f, %.2f)\n",
+                           safe.x, safe.y);
+                }
+                ctx.has_hit_normal = false;
+                consecutive_retries = 0;
+            }
+            continue;
+        }
+
         // Commit segment and advance current position to the collision point.
         // Only now does the iteration count increment: max_iterations counts
         // produced segments, not retry attempts.
+        if (ctx.segments != NULL && (int)cvector_size(ctx.segments) >= BOUNCE_MAX_SEGMENTS_HARD_CAP)
+        {
+            printf("bounce_run_pipeline: aborting at %d segments (memory safety cap)\n",
+                   (int)cvector_size(ctx.segments));
+            break;
+        }
+
         ctx.metrics.iteration++;
         cvector_push_back(ctx.segments, segment);
         ctx.current_position = segment.end;
