@@ -201,6 +201,91 @@ static bool bounce_parse_polygon_vertices(const cJSON *vertices_array, polygon_t
 	return true;
 }
 
+static bool bounce_validate_polygon_list_item(const cJSON *polygon_item)
+{
+	if (!cJSON_IsObject(polygon_item))
+	{
+		return false;
+	}
+
+	const cJSON *vertices = cJSON_GetObjectItemCaseSensitive(polygon_item, "vertices");
+	if (!cJSON_IsArray(vertices) || cJSON_GetArraySize(vertices) < 3)
+	{
+		return false;
+	}
+
+	uint32_t count = (uint32_t)cJSON_GetArraySize(vertices);
+	for (uint32_t i = 0; i < count; ++i)
+	{
+		const cJSON *point = cJSON_GetArrayItem(vertices, (int)i);
+		const cJSON *x = cJSON_GetObjectItemCaseSensitive(point, "x");
+		const cJSON *y = cJSON_GetObjectItemCaseSensitive(point, "y");
+		if (!cJSON_IsObject(point) || !cJSON_IsNumber(x) || !cJSON_IsNumber(y))
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
+static bool bounce_validate_realworld_payload(const cJSON *root, bounce_check_result_t *result)
+{
+	cJSON *realworld = cJSON_GetObjectItemCaseSensitive(root, "realworld");
+	if (realworld == NULL)
+	{
+		return true;
+	}
+
+	if (!cJSON_IsObject(realworld))
+	{
+		bounce_set_result(result, false, "invalid_realworld", "realworld must be an object when provided.");
+		return false;
+	}
+
+	cJSON *zones = cJSON_GetObjectItemCaseSensitive(realworld, "zones");
+	if (zones != NULL)
+	{
+		if (!cJSON_IsArray(zones))
+		{
+			bounce_set_result(result, false, "invalid_realworld_zones", "realworld.zones must be an array when provided.");
+			return false;
+		}
+
+		uint32_t zone_count = (uint32_t)cJSON_GetArraySize(zones);
+		for (uint32_t i = 0; i < zone_count; ++i)
+		{
+			if (!bounce_validate_polygon_list_item(cJSON_GetArrayItem(zones, (int)i)))
+			{
+				bounce_set_result(result, false, "invalid_realworld_zones", "realworld.zones must contain polygons with numeric vertices.");
+				return false;
+			}
+		}
+	}
+
+	cJSON *obstacles = cJSON_GetObjectItemCaseSensitive(realworld, "obstacles");
+	if (obstacles != NULL)
+	{
+		if (!cJSON_IsArray(obstacles))
+		{
+			bounce_set_result(result, false, "invalid_realworld_obstacles", "realworld.obstacles must be an array when provided.");
+			return false;
+		}
+
+		uint32_t obstacle_count = (uint32_t)cJSON_GetArraySize(obstacles);
+		for (uint32_t i = 0; i < obstacle_count; ++i)
+		{
+			if (!bounce_validate_polygon_list_item(cJSON_GetArrayItem(obstacles, (int)i)))
+			{
+				bounce_set_result(result, false, "invalid_realworld_obstacles", "realworld.obstacles must contain polygons with numeric vertices.");
+				return false;
+			}
+		}
+	}
+
+	return true;
+}
+
 bool bounce_check_request_json(const char *request_json, input_environment_t *environment, bounce_check_result_t *result)
 {
 	cJSON *root = NULL;
@@ -217,6 +302,12 @@ bool bounce_check_request_json(const char *request_json, input_environment_t *en
 	if (root == NULL)
 	{
 		bounce_set_result(result, false, "invalid_json", "Failed to parse request JSON.");
+		return false;
+	}
+
+	if (!bounce_validate_realworld_payload(root, result))
+	{
+		cJSON_Delete(root);
 		return false;
 	}
 

@@ -220,6 +220,91 @@ static bool bcd_parse_point_object(
 	return true;
 }
 
+static bool bcd_validate_polygon_list_item(const cJSON *polygon_item)
+{
+	if (!cJSON_IsObject(polygon_item))
+	{
+		return false;
+	}
+
+	const cJSON *vertices = cJSON_GetObjectItemCaseSensitive(polygon_item, "vertices");
+	if (!cJSON_IsArray(vertices) || cJSON_GetArraySize(vertices) < 3)
+	{
+		return false;
+	}
+
+	int vertex_count = cJSON_GetArraySize(vertices);
+	for (int i = 0; i < vertex_count; ++i)
+	{
+		const cJSON *point = cJSON_GetArrayItem(vertices, i);
+		const cJSON *x = cJSON_GetObjectItemCaseSensitive(point, "x");
+		const cJSON *y = cJSON_GetObjectItemCaseSensitive(point, "y");
+		if (!cJSON_IsObject(point) || !cJSON_IsNumber(x) || !cJSON_IsNumber(y))
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
+static bool bcd_validate_realworld_payload(const cJSON *root, bcd_check_result_t *result)
+{
+	const cJSON *realworld = cJSON_GetObjectItemCaseSensitive(root, "realworld");
+	if (realworld == NULL)
+	{
+		return true;
+	}
+
+	if (!cJSON_IsObject(realworld))
+	{
+		bcd_set_result(result, false, "invalid_realworld", "realworld must be an object when provided.");
+		return false;
+	}
+
+	const cJSON *zones = cJSON_GetObjectItemCaseSensitive(realworld, "zones");
+	if (zones != NULL)
+	{
+		if (!cJSON_IsArray(zones))
+		{
+			bcd_set_result(result, false, "invalid_realworld_zones", "realworld.zones must be an array when provided.");
+			return false;
+		}
+
+		int zone_count = cJSON_GetArraySize(zones);
+		for (int i = 0; i < zone_count; ++i)
+		{
+			if (!bcd_validate_polygon_list_item(cJSON_GetArrayItem(zones, i)))
+			{
+				bcd_set_result(result, false, "invalid_realworld_zones", "realworld.zones must contain polygons with numeric vertices.");
+				return false;
+			}
+		}
+	}
+
+	const cJSON *obstacles = cJSON_GetObjectItemCaseSensitive(realworld, "obstacles");
+	if (obstacles != NULL)
+	{
+		if (!cJSON_IsArray(obstacles))
+		{
+			bcd_set_result(result, false, "invalid_realworld_obstacles", "realworld.obstacles must be an array when provided.");
+			return false;
+		}
+
+		int obstacle_count = cJSON_GetArraySize(obstacles);
+		for (int i = 0; i < obstacle_count; ++i)
+		{
+			if (!bcd_validate_polygon_list_item(cJSON_GetArrayItem(obstacles, i)))
+			{
+				bcd_set_result(result, false, "invalid_realworld_obstacles", "realworld.obstacles must contain polygons with numeric vertices.");
+				return false;
+			}
+		}
+	}
+
+	return true;
+}
+
 static int bcd_build_edges(polygon_t *polygon)
 {
 	if (polygon == NULL)
@@ -494,6 +579,12 @@ bool bcd_check_request_json(const char *request_json, input_environment_t *envir
 	{
 		cJSON_Delete(root);
 		bcd_set_result(result, false, "missing_parameters", "BCD requires a parameters object.");
+		return false;
+	}
+
+	if (!bcd_validate_realworld_payload(root, result))
+	{
+		cJSON_Delete(root);
 		return false;
 	}
 
