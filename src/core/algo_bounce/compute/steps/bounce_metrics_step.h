@@ -11,7 +11,8 @@
  *   covered (capsule footprint). Each cell is counted at most once.
  *   estimated_coverage = (covered_cells / valid_cells) * 100.
  *
- * Cell size = path_width / 6, auto-scaled to stay within a 1 M cell budget.
+ * Cell size = "Coverage Grid Cell Size" when > 0, otherwise path_width / 6,
+ * auto-scaled to stay within a 1 M cell budget.
  */
 
 #ifndef BOUNCE_METRICS_STEP_H

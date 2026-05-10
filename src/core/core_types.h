@@ -54,6 +54,7 @@ typedef struct
 {
     uint32_t id;
     float path_width;
+    float coverage_grid_cell_size;
     float path_overlap;
     float headland_coverage_offset;
     float bounce_offset;

@@ -13,8 +13,9 @@
  *      counted at most once regardless of how many segments pass over it.
  *   3. estimated_coverage = (covered_cells / valid_cells) * 100.
  *
- * Cell size = path_width / 6, auto-scaled to stay within a 1 M cell budget
- * so large fields remain fast while small fields stay precise.
+ * Cell size = parameter "Coverage Grid Cell Size" when > 0, otherwise
+ * path_width / 6. The final size is auto-scaled to stay within a 1 M cell
+ * budget so large fields remain fast while small fields stay precise.
  *
  * Dependencies: bounce_metrics_step.h
  */
@@ -135,9 +136,12 @@ static void bounce_coverage_grid_build(bounce_coverage_grid_t *grid,
     if (field_w < 1e-3f || field_h < 1e-3f)
         return;
 
-    // Cell size = path_width / 6, then bumped up as needed to stay under 1 M cells.
+    // Cell size = parameter override when > 0, else path_width / 6,
+    // then bumped up as needed to stay under 1 M cells.
     float path_width = (env->path_width > 0.1f) ? env->path_width : 1.0f;
-    float cell_size = path_width / 6.0f;
+    float cell_size = (env->coverage_grid_cell_size > 0.0f)
+                          ? env->coverage_grid_cell_size
+                          : (path_width / 6.0f);
 
     const float MAX_CELLS = 1000000.0f;
     float min_cs = sqrtf(field_w * field_h / MAX_CELLS);

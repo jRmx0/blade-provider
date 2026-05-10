@@ -11,6 +11,7 @@ static void bounce_init_environment(input_environment_t *environment)
 	{
 		environment->id = 0;
 		environment->path_width = 0.0f;
+		environment->coverage_grid_cell_size = 0.0f;
 		environment->bounce_offset = 0.0f;
 		environment->target_coverage = 0.0f;
 		environment->target_distance = 0.0f;
@@ -812,6 +813,22 @@ bool bounce_check_request_json(const char *request_json, input_environment_t *en
 			environment->max_iterations = 0u;
 		}
 
+		// Coverage Grid Cell Size parameter (optional; <= 0 uses path_width/6 fallback)
+		cJSON *coverage_grid_cell_size_param = cJSON_GetObjectItemCaseSensitive(parameters, "Coverage Grid Cell Size");
+		if (coverage_grid_cell_size_param == NULL)
+			coverage_grid_cell_size_param = cJSON_GetObjectItemCaseSensitive(parameters, "coverageGridCellSize");
+		if (coverage_grid_cell_size_param != NULL && cJSON_IsNumber(coverage_grid_cell_size_param))
+		{
+			float val = (float)coverage_grid_cell_size_param->valuedouble;
+			if (val < 0.0f)
+				val = 0.0f;
+			environment->coverage_grid_cell_size = val;
+		}
+		else
+		{
+			environment->coverage_grid_cell_size = 0.0f;
+		}
+
 		// Initialize other required fields
 		environment->track_memory_usage = false;
 	}
@@ -823,6 +840,7 @@ bool bounce_check_request_json(const char *request_json, input_environment_t *en
 		environment->target_coverage = 0.0f;
 		environment->target_distance = 0.0f;
 		environment->max_iterations = 0u;
+		environment->coverage_grid_cell_size = 0.0f;
 		environment->starting_angle = -1.0f;
 		environment->track_memory_usage = false;
 	}
