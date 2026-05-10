@@ -566,9 +566,6 @@ cJSON *bounce_run_pipeline(input_environment_t *environment)
     bounce_pipeline_context_t ctx;
     bounce_context_init(&ctx, environment);
     uint32_t max_iterations = environment->max_iterations;
-    bool use_realworld_validation =
-        (ctx.active_env->realworld_boundary.vertices != NULL &&
-         ctx.active_env->realworld_boundary.vertex_count >= 3);
 
     // Validate that the starting position is inside active environment
     // (inside boundary and outside obstacles). If not, snap to a safe point.
@@ -586,20 +583,6 @@ cJSON *bounce_run_pipeline(input_environment_t *environment)
         {
             printf("bounce_run_pipeline: unable to find safe start point in environment\n");
         }
-    }
-
-    // Realworld validation only works when path points and realworld geometry
-    // share the same coordinate frame. If the current point is not inside
-    // realworld while inside active env, treat it as a frame mismatch and
-    // fall back to active-environment validation to avoid retry deadlock.
-    if (use_realworld_validation &&
-        !bounce_point_in_geometry(ctx.current_position,
-                                  &ctx.active_env->realworld_boundary,
-                                  ctx.active_env->realworld_obstacles,
-                                  ctx.active_env->realworld_obstacle_count))
-    {
-        use_realworld_validation = false;
-        printf("bounce_run_pipeline: realworld validation disabled (current position not in realworld geometry); falling back to environment validation\n");
     }
 
     // --- Steps 2-5: Main loop ---
@@ -688,35 +671,14 @@ cJSON *bounce_run_pipeline(input_environment_t *environment)
         bounce_segment_validation_reason_t validation_reason = BOUNCE_SEGMENT_VALIDATION_OK;
         uint32_t validation_obstacle_idx = UINT32_MAX;
         uint32_t validation_edge_idx = UINT32_MAX;
-        const polygon_t *validate_boundary = NULL;
-        const polygon_t *validate_obstacles = NULL;
-        uint32_t validate_obstacle_count = 0;
 
-        // Prefer realworld geometry for validation (original, larger boundary).
-        if (use_realworld_validation)
-        {
-            validate_boundary = &ctx.active_env->realworld_boundary;
-            validate_obstacles = ctx.active_env->realworld_obstacles;
-            validate_obstacle_count = ctx.active_env->realworld_obstacle_count;
-
-            // Full segment validation against realworld
-            waypoint_valid = bounce_validate_segment_with_reason(
-                segment.start, segment.end,
-                validate_boundary, validate_obstacles, validate_obstacle_count,
-                &validation_reason, &validation_obstacle_idx, &validation_edge_idx);
-        }
-        else
-        {
-            validate_boundary = &ctx.active_env->boundary;
-            validate_obstacles = ctx.active_env->obstacles;
-            validate_obstacle_count = ctx.active_env->obstacle_count;
-
-            // Fallback: full segment validation against active environment
-            waypoint_valid = bounce_validate_segment_with_reason(
-                segment.start, segment.end,
-                validate_boundary, validate_obstacles, validate_obstacle_count,
-                &validation_reason, &validation_obstacle_idx, &validation_edge_idx);
-        }
+        // Validate segment against realworld geometry (original, larger boundary).
+        waypoint_valid = bounce_validate_segment_with_reason(
+            segment.start, segment.end,
+            &ctx.active_env->realworld_boundary,
+            ctx.active_env->realworld_obstacles,
+            ctx.active_env->realworld_obstacle_count,
+            &validation_reason, &validation_obstacle_idx, &validation_edge_idx);
 
         if (!waypoint_valid)
         {
@@ -728,10 +690,9 @@ cJSON *bounce_run_pipeline(input_environment_t *environment)
             {
                 int obs_idx_print = (validation_obstacle_idx == UINT32_MAX) ? -1 : (int)validation_obstacle_idx;
                 int edge_idx_print = (validation_edge_idx == UINT32_MAX) ? -1 : (int)validation_edge_idx;
-                printf("bounce_run_pipeline: segment validation failed at iter %d attempt %d mode=%s reason=%s start=(%.3f,%.3f) end=(%.3f,%.3f) angle=%.6f obs_idx=%d edge_idx=%d\n",
+                printf("bounce_run_pipeline: segment validation failed at iter %d attempt %d reason=%s start=(%.3f,%.3f) end=(%.3f,%.3f) angle=%.6f obs_idx=%d edge_idx=%d\n",
                        ctx.metrics.iteration,
                        total_attempts,
-                       use_realworld_validation ? "realworld" : "environment",
                        bounce_segment_validation_reason_str(validation_reason),
                        segment.start.x,
                        segment.start.y,

@@ -236,12 +236,101 @@ static bool bounce_validate_polygon_list_item(const cJSON *polygon_item)
 	return true;
 }
 
+static bool bounce_numbers_nearly_equal(double left, double right)
+{
+	double diff = left - right;
+	if (diff < 0.0)
+	{
+		diff = -diff;
+	}
+	return diff <= 1e-6;
+}
+
+static bool bounce_vertices_array_equal(const cJSON *left_vertices, const cJSON *right_vertices)
+{
+	if (!cJSON_IsArray(left_vertices) || !cJSON_IsArray(right_vertices))
+	{
+		return false;
+	}
+
+	int left_count = cJSON_GetArraySize(left_vertices);
+	int right_count = cJSON_GetArraySize(right_vertices);
+	if (left_count != right_count)
+	{
+		return false;
+	}
+
+	for (int i = 0; i < left_count; ++i)
+	{
+		const cJSON *left_point = cJSON_GetArrayItem(left_vertices, i);
+		const cJSON *right_point = cJSON_GetArrayItem(right_vertices, i);
+
+		if (!cJSON_IsObject(left_point) || !cJSON_IsObject(right_point))
+		{
+			return false;
+		}
+
+		const cJSON *left_x = cJSON_GetObjectItemCaseSensitive(left_point, "x");
+		const cJSON *left_y = cJSON_GetObjectItemCaseSensitive(left_point, "y");
+		const cJSON *right_x = cJSON_GetObjectItemCaseSensitive(right_point, "x");
+		const cJSON *right_y = cJSON_GetObjectItemCaseSensitive(right_point, "y");
+
+		if (!cJSON_IsNumber(left_x) || !cJSON_IsNumber(left_y) || !cJSON_IsNumber(right_x) || !cJSON_IsNumber(right_y))
+		{
+			return false;
+		}
+
+		if (!bounce_numbers_nearly_equal(left_x->valuedouble, right_x->valuedouble) ||
+			!bounce_numbers_nearly_equal(left_y->valuedouble, right_y->valuedouble))
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
+static bool bounce_polygon_array_equal(const cJSON *left_polygons, const cJSON *right_polygons)
+{
+	if (!cJSON_IsArray(left_polygons) || !cJSON_IsArray(right_polygons))
+	{
+		return false;
+	}
+
+	int left_count = cJSON_GetArraySize(left_polygons);
+	int right_count = cJSON_GetArraySize(right_polygons);
+	if (left_count != right_count)
+	{
+		return false;
+	}
+
+	for (int i = 0; i < left_count; ++i)
+	{
+		const cJSON *left_polygon = cJSON_GetArrayItem(left_polygons, i);
+		const cJSON *right_polygon = cJSON_GetArrayItem(right_polygons, i);
+		if (!cJSON_IsObject(left_polygon) || !cJSON_IsObject(right_polygon))
+		{
+			return false;
+		}
+
+		const cJSON *left_vertices = cJSON_GetObjectItemCaseSensitive(left_polygon, "vertices");
+		const cJSON *right_vertices = cJSON_GetObjectItemCaseSensitive(right_polygon, "vertices");
+		if (!bounce_vertices_array_equal(left_vertices, right_vertices))
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
 static bool bounce_validate_realworld_payload(const cJSON *root, bounce_check_result_t *result)
 {
 	cJSON *realworld = cJSON_GetObjectItemCaseSensitive(root, "realworld");
 	if (realworld == NULL)
 	{
-		return true;
+		bounce_set_result(result, false, "missing_realworld", "Headland is required.");
+		return false;
 	}
 
 	if (!cJSON_IsObject(realworld))
@@ -287,6 +376,22 @@ static bool bounce_validate_realworld_payload(const cJSON *root, bounce_check_re
 				bounce_set_result(result, false, "invalid_realworld_obstacles", "realworld.obstacles must contain polygons with numeric vertices.");
 				return false;
 			}
+		}
+	}
+
+	cJSON *environment = cJSON_GetObjectItemCaseSensitive(root, "environment");
+	if (cJSON_IsObject(environment))
+	{
+		const cJSON *env_zones = cJSON_GetObjectItemCaseSensitive(environment, "zones");
+		const cJSON *env_obstacles = cJSON_GetObjectItemCaseSensitive(environment, "obstacles");
+
+		if (cJSON_IsArray(env_zones) && cJSON_IsArray(zones) &&
+			cJSON_IsArray(env_obstacles) && cJSON_IsArray(obstacles) &&
+			bounce_polygon_array_equal(env_zones, zones) &&
+			bounce_polygon_array_equal(env_obstacles, obstacles))
+		{
+			bounce_set_result(result, false, "invalid_headland_width", "Headland Width must be greater than 0 for Bounce.");
+			return false;
 		}
 	}
 
@@ -368,7 +473,8 @@ static bool bounce_parse_realworld_payload(const cJSON *root, input_environment_
 	cJSON *realworld = cJSON_GetObjectItemCaseSensitive(root, "realworld");
 	if (realworld == NULL)
 	{
-		return true;
+		bounce_set_result(result, false, "missing_realworld", "realworld is required.");
+		return false;
 	}
 
 	if (!cJSON_IsObject(realworld))

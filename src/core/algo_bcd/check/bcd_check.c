@@ -855,6 +855,14 @@ bool bcd_check_request_json(const char *request_json, input_environment_t *envir
 		return false;
 	}
 
+	if (headland && headland_coverage_offset <= 0.0f)
+	{
+		cJSON_Delete(root);
+		bcd_set_result(result, false, "invalid_headland_coverage_offset", "BCD Headland Coverage Offset must be greater than 0 when Headland is enabled.");
+		free_input_environment(environment);
+		return false;
+	}
+
 	environment->headland_coverage_offset = headland_coverage_offset;
 
 	cJSON_Delete(root);
