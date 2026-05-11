@@ -16,15 +16,14 @@
 
 /*
  * Finds the shortest collision-free path from `from` to `to` within the
- * environment's free space, defined by the boundary offset inward and all
- * obstacle offsets outward by `offset`.
+ * environment's free space (env->boundary as the navigable zone,
+ * env->obstacles as exclusion zones).
  *
  * Returns a cvector of waypoints on success (caller must free with cvector_free).
  * Returns NULL when no path exists (A* exhausted or allocation failure).
  */
 cvector_vector_type(point_t) find_free_space_path(
     point_t from, point_t to,
-    const input_environment_t *env,
-    float offset);
+    const input_environment_t *env);
 
 #endif // PATH_FINDER_H

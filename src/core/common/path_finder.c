@@ -1,7 +1,6 @@
 #include <math.h>
 #include <stdbool.h>
 #include "path_finder.h"
-#include "polygon_offset.h"
 #include "../../../dependencies/cvector/cvector.h"
 #include "../../../dependencies/allocator/allocator.h"
 
@@ -339,8 +338,7 @@ static cvector_vector_type(point_t) free_space_astar(
 
 cvector_vector_type(point_t) find_free_space_path(
     point_t from, point_t to,
-    const input_environment_t *env,
-    float offset)
+    const input_environment_t *env)
 {
     uint32_t nav_total = 1 + env->obstacle_count;
     cvector_vector_type(point_t) *nav_polys =
@@ -349,14 +347,12 @@ cvector_vector_type(point_t) find_free_space_path(
     if (nav_polys == NULL)
         return NULL;
 
-    nav_polys[0] = compute_polygon_vertex_offset(
-        env->boundary.vertices, env->boundary.vertex_count,
-        POLYGON_WINDING_CW, offset, false);
+    for (uint32_t vi = 0; vi < env->boundary.vertex_count; ++vi)
+        cvector_push_back(nav_polys[0], env->boundary.vertices[vi]);
 
     for (uint32_t k = 0; k < env->obstacle_count; ++k)
-        nav_polys[k + 1] = compute_polygon_vertex_offset(
-            env->obstacles[k].vertices, env->obstacles[k].vertex_count,
-            POLYGON_WINDING_CCW, offset, false);
+        for (uint32_t vi = 0; vi < env->obstacles[k].vertex_count; ++vi)
+            cvector_push_back(nav_polys[k + 1], env->obstacles[k].vertices[vi]);
 
     cvector_vector_type(point_t) result = free_space_astar(from, to, nav_polys, nav_total);
 

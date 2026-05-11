@@ -4,7 +4,6 @@
 #include <string.h>
 #include "headland.h"
 #include "path_finder.h"
-#include "polygon_offset.h"
 #include "../../../dependencies/cvector/cvector.h"
 #include "../../../dependencies/allocator/allocator.h"
 
@@ -295,9 +294,7 @@ int compute_headland(const input_environment_t *env,
     if (offset_polys == NULL)
         return -2;
 
-    // The terminal has already shrunk env->boundary by headlandWidth, so
-    // env->boundary IS the headland centerline.  Copy vertices directly —
-    // compute_polygon_vertex_offset returns NULL for offset==0.
+    // Copy boundary vertices directly into the nav polygon slot.
     for (uint32_t vi = 0; vi < env->boundary.vertex_count; ++vi)
         cvector_push_back(offset_polys[0], env->boundary.vertices[vi]);
 
@@ -446,7 +443,7 @@ int compute_headland(const input_environment_t *env,
             {
                 // Different source polygons: visibility-graph A* in the free space
                 // to guarantee the path avoids all obstacles.
-                nav = find_free_space_path(from_pt, to_pt, env, 0.0f);
+                nav = find_free_space_path(from_pt, to_pt, env);
             }
 
             if (nav == NULL)

@@ -15,7 +15,6 @@
 #include "../../../common/path_finder.h"
 #include "../../preprocess/bcd_preprocess.h"
 
-#include "../../../common/polygon_offset.c"
 #include "../../../common/path_finder.c"
 #include "../../../common/headland.c"
 
@@ -474,7 +473,7 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 
 			cvector_vector_type(point_t) existing_nav = last_sec->nav;
 			cvector_vector_type(point_t) replacement_nav =
-				find_free_space_path(ep_from, ep_to, env, 0.0f);
+				find_free_space_path(ep_from, ep_to, env);
 			if (replacement_nav != NULL)
 			{
 				cvector_free(existing_nav);
@@ -531,7 +530,7 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 
 				// Route from the last headland waypoint to the first coverage waypoint.
 				// Uses half_width offset free-space (same as compute_headland internally).
-				last_hs->nav = find_free_space_path(from_pt, to_pt, env, 0.0f);
+				last_hs->nav = find_free_space_path(from_pt, to_pt, env);
 				if (last_hs->nav == NULL)
 				{
 					free_headland(&headland);
@@ -558,7 +557,7 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 				point_t sp_from = env->start_point;
 				point_t sp_to = first_hs->path[0];
 
-				start_nav = find_free_space_path(sp_from, sp_to, env, 0.0f);
+				start_nav = find_free_space_path(sp_from, sp_to, env);
 				if (start_nav == NULL)
 				{
 					free_headland(&headland);
