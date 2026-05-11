@@ -21,7 +21,6 @@ static void bcd_init_environment(input_environment_t *environment)
 	environment->obstacle_count = 0;
 	environment->track_memory_usage = false;
 	environment->headland = false;
-	environment->headland_coverage_offset = 0.0f;
 	environment->max_iterations = 0;
 	environment->start_point.x = 0.0f;
 	environment->start_point.y = 0.0f;

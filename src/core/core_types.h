@@ -56,7 +56,6 @@ typedef struct
     float path_width;
     float coverage_grid_cell_size;
     float path_overlap;
-    float headland_coverage_offset;
     float bounce_offset;
     float target_coverage;
     float target_distance;
