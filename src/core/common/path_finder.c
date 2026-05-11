@@ -54,32 +54,42 @@ static bool vg_point_in_polygon(point_t p,
 
 /*
  * Returns true when segment p→q lies entirely within the free space:
- * inside the zone offset polygon (slot 0) and outside all obstacle offset
- * polygons (slots 1+).
+ * inside the zone polygon (slot 0) and outside all obstacle polygons (slots 1+).
  *
- * Four complementary checks are used:
+ * Checks applied in order:
  *
- *   1a. Midpoint-in-zone: the test point is nudged 1e-4 of the way toward the
- *       zone centroid so that boundary-midpoints (zone-edge segments) are not
- *       falsely rejected, while segments whose midpoint is genuinely outside
- *       the zone — including the "closer-vertex-on-the-other-side" shortcut
- *       where p or q is outside the zone offset polygon and the segment ends
- *       at a zone corner vertex without properly crossing any edge — are
- *       correctly rejected.
+ *   1a. Multi-sample zone containment: four evenly-spaced interior samples
+ *       (t = 0.2, 0.4, 0.6, 0.8) are all tested against the zone polygon.
+ *       Using multiple samples catches segments that exit and re-enter the
+ *       zone (where a single midpoint would pass).  The zone polygon is used
+ *       directly without centroid-nudging — a nudged centroid can land outside
+ *       non-convex fields, making the nudge geometrically meaningless.
  *
- *   1b. Midpoint-in-obstacle: catches chords that pass through a convex
- *       obstacle polygon without crossing its edges.
+ *   1b. Multi-sample obstacle exclusion: the same four samples must all lie
+ *       outside every obstacle polygon.  This catches chords that tunnel
+ *       through a convex obstacle without crossing its edges.
  *
- *   2.  No proper edge crossings: detects any segment that exits the zone or
- *       crosses into/out-of an obstacle.
+ *   2.  Proper edge crossings: the segment must not properly cross any edge of
+ *       any polygon (zone exit or obstacle entry/exit).  Strictly-proper
+ *       crossing (open interior intersection) is tested; endpoint touches are
+ *       intentionally ignored so valid visibility edges that share a polygon
+ *       vertex are not rejected.
  *
- *   3.  Zone-vertex passage: the proper-crossing check intentionally ignores
- *       vertex-touches so that valid visibility edges that share a zone vertex
- *       are not rejected.  This creates a gap for segments that clip through a
- *       concave zone offset vertex V — lying collinearly between p and q with
- *       V's zone neighbours on opposite sides of line p→q.  When an immediate
- *       neighbour is itself collinear, we walk outward until the first
- *       non-collinear vertex in each direction is found.
+ *   3.  Concave-vertex passage (all polygons): for each polygon vertex V that
+ *       is collinear with and strictly between p and q, find the first
+ *       non-collinear neighbour on each side of the polygon ring.  If those
+ *       neighbours lie on opposite sides of line p→q the polygon boundary
+ *       genuinely crosses the segment at V → reject.
+ *
+ *       For the zone (slot 0) this means the path exits the zone at a concave
+ *       notch vertex.  For an obstacle (slot 1+) this means the path enters
+ *       the obstacle at a concave vertex.
+ *
+ *       Fix over the previous version: when the neighbour walk finds only
+ *       collinear vertices (straight boundary run) it leaves c_prev or c_next
+ *       at 0.  The product 0 * anything = 0 is NOT < 0, so the old code
+ *       silently passed.  We now treat a zero product as ambiguous and reject,
+ *       which is conservative but correct.
  */
 static bool vg_segment_is_free(point_t p, point_t q,
                                const cvector_vector_type(point_t) * offset_polys,
@@ -89,45 +99,38 @@ static bool vg_segment_is_free(point_t p, point_t q,
     float pq_y = q.y - p.y;
     float pq_len_sq = pq_x * pq_x + pq_y * pq_y;
 
-    point_t mid = {(p.x + q.x) * 0.5f, (p.y + q.y) * 0.5f};
+    /* Four evenly-spaced interior samples along the segment (avoids endpoints
+     * which may sit exactly on a polygon edge). */
+    static const float sample_t[4] = {0.2f, 0.4f, 0.6f, 0.8f};
 
-    // Check 1a: nudged midpoint must be inside the zone offset polygon.
+    // Check 1a: every sample must be inside the zone polygon.
     if (total_polys > 0 && offset_polys[0] != NULL)
     {
         const cvector_vector_type(point_t) zverts0 = offset_polys[0];
-        uint32_t zn0 = (uint32_t)cvector_size(zverts0);
-        if (zn0 > 0)
+        if (cvector_size(zverts0) > 0)
         {
-            // Compute vertex-average centroid (good enough for convex / mildly
-            // non-convex zone offset polygons).
-            float cx = 0.0f, cy = 0.0f;
-            for (uint32_t vi = 0; vi < zn0; ++vi)
+            for (int si = 0; si < 4; ++si)
             {
-                cx += zverts0[vi].x;
-                cy += zverts0[vi].y;
+                float t = sample_t[si];
+                point_t s = {p.x + t * pq_x, p.y + t * pq_y};
+                if (!vg_point_in_polygon(s, zverts0))
+                    return false;
             }
-            cx /= (float)zn0;
-            cy /= (float)zn0;
-
-            // Nudge 0.01 % of the way toward the centroid so a midpoint that
-            // lands exactly on a zone edge is pulled strictly inside, avoiding
-            // ray-casting boundary ambiguity.
-            const float nudge = 1e-4f;
-            point_t test_mid = {
-                mid.x + nudge * (cx - mid.x),
-                mid.y + nudge * (cy - mid.y)};
-            if (!vg_point_in_polygon(test_mid, zverts0))
-                return false;
         }
     }
 
-    // Check 1b: midpoint must be outside every obstacle offset polygon.
+    // Check 1b: every sample must be outside every obstacle polygon.
     for (uint32_t pi = 1; pi < total_polys; ++pi)
     {
         if (offset_polys[pi] == NULL)
             continue;
-        if (vg_point_in_polygon(mid, offset_polys[pi]))
-            return false;
+        for (int si = 0; si < 4; ++si)
+        {
+            float t = sample_t[si];
+            point_t s = {p.x + t * pq_x, p.y + t * pq_y};
+            if (vg_point_in_polygon(s, offset_polys[pi]))
+                return false;
+        }
     }
 
     // Check 2: segment must not properly cross any polygon boundary edge.
@@ -144,61 +147,74 @@ static bool vg_segment_is_free(point_t p, point_t q,
         }
     }
 
-    // Check 3: zone-vertex passage (slot 0 only).
-    // For each zone offset vertex V strictly between p and q on the segment:
-    //   Walk outward in each direction around the zone polygon to find the
-    //   first non-collinear neighbour (handles collinear-edge runs where an
-    //   immediate neighbour also lies on the segment line, giving c = 0).
-    //   If those two non-collinear neighbours are on opposite sides of line
-    //   p→q the zone boundary genuinely crosses the segment at V → reject.
-    if (total_polys > 0 && offset_polys[0] != NULL && pq_len_sq > 1e-12f)
+    // Check 3: concave-vertex passage for ALL polygons.
+    // For each polygon vertex V that is collinear with and strictly between
+    // p and q: find the first non-collinear neighbour in each ring direction.
+    // If those neighbours are on opposite sides of line p→q the boundary
+    // genuinely crosses the segment at V → reject.
+    //
+    // For slot 0 (zone): opposite sides means the path exits the zone.
+    // For slot 1+ (obstacle): opposite sides means the path enters the obstacle.
+    //
+    // If the neighbour walk exhausts all ring vertices without finding a
+    // non-collinear one (degenerate polygon), c_prev or c_next stays 0.
+    // A zero product is treated as a crossing (conservative / safe).
+    if (pq_len_sq > 1e-12f)
     {
-        const cvector_vector_type(point_t) zverts = offset_polys[0];
-        uint32_t zn = (uint32_t)cvector_size(zverts);
         float eps_cross_sq = 1e-6f * pq_len_sq;
 
-        for (uint32_t vi = 0; vi < zn; ++vi)
+        for (uint32_t pi = 0; pi < total_polys; ++pi)
         {
-            point_t V = zverts[vi];
-
-            // Skip vertices coinciding with or beyond a segment endpoint.
-            float dp = (V.x - p.x) * pq_x + (V.y - p.y) * pq_y;
-            if (dp <= 0.0f || dp >= pq_len_sq)
+            const cvector_vector_type(point_t) verts = offset_polys[pi];
+            if (verts == NULL)
                 continue;
+            uint32_t n = (uint32_t)cvector_size(verts);
 
-            // Collinearity: |cross(pq, pV)|² ≤ 1e-6 · |pq|²  (≈ 1 mm lateral).
-            float cross = pq_x * (V.y - p.y) - pq_y * (V.x - p.x);
-            if (cross * cross > eps_cross_sq)
-                continue;
-
-            // Walk backwards to find the first non-collinear predecessor.
-            float c_prev = 0.0f;
-            for (uint32_t step = 1; step <= zn; ++step)
+            for (uint32_t vi = 0; vi < n; ++vi)
             {
-                point_t Vs = zverts[(vi + zn - step) % zn];
-                float c = pq_x * (Vs.y - p.y) - pq_y * (Vs.x - p.x);
-                if (c * c > eps_cross_sq)
-                {
-                    c_prev = c;
-                    break;
-                }
-            }
+                point_t V = verts[vi];
 
-            // Walk forwards to find the first non-collinear successor.
-            float c_next = 0.0f;
-            for (uint32_t step = 1; step <= zn; ++step)
-            {
-                point_t Vs = zverts[(vi + step) % zn];
-                float c = pq_x * (Vs.y - p.y) - pq_y * (Vs.x - p.x);
-                if (c * c > eps_cross_sq)
-                {
-                    c_next = c;
-                    break;
-                }
-            }
+                // Must be strictly between p and q along the segment direction.
+                float dp = (V.x - p.x) * pq_x + (V.y - p.y) * pq_y;
+                if (dp <= 0.0f || dp >= pq_len_sq)
+                    continue;
 
-            if (c_prev * c_next < 0.0f)
-                return false;
+                // Collinearity test: lateral distance² ≤ ε·|pq|².
+                float cross = pq_x * (V.y - p.y) - pq_y * (V.x - p.x);
+                if (cross * cross > eps_cross_sq)
+                    continue;
+
+                // Walk backwards for first non-collinear predecessor.
+                float c_prev = 0.0f;
+                for (uint32_t step = 1; step <= n; ++step)
+                {
+                    point_t Vs = verts[(vi + n - step) % n];
+                    float c = pq_x * (Vs.y - p.y) - pq_y * (Vs.x - p.x);
+                    if (c * c > eps_cross_sq)
+                    {
+                        c_prev = c;
+                        break;
+                    }
+                }
+
+                // Walk forwards for first non-collinear successor.
+                float c_next = 0.0f;
+                for (uint32_t step = 1; step <= n; ++step)
+                {
+                    point_t Vs = verts[(vi + step) % n];
+                    float c = pq_x * (Vs.y - p.y) - pq_y * (Vs.x - p.x);
+                    if (c * c > eps_cross_sq)
+                    {
+                        c_next = c;
+                        break;
+                    }
+                }
+
+                // Opposite sides (c_prev * c_next < 0) → boundary crosses here.
+                // Zero product → degenerate / ambiguous → reject conservatively.
+                if (c_prev * c_next <= 0.0f)
+                    return false;
+            }
         }
     }
 
@@ -211,9 +227,12 @@ static bool vg_segment_is_free(point_t p, point_t q,
  * Finds the shortest collision-free path from `from` to `to` using a
  * visibility-graph A* over the given pre-built offset polygon array.
  *
- * Node set: {from} ∪ {all offset polygon vertices} ∪ {to}.
+ * Node set: {from} ∪ {extra_nodes} ∪ {all offset polygon vertices} ∪ {to}.
  * An edge (u, v) is valid when vg_segment_is_free(u, v) is true.
  * Cost and heuristic are Euclidean distances.
+ *
+ * extra_nodes / extra_count: optional relay points injected before the
+ * polygon vertices.  Pass NULL / 0 to get the original behaviour.
  *
  * Returns a cvector of waypoints (caller frees) on success, or NULL when
  * no path exists.
@@ -221,11 +240,14 @@ static bool vg_segment_is_free(point_t p, point_t q,
 static cvector_vector_type(point_t) free_space_astar(
     point_t from, point_t to,
     const cvector_vector_type(point_t) * offset_polys,
-    uint32_t total_polys)
+    uint32_t total_polys,
+    const point_t *extra_nodes, int extra_count)
 {
-    // Build node list: from → all polygon vertices → to.
+    // Build node list: from → extra relay nodes → all polygon vertices → to.
     cvector_vector_type(point_t) nodes = NULL;
     cvector_push_back(nodes, from);
+    for (int ei = 0; ei < extra_count; ++ei)
+        cvector_push_back(nodes, extra_nodes[ei]);
     for (uint32_t pi = 0; pi < total_polys; ++pi)
     {
         if (offset_polys[pi] == NULL)
@@ -334,11 +356,15 @@ static cvector_vector_type(point_t) free_space_astar(
     return result;
 }
 
-// IMPLEMENTATION --- find_free_space_path ------------------------------
+// IMPLEMENTATION --- find_free_space_path / find_free_space_path_ex ------
 
-cvector_vector_type(point_t) find_free_space_path(
+/*
+ * Shared helper: builds the polygon array from env and calls free_space_astar.
+ */
+static cvector_vector_type(point_t) find_free_space_path_impl(
     point_t from, point_t to,
-    const input_environment_t *env)
+    const input_environment_t *env,
+    const point_t *extra_nodes, int extra_count)
 {
     uint32_t nav_total = 1 + env->obstacle_count;
     cvector_vector_type(point_t) *nav_polys =
@@ -354,11 +380,27 @@ cvector_vector_type(point_t) find_free_space_path(
         for (uint32_t vi = 0; vi < env->obstacles[k].vertex_count; ++vi)
             cvector_push_back(nav_polys[k + 1], env->obstacles[k].vertices[vi]);
 
-    cvector_vector_type(point_t) result = free_space_astar(from, to, nav_polys, nav_total);
+    cvector_vector_type(point_t) result =
+        free_space_astar(from, to, nav_polys, nav_total, extra_nodes, extra_count);
 
     for (uint32_t p = 0; p < nav_total; ++p)
         cvector_free(nav_polys[p]);
     va_free(nav_polys);
 
     return result;
+}
+
+cvector_vector_type(point_t) find_free_space_path(
+    point_t from, point_t to,
+    const input_environment_t *env)
+{
+    return find_free_space_path_impl(from, to, env, NULL, 0);
+}
+
+cvector_vector_type(point_t) find_free_space_path_ex(
+    point_t from, point_t to,
+    const input_environment_t *env,
+    const point_t *extra_nodes, int extra_count)
+{
+    return find_free_space_path_impl(from, to, env, extra_nodes, extra_count);
 }

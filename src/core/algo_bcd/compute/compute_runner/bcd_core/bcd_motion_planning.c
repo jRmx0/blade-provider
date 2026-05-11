@@ -49,12 +49,11 @@ int compute_bcd_motion(cvector_vector_type(bcd_cell_t) * cell_list,
         }
 
         // Push current section with nav=NULL.
-        // Transit paths are now computed centrally in bcd_runner.c using
-        // find_free_space_path() for both headland and coverage transit.
+        // Transit paths are computed centrally in bcd_runner.c using
+        // find_free_space_path() (visibility-graph A*) for all transit segments.
         cell_motion_plan_t curr_section;
         curr_section.ox = ox;
         curr_section.nav = NULL;
-        curr_section.path_list_index = (int)i;
 
         cvector_push_back(motion_plan->section, curr_section);
 

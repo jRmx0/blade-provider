@@ -11,7 +11,6 @@
 #include "bcd_core/bcd_coverage_planning.h"
 #include "bcd_core/bcd_motion_planning.h"
 #include "bcd_core/bcd_geometry.h"
-#include "bcd_core/bcd_funnel.h"
 #include "../../../common/headland.h"
 #include "../../../common/path_finder.h"
 #include "../../preprocess/bcd_preprocess.h"
@@ -486,16 +485,41 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 
 	va_tracking_mark("Maršrutas");
 	// --- Coverage transit segments (coverage waypoint → coverage waypoint/end) ---
-	// For cell-to-cell transitions, prefer bcd_funnel using the corridor sub-slice
-	// from path_list (guaranteed adjacent cells). Falls back to visibility-graph A*
-	// when the corridor is unavailable (last section → end_point) or funnel fails.
 	// For each coverage section i, nav connects:
-	//   - section[i].ox end → section[i+1].ox start  (funnel or A* fallback)
-	//   - for the last section: section[last].ox end → end_point  (A* only)
+	//   - section[i].ox end → section[i+1].ox start
+	//   - for the last section: section[last].ox end → end_point
+	// Uses visibility-graph A* for all transit paths.
+	//
+	// Pre-collect all coverage section start/end points as extra relay nodes so
+	// the visibility graph can route through any section endpoint, not just the
+	// current source and goal.  This allows globally-optimal transit paths when
+	// multiple sections cluster near each other.
+	cvector_vector_type(point_t) coverage_relay_nodes = NULL;
+	if (motion_plan.section != NULL)
+	{
+		int sc = (int)cvector_size(motion_plan.section);
+		for (int ri = 0; ri < sc; ++ri)
+		{
+			const cell_motion_plan_t *rs = &motion_plan.section[ri];
+			if (rs->ox == NULL || cvector_size(rs->ox) == 0)
+				continue;
+			point_t sp = rs->ox[0];
+			point_t ep = rs->ox[cvector_size(rs->ox) - 1];
+			cvector_push_back(coverage_relay_nodes, sp);
+			if (ep.x != sp.x || ep.y != sp.y)
+				cvector_push_back(coverage_relay_nodes, ep);
+		}
+	}
+	const point_t *relay_ptr = (coverage_relay_nodes != NULL)
+								   ? coverage_relay_nodes
+								   : NULL;
+	int relay_count = (coverage_relay_nodes != NULL)
+						  ? (int)cvector_size(coverage_relay_nodes)
+						  : 0;
+
 	if (motion_plan.section != NULL && cvector_size(motion_plan.section) > 0)
 	{
 		int section_count = (int)cvector_size(motion_plan.section);
-		int path_list_len = (int)cvector_size(path_list);
 		for (int i = 0; i < section_count; ++i)
 		{
 			cell_motion_plan_t *curr = &motion_plan.section[i];
@@ -505,8 +529,6 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 			point_t from_pt = curr->ox[cvector_size(curr->ox) - 1];
 			point_t to_pt = {0};
 			bool has_target = false;
-			bool use_funnel = false;
-			int corridor_start = 0, corridor_end = 0;
 
 			if (i + 1 < section_count)
 			{
@@ -515,14 +537,6 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 				{
 					to_pt = next->ox[0];
 					has_target = true;
-
-					// Use funnel when both sections have valid path_list indices
-					// and the corridor slice is non-trivial (more than one cell).
-					corridor_start = curr->path_list_index;
-					corridor_end = next->path_list_index;
-					if (corridor_start >= 0 && corridor_end > corridor_start &&
-						corridor_end < path_list_len)
-						use_funnel = true;
 				}
 			}
 			else
@@ -538,33 +552,14 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 				continue;
 			}
 
-			cvector_vector_type(point_t) replacement_nav = NULL;
-
-			if (use_funnel)
-			{
-				// Build a temporary corridor vector from the path_list sub-slice
-				// [corridor_start .. corridor_end] (inclusive). Consecutive entries
-				// in path_list are always adjacent cells (guaranteed by the BCD
-				// path ordering and A* backtrack fill in bcd_coverage_planning.c).
-				cvector_vector_type(int) corridor = NULL;
-				for (int ci = corridor_start; ci <= corridor_end; ++ci)
-					cvector_push_back(corridor, path_list[ci]);
-
-				replacement_nav = bcd_funnel(
-					(const cvector_vector_type(bcd_cell_t) *)&cell_list,
-					(const cvector_vector_type(int) *)&corridor,
-					from_pt, to_pt);
-				cvector_free(corridor);
-			}
-
-			// Fall back to visibility-graph A* when funnel is not applicable or fails.
-			if (replacement_nav == NULL)
-				replacement_nav = find_free_space_path(from_pt, to_pt, env);
+			cvector_vector_type(point_t) replacement_nav =
+				find_free_space_path_ex(from_pt, to_pt, env, relay_ptr, relay_count);
 
 			if (replacement_nav == NULL)
 			{
 				if (has_headland)
 					free_headland(&headland);
+				cvector_free(coverage_relay_nodes);
 				free_bcd_event_list(&event_list);
 				free_bcd_cell_list(&cell_list);
 				cvector_free(path_list);
@@ -580,6 +575,7 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 			curr->nav = replacement_nav;
 		}
 	}
+	cvector_free(coverage_relay_nodes);
 
 	// --- Headland → first coverage point transit ---
 	// The last headland section's nav must point to the first coverage waypoint.
