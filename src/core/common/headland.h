@@ -22,16 +22,11 @@ typedef struct
 /**
  * Output of compute_headland().
  *
- * sections:            ordered list of headland path sections.
- * shrunken_zone:       zone boundary inset by (path_width/2 + headland_coverage_offset).
- * expanded_obstacles:  obstacle boundaries expanded by the same amount.
+ * sections: ordered list of headland path sections.
  */
 typedef struct
 {
     cvector_vector_type(headland_section_t) sections;
-    polygon_t shrunken_zone;
-    polygon_t *expanded_obstacles;
-    uint32_t expanded_obstacle_count;
 } headland_t;
 
 /**

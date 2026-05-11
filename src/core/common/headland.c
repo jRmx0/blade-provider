@@ -465,64 +465,6 @@ int compute_headland(const input_environment_t *env,
         }
     }
 
-    // --- Build reduced geometry polygons for coverage planning ---
-    //
-    // The coverage area boundary must be offset inward (zone) / outward (obstacles)
-    // by bcd_shrink from the original polygon edges.
-    //
-    // headland_coverage_offset is measured from the headland path centreline
-    // (which sits at half_width from the original edge), so the total offset
-    // from the original edge is:
-    //
-    //   bcd_shrink = half_width + headland_coverage_offset
-    //
-    // offset_polys[] remain at half_width and are used only for headland path
-    // tracing and A* transit — they must not be reused here.
-    float bcd_shrink = half_width + env->headland_coverage_offset;
-
-    // BCD input polygons use allow_bevel=true: bevel vertices at sharp zone
-    // corners are correctly classified as BCD_FLOOR/BCD_CEILING by the guarded
-    // find_common_event (BCD_IN/BCD_OUT are restricted to obstacle polygons).
-    cvector_vector_type(point_t) bcd_zone_verts = compute_polygon_vertex_offset(
-        env->boundary.vertices, env->boundary.vertex_count,
-        POLYGON_WINDING_CW, bcd_shrink, true);
-    if (bcd_zone_verts != NULL)
-    {
-        int rc = build_offset_polygon(bcd_zone_verts, POLYGON_WINDING_CW,
-                                      &headland->shrunken_zone);
-        if (rc != 0)
-        {
-            printf("compute_headland: failed to build shrunken zone polygon (%d)\n", rc);
-        }
-        cvector_free(bcd_zone_verts);
-    }
-
-    if (env->obstacle_count > 0)
-    {
-        headland->expanded_obstacles =
-            (polygon_t *)va_calloc((size_t)env->obstacle_count, sizeof(polygon_t));
-        if (headland->expanded_obstacles != NULL)
-        {
-            headland->expanded_obstacle_count = env->obstacle_count;
-            for (uint32_t k = 0; k < env->obstacle_count; ++k)
-            {
-                cvector_vector_type(point_t) bcd_obs_verts = compute_polygon_vertex_offset(
-                    env->obstacles[k].vertices, env->obstacles[k].vertex_count,
-                    POLYGON_WINDING_CCW, bcd_shrink, true);
-                if (bcd_obs_verts != NULL)
-                {
-                    int rc = build_offset_polygon(bcd_obs_verts, POLYGON_WINDING_CCW,
-                                                  &headland->expanded_obstacles[k]);
-                    if (rc != 0)
-                    {
-                        printf("compute_headland: failed to build expanded obstacle %u polygon (%d)\n", k, rc);
-                    }
-                    cvector_free(bcd_obs_verts);
-                }
-            }
-        }
-    }
-
     // Cleanup temporaries
     for (uint32_t p = 0; p < total_polys; ++p)
         cvector_free(offset_polys[p]);
@@ -530,86 +472,7 @@ int compute_headland(const input_environment_t *env,
     va_free(headland_generated);
     va_free(call_stack);
 
-    // --- Validate reduced geometry ---
-    //
-    // After applying bcd_shrink, two failure modes are possible:
-    //
-    //   -10  obstacles_too_close   : expanded obstacle i overlaps obstacle j
-    //   -11  obstacle_escapes_zone : expanded obstacle vertex lies outside
-    //                                the shrunken zone
-    //
-    // Both checks reuse vg_point_in_polygon with temporary cvectors built
-    // from the already-stored polygon_t vertex arrays.
-
-    int geometry_rc = 0;
-
-    // Build zone cvector once for both checks.
-    cvector_vector_type(point_t) zone_cv = NULL;
-    for (uint32_t vi = 0; vi < headland->shrunken_zone.vertex_count; ++vi)
-        cvector_push_back(zone_cv, headland->shrunken_zone.vertices[vi]);
-
-    // Build obstacle cvectors array.
-    uint32_t obs_count = headland->expanded_obstacle_count;
-    cvector_vector_type(point_t) *obs_cvs = NULL;
-    if (obs_count > 0)
-    {
-        obs_cvs = (cvector_vector_type(point_t) *)va_calloc(
-            (size_t)obs_count, sizeof(cvector_vector_type(point_t)));
-        if (obs_cvs != NULL)
-        {
-            for (uint32_t k = 0; k < obs_count; ++k)
-            {
-                for (uint32_t vi = 0; vi < headland->expanded_obstacles[k].vertex_count; ++vi)
-                    cvector_push_back(obs_cvs[k], headland->expanded_obstacles[k].vertices[vi]);
-            }
-        }
-    }
-
-    if (geometry_rc == 0 && obs_cvs != NULL && zone_cv != NULL)
-    {
-        for (uint32_t k = 0; k < obs_count && geometry_rc == 0; ++k)
-        {
-            if (obs_cvs[k] == NULL)
-                continue;
-
-            uint32_t vc = (uint32_t)cvector_size(obs_cvs[k]);
-            for (uint32_t vi = 0; vi < vc && geometry_rc == 0; ++vi)
-            {
-                point_t v = obs_cvs[k][vi];
-
-                // Check: vertex outside shrunken zone → escape.
-                if (!vg_point_in_polygon(v, zone_cv))
-                {
-                    printf("compute_headland: expanded obstacle %u escapes shrunken zone (vertex %u)\n", k, vi);
-                    geometry_rc = -11;
-                    break;
-                }
-
-                // Check: vertex inside any other expanded obstacle → overlap.
-                for (uint32_t j = 0; j < obs_count && geometry_rc == 0; ++j)
-                {
-                    if (j == k || obs_cvs[j] == NULL)
-                        continue;
-                    if (vg_point_in_polygon(v, obs_cvs[j]))
-                    {
-                        printf("compute_headland: expanded obstacles %u and %u overlap\n", k, j);
-                        geometry_rc = -10;
-                    }
-                }
-            }
-        }
-    }
-
-    // Free temporary cvectors.
-    cvector_free(zone_cv);
-    if (obs_cvs != NULL)
-    {
-        for (uint32_t k = 0; k < obs_count; ++k)
-            cvector_free(obs_cvs[k]);
-        va_free(obs_cvs);
-    }
-
-    return geometry_rc;
+    return 0;
 }
 
 // IMPLEMENTATION --- free_headland -------------------------------------
@@ -630,15 +493,4 @@ void free_headland(headland_t *headland)
         cvector_free(headland->sections);
         headland->sections = NULL;
     }
-
-    free_polygon(&headland->shrunken_zone);
-
-    if (headland->expanded_obstacles != NULL)
-    {
-        for (uint32_t k = 0; k < headland->expanded_obstacle_count; ++k)
-            free_polygon(&headland->expanded_obstacles[k]);
-        va_free(headland->expanded_obstacles);
-        headland->expanded_obstacles = NULL;
-    }
-    headland->expanded_obstacle_count = 0;
 }

@@ -337,71 +337,6 @@ static cJSON *serialize_result_json(const bcd_event_list_t *event_list,
 		cJSON_AddItemToArray(layers_arr, visit_layer);
 	}
 
-	/* ---- Shrunken Zone Border (id=13, source="headlandShrunkenZoneBorder") ---- */
-	{
-		cJSON *zone_layer = cJSON_CreateObject();
-		cJSON_AddNumberToObject(zone_layer, "id", 13);
-		cJSON_AddStringToObject(zone_layer, "source", "headlandShrunkenZoneBorder");
-		cJSON *zone_data_arr = cJSON_CreateArray();
-		cJSON_AddItemToObject(zone_layer, "list", zone_data_arr);
-
-		if (headland && headland->shrunken_zone.vertices && headland->shrunken_zone.vertex_count > 0)
-		{
-			cJSON *entry = cJSON_CreateObject();
-			cJSON_AddNumberToObject(entry, "id", 1);
-
-			cJSON *vertices = cJSON_CreateArray();
-			for (uint32_t i = 0; i < headland->shrunken_zone.vertex_count; ++i)
-			{
-				cJSON *jpt = cJSON_CreateObject();
-				cJSON_AddNumberToObject(jpt, "x", headland->shrunken_zone.vertices[i].x);
-				cJSON_AddNumberToObject(jpt, "y", headland->shrunken_zone.vertices[i].y);
-				cJSON_AddItemToArray(vertices, jpt);
-			}
-			cJSON_AddItemToObject(entry, "vertices", vertices);
-
-			cJSON_AddItemToArray(zone_data_arr, entry);
-		}
-
-		cJSON_AddItemToArray(layers_arr, zone_layer);
-	}
-
-	/* ---- Expanded Obstacle Borders (id=14, source="headlandExpandedObstacleBorders") ---- */
-	{
-		cJSON *obs_layer = cJSON_CreateObject();
-		cJSON_AddNumberToObject(obs_layer, "id", 14);
-		cJSON_AddStringToObject(obs_layer, "source", "headlandExpandedObstacleBorders");
-		cJSON *obs_data_arr = cJSON_CreateArray();
-		cJSON_AddItemToObject(obs_layer, "list", obs_data_arr);
-
-		if (headland && headland->expanded_obstacles && headland->expanded_obstacle_count > 0)
-		{
-			for (uint32_t k = 0; k < headland->expanded_obstacle_count; ++k)
-			{
-				const polygon_t *obs = &headland->expanded_obstacles[k];
-				if (obs->vertices == NULL || obs->vertex_count == 0)
-					continue;
-
-				cJSON *entry = cJSON_CreateObject();
-				cJSON_AddNumberToObject(entry, "id", (double)(k + 1));
-
-				cJSON *vertices = cJSON_CreateArray();
-				for (uint32_t i = 0; i < obs->vertex_count; ++i)
-				{
-					cJSON *jpt = cJSON_CreateObject();
-					cJSON_AddNumberToObject(jpt, "x", obs->vertices[i].x);
-					cJSON_AddNumberToObject(jpt, "y", obs->vertices[i].y);
-					cJSON_AddItemToArray(vertices, jpt);
-				}
-				cJSON_AddItemToObject(entry, "vertices", vertices);
-
-				cJSON_AddItemToArray(obs_data_arr, entry);
-			}
-		}
-
-		cJSON_AddItemToArray(layers_arr, obs_layer);
-	}
-
 	/* ---- performance is injected by bcd_run_compute after all
 	 * compute data and environment polygons have been freed, so
 	 * the working-set drop from those releases is captured first. ---- */
@@ -426,9 +361,6 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 	memset(&headland, 0, sizeof(headland_t));
 	bool has_headland = false;
 
-	input_environment_t headland_env;
-	memset(&headland_env, 0, sizeof(input_environment_t));
-
 	input_environment_t *active_env = env;
 
 	if (env->headland)
@@ -441,14 +373,10 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 			free_headland(&headland);
 
 			const char *err_code =
-				(hrc == -10) ? "obstacles_too_close" : (hrc == -11) ? "obstacle_too_close_to_boundary"
-												   : (hrc == -3)	? "no_headland_transit_path"
-																	: "headland_failed";
+				(hrc == -3) ? "no_headland_transit_path" : "headland_failed";
 			const char *err_msg =
-				(hrc == -10)   ? "Two or more obstacles are too close to each other: their expanded headland boundaries overlap. Reduce Path Width, Headland Coverage Offset, or increase the distance between obstacles."
-				: (hrc == -11) ? "An obstacle is too close to the zone boundary: its expanded headland boundary escapes the shrunken zone. Reduce Path Width, Headland Coverage Offset, or move the obstacle away from the boundary."
-				: (hrc == -3)  ? "No collision-free path could be found between headland sections. The field geometry may be too complex or obstacles too close together."
-							   : "Headland generation failed.";
+				(hrc == -3) ? "No collision-free path could be found between headland sections. The field geometry may be too complex or obstacles too close together."
+							: "Headland generation failed.";
 
 			cJSON *err = cJSON_CreateObject();
 			cJSON_AddStringToObject(err, "status", "error");
@@ -459,22 +387,6 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 		else
 		{
 			has_headland = true;
-
-			// Build a reduced input_environment_t pointing at the headland geometry.
-			// This is a shallow wrapper — the polygon data is owned by headland.
-			headland_env.id = env->id;
-			headland_env.path_width = env->path_width;
-			headland_env.path_overlap = env->path_overlap;
-			headland_env.track_memory_usage = env->track_memory_usage;
-			headland_env.headland = false; // already processed
-			headland_env.start_point = env->start_point;
-			headland_env.end_point = env->end_point;
-			headland_env.boundary = headland.shrunken_zone;
-			headland_env.obstacles = headland.expanded_obstacles;
-			headland_env.obstacle_count = headland.expanded_obstacle_count;
-
-			active_env = &headland_env;
-
 			printf("coverage_path_planning: headland generated %zu section(s)\n",
 				   cvector_size(headland.sections));
 		}
