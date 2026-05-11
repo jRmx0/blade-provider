@@ -18,6 +18,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <time.h>
+#include <string.h>
 
 #include "steps/bounce_angle_step.c"
 #include "steps/bounce_ray_step.c"
@@ -126,6 +127,21 @@ char *bounce_run_compute(const char *input_environment_json)
     if (result == NULL)
     {
         return bounce_create_error_json("allocation_failed", "Bounce pipeline allocation failed.");
+    }
+
+    // Check if the result is an error (early exit without targets)
+    cJSON *status_field = cJSON_GetObjectItemCaseSensitive(result, "status");
+    if (status_field != NULL && cJSON_IsString(status_field) && strcmp(status_field->valuestring, "error") == 0)
+    {
+        cJSON *code_field = cJSON_GetObjectItemCaseSensitive(result, "code");
+        cJSON *message_field = cJSON_GetObjectItemCaseSensitive(result, "message");
+
+        const char *code = (code_field != NULL && cJSON_IsString(code_field)) ? code_field->valuestring : "early_exit";
+        const char *message = (message_field != NULL && cJSON_IsString(message_field)) ? message_field->valuestring : "Bounce exited early without hitting targets.";
+
+        char *json = bounce_create_error_json(code, message);
+        cJSON_Delete(result);
+        return json;
     }
 
     char *json = cJSON_PrintUnformatted(result);

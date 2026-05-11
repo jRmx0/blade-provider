@@ -468,6 +468,59 @@ static bool bounce_targets_reached(const bounce_pipeline_context_t *ctx,
 }
 
 // ---------------------------------------------------------------------------
+// Error result serialization
+// ---------------------------------------------------------------------------
+
+/**
+ * Create an error result JSON indicating early exit without hitting targets.
+ *
+ * Returns a JSON object with status: "error" so it can be detected at the
+ * API level and converted to a proper error response.
+ */
+static cJSON *bounce_serialize_early_exit_error(
+    const bounce_pipeline_context_t *ctx,
+    const input_environment_t *env)
+{
+    cJSON *root = cJSON_CreateObject();
+    if (root == NULL)
+    {
+        return NULL;
+    }
+
+    cJSON_AddStringToObject(root, "status", "error");
+    cJSON_AddStringToObject(root, "code", "early_exit");
+
+    // Build descriptive message
+    char message[512];
+    snprintf(message, sizeof(message),
+             "Bounce exited early without reaching targets. "
+             "Achieved: distance=%.2f/%s, coverage=%.1f%%/%s, iterations=%d. "
+             "Configured targets: distance_target=%.2f, coverage_target=%.1f%%, max_iterations=%u",
+             ctx->metrics.total_distance,
+             (env->target_distance > 0.001f) ? "required" : "unconfigured",
+             ctx->metrics.estimated_coverage * 100.0f,
+             (env->target_coverage > 0.001f) ? "required" : "unconfigured",
+             ctx->metrics.iteration,
+             env->target_distance,
+             env->target_coverage * 100.0f,
+             env->max_iterations);
+
+    cJSON_AddStringToObject(root, "message", message);
+
+    // Include partial metrics for debugging
+    cJSON *metrics = cJSON_CreateObject();
+    if (metrics != NULL)
+    {
+        cJSON_AddNumberToObject(metrics, "total_distance", ctx->metrics.total_distance);
+        cJSON_AddNumberToObject(metrics, "estimated_coverage", ctx->metrics.estimated_coverage);
+        cJSON_AddNumberToObject(metrics, "iterations", ctx->metrics.iteration);
+        cJSON_AddItemToObject(root, "partialMetrics", metrics);
+    }
+
+    return root;
+}
+
+// ---------------------------------------------------------------------------
 // Result serialization
 // ---------------------------------------------------------------------------
 
@@ -750,6 +803,17 @@ cJSON *bounce_run_pipeline(input_environment_t *environment)
     printf("bounce_run_pipeline: loop ended after %d iter(s), %d segment(s)\n",
            ctx.metrics.iteration,
            (ctx.segments != NULL) ? (int)cvector_size(ctx.segments) : 0);
+
+    // Check if targets were actually reached
+    bool targets_reached = bounce_targets_reached(&ctx, environment);
+
+    if (!targets_reached)
+    {
+        printf("bounce_run_pipeline: early exit — targets not reached\n");
+        cJSON *error_result = bounce_serialize_early_exit_error(&ctx, environment);
+        bounce_context_free(&ctx);
+        return error_result;
+    }
 
     // --- Step 6: Serialize result ---
     cJSON *result = bounce_serialize_result(&ctx);
