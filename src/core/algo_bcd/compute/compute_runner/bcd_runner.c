@@ -484,17 +484,41 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 	log_bcd_motion(motion_plan);
 
 	va_tracking_mark("Maršrutas");
-	// --- Coverage transit segments (coverage waypoint → coverage waypoint/end) ---
-	// For each coverage section i, nav connects:
-	//   - section[i].ox end → section[i+1].ox start
-	//   - for the last section: section[last].ox end → end_point
-	// Uses visibility-graph A* for all transit paths.
+	// --- Build one visibility graph for ALL transit segments -----------
 	//
-	// Pre-collect all coverage section start/end points as extra relay nodes so
-	// the visibility graph can route through any section endpoint, not just the
-	// current source and goal.  This allows globally-optimal transit paths when
-	// multiple sections cluster near each other.
-	cvector_vector_type(point_t) coverage_relay_nodes = NULL;
+	// All coverage section start/end points, headland section start/end points,
+	// and the global start/end points are now known.  Inject every one of them
+	// as extra nodes so the single O(n²) edge-validity sweep covers them all.
+	// Subsequent A* queries just read the pre-computed adjacency matrix.
+	//
+	// Transit segments that need paths:
+	//   (a) coverage section[i] end → coverage section[i+1] start
+	//   (b) coverage section[last] end → env->end_point
+	//   (c) headland section[last] end → coverage section[0] start  (if headland)
+	//   (d) env->start_point → headland section[0] start  OR  coverage section[0] start
+
+	cvector_vector_type(point_t) all_transit_nodes = NULL;
+
+	// Always include global start/end.
+	cvector_push_back(all_transit_nodes, env->start_point);
+	cvector_push_back(all_transit_nodes, active_env->end_point);
+
+	// Headland section endpoints.
+	if (has_headland && headland.sections != NULL)
+	{
+		int hl_n = (int)cvector_size(headland.sections);
+		for (int hi = 0; hi < hl_n; ++hi)
+		{
+			const headland_section_t *hs = &headland.sections[hi];
+			if (hs->path == NULL || cvector_size(hs->path) == 0)
+				continue;
+			cvector_push_back(all_transit_nodes, hs->path[0]);
+			point_t ep = hs->path[cvector_size(hs->path) - 1];
+			cvector_push_back(all_transit_nodes, ep);
+		}
+	}
+
+	// Coverage section endpoints.
 	if (motion_plan.section != NULL)
 	{
 		int sc = (int)cvector_size(motion_plan.section);
@@ -505,18 +529,35 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 				continue;
 			point_t sp = rs->ox[0];
 			point_t ep = rs->ox[cvector_size(rs->ox) - 1];
-			cvector_push_back(coverage_relay_nodes, sp);
+			cvector_push_back(all_transit_nodes, sp);
 			if (ep.x != sp.x || ep.y != sp.y)
-				cvector_push_back(coverage_relay_nodes, ep);
+				cvector_push_back(all_transit_nodes, ep);
 		}
 	}
-	const point_t *relay_ptr = (coverage_relay_nodes != NULL)
-								   ? coverage_relay_nodes
-								   : NULL;
-	int relay_count = (coverage_relay_nodes != NULL)
-						  ? (int)cvector_size(coverage_relay_nodes)
-						  : 0;
 
+	// Build the graph once.
+	vg_graph_t *vg = vg_graph_build(
+		env,
+		all_transit_nodes != NULL ? all_transit_nodes : NULL,
+		all_transit_nodes != NULL ? (int)cvector_size(all_transit_nodes) : 0);
+	cvector_free(all_transit_nodes);
+
+	if (vg == NULL)
+	{
+		if (has_headland)
+			free_headland(&headland);
+		free_bcd_event_list(&event_list);
+		free_bcd_cell_list(&cell_list);
+		cvector_free(path_list);
+		free_bcd_motion(&motion_plan);
+		cJSON *err = cJSON_CreateObject();
+		cJSON_AddStringToObject(err, "status", "error");
+		cJSON_AddStringToObject(err, "code", "vg_build_failed");
+		cJSON_AddStringToObject(err, "message", "Visibility graph construction failed (allocation error).");
+		return err;
+	}
+
+	// --- (a)+(b) Coverage transit segments ---
 	if (motion_plan.section != NULL && cvector_size(motion_plan.section) > 0)
 	{
 		int section_count = (int)cvector_size(motion_plan.section);
@@ -552,14 +593,12 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 				continue;
 			}
 
-			cvector_vector_type(point_t) replacement_nav =
-				find_free_space_path_ex(from_pt, to_pt, env, relay_ptr, relay_count);
-
-			if (replacement_nav == NULL)
+			cvector_vector_type(point_t) nav = vg_graph_query(vg, from_pt, to_pt);
+			if (nav == NULL)
 			{
+				vg_graph_free(vg);
 				if (has_headland)
 					free_headland(&headland);
-				cvector_free(coverage_relay_nodes);
 				free_bcd_event_list(&event_list);
 				free_bcd_cell_list(&cell_list);
 				cvector_free(path_list);
@@ -572,17 +611,11 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 			}
 
 			cvector_free(curr->nav);
-			curr->nav = replacement_nav;
+			curr->nav = nav;
 		}
 	}
-	cvector_free(coverage_relay_nodes);
 
-	// --- Headland → first coverage point transit ---
-	// The last headland section's nav must point to the first coverage waypoint.
-	// This can only be computed here because motion_plan is not available inside
-	// compute_headland.
-	//
-	// from_pt lies on the headland boundary, so use free-space routing.
+	// --- (c) Headland section[last] end → coverage section[0] start ---
 	if (has_headland && headland.sections != NULL)
 	{
 		int hl_count = (int)cvector_size(headland.sections);
@@ -596,10 +629,11 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 				point_t from_pt = last_hs->path[cvector_size(last_hs->path) - 1];
 				point_t to_pt = motion_plan.section[0].ox[0];
 
-				// Route from the last headland waypoint to the first coverage waypoint.
-				last_hs->nav = find_free_space_path(from_pt, to_pt, env);
+				cvector_free(last_hs->nav);
+				last_hs->nav = vg_graph_query(vg, from_pt, to_pt);
 				if (last_hs->nav == NULL)
 				{
+					vg_graph_free(vg);
 					free_headland(&headland);
 					return err_cleanup(&event_list, &cell_list, &path_list, &motion_plan, -3);
 				}
@@ -607,14 +641,11 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 		}
 	}
 
-	// --- Start point → first path waypoint transit ---
-	// Bridges the gap from start_point to the first headland (or coverage) waypoint.
-	// Emitted as the very first segment in coveragePathPlan.segments.
+	// --- (d) Start point → first headland or coverage waypoint ---
 	cvector_vector_type(point_t) start_nav = NULL;
 
 	if (has_headland)
 	{
-		// Route from start_point to the first headland waypoint.
 		if (headland.sections != NULL && cvector_size(headland.sections) > 0)
 		{
 			headland_section_t *first_hs = &headland.sections[0];
@@ -623,9 +654,10 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 				point_t sp_from = env->start_point;
 				point_t sp_to = first_hs->path[0];
 
-				start_nav = find_free_space_path(sp_from, sp_to, env);
+				start_nav = vg_graph_query(vg, sp_from, sp_to);
 				if (start_nav == NULL)
 				{
+					vg_graph_free(vg);
 					free_headland(&headland);
 					return err_cleanup(&event_list, &cell_list, &path_list, &motion_plan, -3);
 				}
@@ -634,16 +666,16 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 	}
 	else
 	{
-		// No headland: use free-space pathfinding from start_point to first coverage waypoint.
 		if (motion_plan.section != NULL && cvector_size(motion_plan.section) > 0 &&
 			motion_plan.section[0].ox != NULL && cvector_size(motion_plan.section[0].ox) > 0)
 		{
 			point_t sp_from = active_env->start_point;
 			point_t sp_to = motion_plan.section[0].ox[0];
 
-			start_nav = find_free_space_path(sp_from, sp_to, env);
+			start_nav = vg_graph_query(vg, sp_from, sp_to);
 			if (start_nav == NULL)
 			{
+				vg_graph_free(vg);
 				free_bcd_event_list(&event_list);
 				free_bcd_cell_list(&cell_list);
 				cvector_free(path_list);
@@ -668,6 +700,7 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 	/* Free compute data after serializing — these va_free calls are tracked,
 	 * so the working-set drop from releasing cell/path/motion/event data
 	 * appears in the sample vector before the snapshot is taken. */
+	vg_graph_free(vg);
 	free_bcd_event_list(&event_list);
 	free_bcd_cell_list(&cell_list);
 	cvector_free(path_list);

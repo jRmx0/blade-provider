@@ -221,156 +221,22 @@ static bool vg_segment_is_free(point_t p, point_t q,
     return true;
 }
 
-// IMPLEMENTATION --- free_space_astar ----------------------------------
+// IMPLEMENTATION --- pre-built visibility graph (vg_graph_t) -----------
 
 /*
- * Finds the shortest collision-free path from `from` to `to` using a
- * visibility-graph A* over the given pre-built offset polygon array.
- *
- * Node set: {from} ∪ {extra_nodes} ∪ {all offset polygon vertices} ∪ {to}.
- * An edge (u, v) is valid when vg_segment_is_free(u, v) is true.
- * Cost and heuristic are Euclidean distances.
- *
- * extra_nodes / extra_count: optional relay points injected before the
- * polygon vertices.  Pass NULL / 0 to get the original behaviour.
- *
- * Returns a cvector of waypoints (caller frees) on success, or NULL when
- * no path exists.
+ * Builds an internal polygon array from `env`.  Caller frees via
+ *   for (uint32_t p = 0; p < nav_total; ++p) cvector_free(nav_polys[p]);
+ *   va_free(nav_polys);
+ * Returns NULL on allocation failure.
  */
-static cvector_vector_type(point_t) free_space_astar(
-    point_t from, point_t to,
-    const cvector_vector_type(point_t) * offset_polys,
-    uint32_t total_polys,
-    const point_t *extra_nodes, int extra_count)
-{
-    // Build node list: from → extra relay nodes → all polygon vertices → to.
-    cvector_vector_type(point_t) nodes = NULL;
-    cvector_push_back(nodes, from);
-    for (int ei = 0; ei < extra_count; ++ei)
-        cvector_push_back(nodes, extra_nodes[ei]);
-    for (uint32_t pi = 0; pi < total_polys; ++pi)
-    {
-        if (offset_polys[pi] == NULL)
-            continue;
-        uint32_t nv = (uint32_t)cvector_size(offset_polys[pi]);
-        for (uint32_t vi = 0; vi < nv; ++vi)
-            cvector_push_back(nodes, offset_polys[pi][vi]);
-    }
-    int goal = (int)cvector_size(nodes); // index of the `to` node
-    cvector_push_back(nodes, to);
-    int n = goal + 1;
-
-    float *g = (float *)va_malloc((size_t)n * sizeof(float));
-    float *f_arr = (float *)va_malloc((size_t)n * sizeof(float));
-    int *par = (int *)va_malloc((size_t)n * sizeof(int));
-    bool *closed = (bool *)va_calloc((size_t)n, sizeof(bool));
-    bool *in_open = (bool *)va_calloc((size_t)n, sizeof(bool));
-
-    if (!g || !f_arr || !par || !closed || !in_open)
-    {
-        va_free(g);
-        va_free(f_arr);
-        va_free(par);
-        va_free(closed);
-        va_free(in_open);
-        cvector_free(nodes);
-        return NULL;
-    }
-
-    const float INF = 1e30f;
-    for (int i = 0; i < n; ++i)
-    {
-        g[i] = INF;
-        f_arr[i] = INF;
-        par[i] = -1;
-    }
-
-    g[0] = 0.0f;
-    {
-        float dx = nodes[0].x - to.x, dy = nodes[0].y - to.y;
-        f_arr[0] = sqrtf(dx * dx + dy * dy);
-    }
-    in_open[0] = true;
-
-    cvector_vector_type(point_t) result = NULL;
-
-    while (true)
-    {
-        // Pick the open node with the lowest f (linear scan — n is small: ~20-100).
-        int cur = -1;
-        float best = INF;
-        for (int i = 0; i < n; ++i)
-        {
-            if (in_open[i] && f_arr[i] < best)
-            {
-                best = f_arr[i];
-                cur = i;
-            }
-        }
-        if (cur < 0)
-            break; // exhausted open set, no path
-
-        if (cur == goal)
-        {
-            // Reconstruct path from goal back to start, then reverse.
-            cvector_vector_type(int) rev = NULL;
-            for (int c = cur; c >= 0; c = par[c])
-                cvector_push_back(rev, c);
-            int rlen = (int)cvector_size(rev);
-            for (int k = rlen - 1; k >= 0; --k)
-                cvector_push_back(result, nodes[rev[k]]);
-            cvector_free(rev);
-            break;
-        }
-
-        in_open[cur] = false;
-        closed[cur] = true;
-
-        for (int nb = 0; nb < n; ++nb)
-        {
-            if (closed[nb] || nb == cur)
-                continue;
-            if (!vg_segment_is_free(nodes[cur], nodes[nb], offset_polys, total_polys))
-                continue;
-
-            float dx = nodes[nb].x - nodes[cur].x;
-            float dy = nodes[nb].y - nodes[cur].y;
-            float ng = g[cur] + sqrtf(dx * dx + dy * dy);
-            if (ng < g[nb])
-            {
-                g[nb] = ng;
-                float hdx = nodes[nb].x - to.x, hdy = nodes[nb].y - to.y;
-                f_arr[nb] = ng + sqrtf(hdx * hdx + hdy * hdy);
-                par[nb] = cur;
-                in_open[nb] = true;
-            }
-        }
-    }
-
-    va_free(g);
-    va_free(f_arr);
-    va_free(par);
-    va_free(closed);
-    va_free(in_open);
-    cvector_free(nodes);
-    return result;
-}
-
-// IMPLEMENTATION --- find_free_space_path / find_free_space_path_ex ------
-
-/*
- * Shared helper: builds the polygon array from env and calls free_space_astar.
- */
-static cvector_vector_type(point_t) find_free_space_path_impl(
-    point_t from, point_t to,
-    const input_environment_t *env,
-    const point_t *extra_nodes, int extra_count)
+static cvector_vector_type(point_t) * vg_build_nav_polys(
+                                          const input_environment_t *env, uint32_t *out_total)
 {
     uint32_t nav_total = 1 + env->obstacle_count;
     cvector_vector_type(point_t) *nav_polys =
-        (cvector_vector_type(point_t) *)va_calloc(nav_total,
-                                                  sizeof(cvector_vector_type(point_t)));
-    if (nav_polys == NULL)
+        (cvector_vector_type(point_t) *)va_calloc(
+            nav_total, sizeof(cvector_vector_type(point_t)));
+    if (!nav_polys)
         return NULL;
 
     for (uint32_t vi = 0; vi < env->boundary.vertex_count; ++vi)
@@ -380,13 +246,241 @@ static cvector_vector_type(point_t) find_free_space_path_impl(
         for (uint32_t vi = 0; vi < env->obstacles[k].vertex_count; ++vi)
             cvector_push_back(nav_polys[k + 1], env->obstacles[k].vertices[vi]);
 
-    cvector_vector_type(point_t) result =
-        free_space_astar(from, to, nav_polys, nav_total, extra_nodes, extra_count);
+    *out_total = nav_total;
+    return nav_polys;
+}
 
+/*
+ * Epsilon-match: returns the index of the first node within 1e-6 of p, or -1.
+ * Since all query points were injected at build time, this is usually exact.
+ */
+static int vg_find_node(const vg_graph_t *graph, point_t p)
+{
+    const float EPS2 = 1e-12f; /* (1 µm)² at metre-scale coordinates */
+    for (int i = 0; i < graph->n; ++i)
+    {
+        float dx = graph->nodes[i].x - p.x;
+        float dy = graph->nodes[i].y - p.y;
+        if (dx * dx + dy * dy < EPS2)
+            return i;
+    }
+    return -1;
+}
+
+vg_graph_t *vg_graph_build(const input_environment_t *env,
+                           const point_t *extra_nodes, int extra_count)
+{
+    /* 1. Build polygon array from env. */
+    uint32_t nav_total = 0;
+    cvector_vector_type(point_t) *nav_polys = vg_build_nav_polys(env, &nav_total);
+    if (!nav_polys)
+        return NULL;
+
+    /* 2. Collect all nodes: extra_nodes first, then polygon vertices. */
+    cvector_vector_type(point_t) nodes = NULL;
+    for (int ei = 0; ei < extra_count; ++ei)
+        cvector_push_back(nodes, extra_nodes[ei]);
+    for (uint32_t pi = 0; pi < nav_total; ++pi)
+    {
+        if (nav_polys[pi] == NULL)
+            continue;
+        uint32_t nv = (uint32_t)cvector_size(nav_polys[pi]);
+        for (uint32_t vi = 0; vi < nv; ++vi)
+            cvector_push_back(nodes, nav_polys[pi][vi]);
+    }
+
+    int n = (int)cvector_size(nodes);
+    if (n == 0)
+    {
+        for (uint32_t p = 0; p < nav_total; ++p)
+            cvector_free(nav_polys[p]);
+        va_free(nav_polys);
+        cvector_free(nodes);
+        return NULL;
+    }
+
+    /* 3. Allocate adjacency matrix and graph struct. */
+    bool *adj = (bool *)va_calloc((size_t)n * (size_t)n, sizeof(bool));
+    vg_graph_t *graph = (vg_graph_t *)va_malloc(sizeof(vg_graph_t));
+    if (!adj || !graph)
+    {
+        va_free(adj);
+        va_free(graph);
+        cvector_free(nodes);
+        for (uint32_t p = 0; p < nav_total; ++p)
+            cvector_free(nav_polys[p]);
+        va_free(nav_polys);
+        return NULL;
+    }
+
+    /* 4. Evaluate all O(n²/2) edges once. */
+    for (int i = 0; i < n; ++i)
+        for (int j = i + 1; j < n; ++j)
+        {
+            bool ok = vg_segment_is_free(nodes[i], nodes[j], nav_polys, nav_total);
+            adj[i * n + j] = ok;
+            adj[j * n + i] = ok;
+        }
+
+    /* 5. Release polygon data — the graph only needs nodes + adj. */
     for (uint32_t p = 0; p < nav_total; ++p)
         cvector_free(nav_polys[p]);
     va_free(nav_polys);
 
+    graph->nodes = nodes;
+    graph->adj = adj;
+    graph->n = n;
+    return graph;
+}
+
+cvector_vector_type(point_t) vg_graph_query(const vg_graph_t *graph,
+                                            point_t from, point_t to)
+{
+    if (!graph || graph->n == 0)
+        return NULL;
+
+    int from_idx = vg_find_node(graph, from);
+    int to_idx = vg_find_node(graph, to);
+    if (from_idx < 0 || to_idx < 0)
+        return NULL;
+
+    if (from_idx == to_idx)
+    {
+        /* Degenerate: from == to — return a single-point path. */
+        cvector_vector_type(point_t) r = NULL;
+        cvector_push_back(r, from);
+        return r;
+    }
+
+    int n = graph->n;
+    float *g_cost = (float *)va_malloc((size_t)n * sizeof(float));
+    float *f_arr = (float *)va_malloc((size_t)n * sizeof(float));
+    int *par = (int *)va_malloc((size_t)n * sizeof(int));
+    bool *closed = (bool *)va_calloc((size_t)n, sizeof(bool));
+    bool *in_open = (bool *)va_calloc((size_t)n, sizeof(bool));
+
+    if (!g_cost || !f_arr || !par || !closed || !in_open)
+    {
+        va_free(g_cost);
+        va_free(f_arr);
+        va_free(par);
+        va_free(closed);
+        va_free(in_open);
+        return NULL;
+    }
+
+    const float INF = 1e30f;
+    for (int i = 0; i < n; ++i)
+    {
+        g_cost[i] = INF;
+        f_arr[i] = INF;
+        par[i] = -1;
+    }
+
+    {
+        float dx = graph->nodes[from_idx].x - graph->nodes[to_idx].x;
+        float dy = graph->nodes[from_idx].y - graph->nodes[to_idx].y;
+        g_cost[from_idx] = 0.0f;
+        f_arr[from_idx] = sqrtf(dx * dx + dy * dy);
+        in_open[from_idx] = true;
+    }
+
+    cvector_vector_type(point_t) result = NULL;
+
+    while (true)
+    {
+        /* Pick the open node with the lowest f (linear scan; n is small). */
+        int cur = -1;
+        float best = INF;
+        for (int i = 0; i < n; ++i)
+            if (in_open[i] && f_arr[i] < best)
+            {
+                best = f_arr[i];
+                cur = i;
+            }
+
+        if (cur < 0)
+            break; /* open set exhausted — no path */
+
+        if (cur == to_idx)
+        {
+            cvector_vector_type(int) rev = NULL;
+            for (int c = cur; c >= 0; c = par[c])
+                cvector_push_back(rev, c);
+            int rlen = (int)cvector_size(rev);
+            for (int k = rlen - 1; k >= 0; --k)
+                cvector_push_back(result, graph->nodes[rev[k]]);
+            cvector_free(rev);
+            break;
+        }
+
+        in_open[cur] = false;
+        closed[cur] = true;
+
+        for (int nb = 0; nb < n; ++nb)
+        {
+            if (closed[nb] || nb == cur || !graph->adj[cur * n + nb])
+                continue;
+            float dx = graph->nodes[nb].x - graph->nodes[cur].x;
+            float dy = graph->nodes[nb].y - graph->nodes[cur].y;
+            float ng = g_cost[cur] + sqrtf(dx * dx + dy * dy);
+            if (ng < g_cost[nb])
+            {
+                g_cost[nb] = ng;
+                float hdx = graph->nodes[nb].x - graph->nodes[to_idx].x;
+                float hdy = graph->nodes[nb].y - graph->nodes[to_idx].y;
+                f_arr[nb] = ng + sqrtf(hdx * hdx + hdy * hdy);
+                par[nb] = cur;
+                in_open[nb] = true;
+            }
+        }
+    }
+
+    va_free(g_cost);
+    va_free(f_arr);
+    va_free(par);
+    va_free(closed);
+    va_free(in_open);
+    return result;
+}
+
+void vg_graph_free(vg_graph_t *graph)
+{
+    if (!graph)
+        return;
+    cvector_free(graph->nodes);
+    va_free(graph->adj);
+    va_free(graph);
+}
+
+// IMPLEMENTATION --- find_free_space_path / find_free_space_path_ex ------
+
+/*
+ * Shared helper: injects from+to alongside extra_nodes, builds a one-shot
+ * vg_graph_t, runs A*, then frees the graph.
+ */
+static cvector_vector_type(point_t) find_free_space_path_impl(
+    point_t from, point_t to,
+    const input_environment_t *env,
+    const point_t *extra_nodes, int extra_count)
+{
+    /* Prepend from + to so they are registered as graph nodes. */
+    int total = extra_count + 2;
+    point_t *all = (point_t *)va_malloc((size_t)total * sizeof(point_t));
+    if (!all)
+        return NULL;
+    all[0] = from;
+    all[1] = to;
+    for (int i = 0; i < extra_count; ++i)
+        all[2 + i] = extra_nodes[i];
+
+    vg_graph_t *graph = vg_graph_build(env, all, total);
+    va_free(all);
+    if (!graph)
+        return NULL;
+
+    cvector_vector_type(point_t) result = vg_graph_query(graph, from, to);
+    vg_graph_free(graph);
     return result;
 }
 
