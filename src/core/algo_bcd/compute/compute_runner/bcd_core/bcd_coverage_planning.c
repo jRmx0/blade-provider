@@ -2,6 +2,7 @@
 #include <stdbool.h>
 #include "../../../../../../dependencies/cvector/cvector.h"
 #include "bcd_coverage_planning.h"
+#include "bcd_pathfinding.h"
 
 // COMPUTE_BCD_PATH_LIST
 
@@ -19,12 +20,6 @@ static void add_shortest_path_to_list(cvector_vector_type(int) * path_list,
                                       cvector_vector_type(bcd_cell_t) * cell_list,
                                       int target_cell_index,
                                       int *visited_count);
-
-// --- ADD_SHORTEST_PATH_TO_LIST
-
-cvector_vector_type(int) find_shortest_path(int cell_index_from,
-                                            int cell_index_to,
-                                            cvector_vector_type(bcd_cell_t) * cell_list);
 
 // ---
 
@@ -190,148 +185,24 @@ static void add_shortest_path_to_list(cvector_vector_type(int) * path_list,
                                       int *visited_count)
 {
     if (path_list == NULL || *path_list == NULL || cvector_size(*path_list) == 0)
-    {
         return;
-    }
 
     int last_cell_index = (*path_list)[cvector_size(*path_list) - 1];
-    cvector_vector_type(int) shortest_path = find_shortest_path(last_cell_index, target_cell_index, cell_list);
+    cvector_vector_type(int) corridor = bcd_astar(last_cell_index, target_cell_index, cell_list);
 
-    if (shortest_path == NULL || cvector_size(shortest_path) < 2)
+    if (corridor == NULL || cvector_size(corridor) < 2)
     {
-        cvector_free(shortest_path);
+        cvector_free(corridor);
         add_cell_to_path(path_list, cell_list, target_cell_index, visited_count);
         return;
     }
 
-    // Add intermediate cells from shortest path (skip first and last)
-    for (size_t i = 1; i < cvector_size(shortest_path) - 1; ++i)
-    {
-        cvector_push_back(*path_list, shortest_path[i]);
-    }
+    // Add intermediate cells from A* corridor (skip first — already in path — and last)
+    for (size_t i = 1; i < cvector_size(corridor) - 1; ++i)
+        cvector_push_back(*path_list, corridor[i]);
 
-    cvector_free(shortest_path);
+    cvector_free(corridor);
     add_cell_to_path(path_list, cell_list, target_cell_index, visited_count);
-}
-
-// --- --- ADD_SHORTEST_PATH_TO_LIST
-
-cvector_vector_type(int) find_shortest_path(int cell_index_from,
-                                            int cell_index_to,
-                                            cvector_vector_type(bcd_cell_t) * cell_list)
-{
-    cvector_vector_type(int) path = NULL;
-
-    if (cell_list == NULL || cell_index_from < 0 || cell_index_to < 0)
-    {
-        return path;
-    }
-
-    int cell_count = cvector_size(*cell_list);
-    if (cell_index_from >= cell_count || cell_index_to >= cell_count)
-    {
-        return path;
-    }
-
-    // If source and destination are the same
-    if (cell_index_from == cell_index_to)
-    {
-        cvector_push_back(path, cell_index_from);
-        return path;
-    }
-
-    // BFS data structures
-    cvector_vector_type(int) queue = NULL;
-    cvector_vector_type(int) parent = NULL;
-    cvector_vector_type(bool) visited = NULL;
-
-    // Initialize arrays
-    for (int i = 0; i < cell_count; i++)
-    {
-        cvector_push_back(parent, -1);
-        cvector_push_back(visited, false);
-    }
-
-    // Start BFS
-    cvector_push_back(queue, cell_index_from);
-    visited[cell_index_from] = true;
-
-    bool found = false;
-
-    while (cvector_size(queue) > 0 && !found)
-    {
-        int current_cell = queue[0];
-
-        if (current_cell < 0 || current_cell >= cell_count)
-        {
-            continue;
-        }
-
-        // Remove first element from queue
-        for (int i = 0; i < cvector_size(queue) - 1; i++)
-        {
-            queue[i] = queue[i + 1];
-        }
-        cvector_pop_back(queue);
-
-        // Check all neighbors
-        bcd_neighbor_node_t *neighbor_node = (*cell_list)[current_cell].neighbor_list.head;
-
-        while (neighbor_node != NULL)
-        {
-            int neighbor_index = neighbor_node->cell_index;
-
-            if (neighbor_index < 0 || neighbor_index >= cell_count)
-            {
-                neighbor_node = neighbor_node->next;
-                continue;
-            }
-
-            if (!visited[neighbor_index])
-            {
-                visited[neighbor_index] = true;
-                parent[neighbor_index] = current_cell;
-                cvector_push_back(queue, neighbor_index);
-
-                if (neighbor_index == cell_index_to)
-                {
-                    found = true;
-                    break;
-                }
-            }
-
-            neighbor_node = neighbor_node->next;
-        }
-    }
-
-    // Reconstruct path if found
-    if (found)
-    {
-        cvector_vector_type(int) temp_path = NULL;
-        int current = cell_index_to;
-
-        while (current != -1)
-        {
-            cvector_push_back(temp_path, current);
-            current = parent[current];
-        }
-
-        // Reverse the path
-        int path_length = cvector_size(temp_path);
-        for (int i = path_length - 1; i >= 0; i--)
-        {
-            cvector_push_back(path, temp_path[i]);
-        }
-
-        cvector_free(temp_path);
-    }
-
-    // Cleanup
-    cvector_free(queue);
-    cvector_free(parent);
-    cvector_free(visited);
-
-    return path;
 }
 
 // ---

@@ -23,13 +23,17 @@
 
 #include "compute_runner/bcd_core/bcd_event_list_building.c"
 #include "compute_runner/bcd_core/bcd_cell_computation.c"
+#include "compute_runner/bcd_core/bcd_pq.c"
 #include "compute_runner/bcd_core/bcd_coverage_planning.c"
 #include "compute_runner/bcd_core/bcd_geometry.c"
+#include "compute_runner/bcd_core/bcd_pathfinding.c"
+#include "compute_runner/bcd_core/bcd_funnel.c"
 #include "compute_runner/bcd_core/bcd_ox_motion.c"
 #include "compute_runner/bcd_core/bcd_transit_motion.c"
 #include "compute_runner/bcd_core/bcd_motion_planning.c"
 #include "../preprocess/bcd_preprocess.c"
 #include "compute_runner/bcd_runner.c"
+#include "compute_runner/bcd_core/bcd_navigate.c"
 
 #define BYTES_PER_KB 1024.0
 

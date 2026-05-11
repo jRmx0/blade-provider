@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include "bcd_geometry.h"
 
 /* ---- grid resolution and refinement tolerance ---- */
@@ -320,4 +321,15 @@ int bcd_find_starting_cell(const cvector_vector_type(bcd_cell_t) * cell_list, po
         }
     }
     return best_index;
+}
+
+bool bcd_cell_contains_point(const bcd_cell_t *cell, point_t p)
+{
+    if (p.x < cell->c_begin.x || p.x > cell->c_end.x)
+        return false;
+
+    float ceil_y, floor_y;
+    cell_interp_bounds(cell, p.x, &ceil_y, &floor_y);
+
+    return (p.y >= ceil_y && p.y <= floor_y);
 }
