@@ -5,7 +5,6 @@
 #include "bcd_cell_computation.h"
 #include "bcd_motion_planning.h"
 #include "bcd_ox_motion.h"
-#include "bcd_transit_motion.h"
 
 // IMPLEMENTATION --- compute_bcd_motion ----------------------------
 
@@ -15,6 +14,8 @@ int compute_bcd_motion(cvector_vector_type(bcd_cell_t) * cell_list,
                        float step_size,
                        point_t end_point)
 {
+    (void)end_point;
+
     if (cell_list == NULL || *cell_list == NULL ||
         path_list == NULL || *path_list == NULL ||
         motion_plan == NULL)
@@ -23,11 +24,6 @@ int compute_bcd_motion(cvector_vector_type(bcd_cell_t) * cell_list,
     }
 
     int cell_count = (int)cvector_size(*cell_list);
-
-    int begin_path_pos = 0;
-    point_t begin_point = {0};
-    bool compute_nav = false;
-    bool any_section = false;
 
     size_t i;
     for (i = 0; i < cvector_size(*path_list); ++i)
@@ -52,28 +48,9 @@ int compute_bcd_motion(cvector_vector_type(bcd_cell_t) * cell_list,
             return -1;
         }
 
-        if (compute_nav)
-        {
-            // Nav connects the previous section's coverage END to this section's
-            // coverage START.  Assign it to the already-pushed previous section
-            // so that each section's nav describes how to LEAVE that section,
-            // not how to arrive at it.
-            point_t next_start = *cvector_front(ox);
-
-            cvector_vector_type(point_t) nav =
-                compute_connection_motion((const cvector_vector_type(bcd_cell_t) *)cell_list,
-                                          (const cvector_vector_type(int) *)path_list,
-                                          begin_path_pos,
-                                          begin_point,
-                                          (int)i,
-                                          next_start);
-
-            int prev_section_idx = (int)cvector_size(motion_plan->section) - 1;
-            motion_plan->section[prev_section_idx].nav = nav;
-        }
-
-        // Push current section with nav=NULL; nav will be filled in on the
-        // next iteration once the next cell's start point is known.
+        // Push current section with nav=NULL.
+        // Transit paths are now computed centrally in bcd_runner.c using
+        // find_free_space_path() for both headland and coverage transit.
         cell_motion_plan_t curr_section;
         curr_section.ox = ox;
         curr_section.nav = NULL;
@@ -81,33 +58,6 @@ int compute_bcd_motion(cvector_vector_type(bcd_cell_t) * cell_list,
         cvector_push_back(motion_plan->section, curr_section);
 
         (*cell_list)[path_cell_index].cleaned = true;
-
-        any_section = true;
-        begin_path_pos = (int)i;
-        begin_point = *cvector_back(ox);
-        compute_nav = true;
-    }
-
-    // Generate the closing nav: last coverage end → end_point.
-    // path_list ends at the last coverage cell (no return tail).
-    // begin_path_pos points to that same last cell, so
-    // compute_connection_motion executes the single-cell spine branch
-    // (begin_point → medial-axis spine → end_point within the last cell).
-    // bcd_runner.c overrides this nav with a VG A* path to the true end_point.
-    if (any_section && cvector_size(motion_plan->section) > 0)
-    {
-        int last_section_idx = (int)cvector_size(motion_plan->section) - 1;
-        int path_list_end = begin_path_pos;
-
-        cvector_vector_type(point_t) return_nav =
-            compute_connection_motion((const cvector_vector_type(bcd_cell_t) *)cell_list,
-                                      (const cvector_vector_type(int) *)path_list,
-                                      begin_path_pos,
-                                      begin_point,
-                                      path_list_end,
-                                      end_point);
-
-        motion_plan->section[last_section_idx].nav = return_nav;
     }
 
     return 0;

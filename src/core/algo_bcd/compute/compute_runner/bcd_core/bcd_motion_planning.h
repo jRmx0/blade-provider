@@ -7,7 +7,7 @@
 typedef struct
 {
     cvector_vector_type(point_t) ox;
-    cvector_vector_type(point_t) nav; // navigation to next cell
+    cvector_vector_type(point_t) nav; // transit path to next section/end (assigned in bcd_runner.c)
 } cell_motion_plan_t;
 
 typedef struct
