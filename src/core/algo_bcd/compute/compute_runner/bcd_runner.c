@@ -524,9 +524,7 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 	// This can only be computed here because motion_plan is not available inside
 	// compute_headland.
 	//
-	// from_pt lies on the headland boundary, not inside any BCD cell, so
-	// compute_connection_motion is not appropriate here — it degrades to a
-	// direct line when from_pt falls outside the first cell's x-range.
+	// from_pt lies on the headland boundary, so use free-space routing.
 	if (has_headland && headland.sections != NULL)
 	{
 		int hl_count = (int)cvector_size(headland.sections);
