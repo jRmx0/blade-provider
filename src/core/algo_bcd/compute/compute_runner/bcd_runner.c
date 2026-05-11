@@ -457,35 +457,49 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 	log_bcd_motion(motion_plan);
 
 	va_tracking_mark("Maršrutas");
-	// --- Last coverage point → end_point transit ---
-	// compute_bcd_motion sets the last section's nav via compute_connection_motion
-	// (cell-spine).  Replace it with a VG A* path so that end_point values that
-	// lie outside the BCD cells are handled correctly and obstacle crossing is
-	// explicitly avoided — consistent with how start_point transit is handled.
+	// --- Coverage transit segments (coverage waypoint → coverage waypoint/end) ---
+	// Use the same free-space mechanism as headland transit: visibility-graph A*.
+	// For each coverage section i, nav connects:
+	//   - section[i].ox end → section[i+1].ox start
+	//   - for the last section: section[last].ox end → end_point
 	if (motion_plan.section != NULL && cvector_size(motion_plan.section) > 0)
 	{
-		int last_idx = (int)cvector_size(motion_plan.section) - 1;
-		cell_motion_plan_t *last_sec = &motion_plan.section[last_idx];
-		if (last_sec->ox != NULL && cvector_size(last_sec->ox) > 0)
+		int section_count = (int)cvector_size(motion_plan.section);
+		for (int i = 0; i < section_count; ++i)
 		{
-			point_t ep_from = last_sec->ox[cvector_size(last_sec->ox) - 1];
-			point_t ep_to = active_env->end_point;
+			cell_motion_plan_t *curr = &motion_plan.section[i];
+			if (curr->ox == NULL || cvector_size(curr->ox) == 0)
+				continue;
 
-			cvector_vector_type(point_t) existing_nav = last_sec->nav;
-			cvector_vector_type(point_t) replacement_nav =
-				find_free_space_path(ep_from, ep_to, env);
-			if (replacement_nav != NULL)
+			point_t from_pt = curr->ox[cvector_size(curr->ox) - 1];
+			point_t to_pt = {0};
+			bool has_target = false;
+
+			if (i + 1 < section_count)
 			{
-				cvector_free(existing_nav);
-				last_sec->nav = replacement_nav;
-			}
-			else if (!has_headland && existing_nav != NULL && cvector_size(existing_nav) > 0)
-			{
-				// Headland disabled: keep the cell-spine transit produced by
-				// compute_bcd_motion when VG A* replacement cannot be found.
-				last_sec->nav = existing_nav;
+				cell_motion_plan_t *next = &motion_plan.section[i + 1];
+				if (next->ox != NULL && cvector_size(next->ox) > 0)
+				{
+					to_pt = next->ox[0];
+					has_target = true;
+				}
 			}
 			else
+			{
+				to_pt = active_env->end_point;
+				has_target = true;
+			}
+
+			if (!has_target)
+			{
+				cvector_free(curr->nav);
+				curr->nav = NULL;
+				continue;
+			}
+
+			cvector_vector_type(point_t) replacement_nav =
+				find_free_space_path(from_pt, to_pt, env);
+			if (replacement_nav == NULL)
 			{
 				if (has_headland)
 					free_headland(&headland);
@@ -495,10 +509,13 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 				free_bcd_motion(&motion_plan);
 				cJSON *err = cJSON_CreateObject();
 				cJSON_AddStringToObject(err, "status", "error");
-				cJSON_AddStringToObject(err, "code", "no_end_transit_path");
-				cJSON_AddStringToObject(err, "message", "No collision-free path could be found from the last coverage point to the end point.");
+				cJSON_AddStringToObject(err, "code", "no_coverage_transit_path");
+				cJSON_AddStringToObject(err, "message", "No collision-free path could be found for a coverage transit segment.");
 				return err;
 			}
+
+			cvector_free(curr->nav);
+			curr->nav = replacement_nav;
 		}
 	}
 
@@ -561,14 +578,26 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 	}
 	else
 	{
-		// No headland: direct 2-point line from start_point to the first coverage waypoint.
+		// No headland: use free-space pathfinding from start_point to first coverage waypoint.
 		if (motion_plan.section != NULL && cvector_size(motion_plan.section) > 0 &&
 			motion_plan.section[0].ox != NULL && cvector_size(motion_plan.section[0].ox) > 0)
 		{
 			point_t sp_from = active_env->start_point;
 			point_t sp_to = motion_plan.section[0].ox[0];
-			cvector_push_back(start_nav, sp_from);
-			cvector_push_back(start_nav, sp_to);
+
+			start_nav = find_free_space_path(sp_from, sp_to, env);
+			if (start_nav == NULL)
+			{
+				free_bcd_event_list(&event_list);
+				free_bcd_cell_list(&cell_list);
+				cvector_free(path_list);
+				free_bcd_motion(&motion_plan);
+				cJSON *err = cJSON_CreateObject();
+				cJSON_AddStringToObject(err, "status", "error");
+				cJSON_AddStringToObject(err, "code", "no_start_transit_path");
+				cJSON_AddStringToObject(err, "message", "No collision-free path could be found from the start point to the first coverage waypoint.");
+				return err;
+			}
 		}
 	}
 
