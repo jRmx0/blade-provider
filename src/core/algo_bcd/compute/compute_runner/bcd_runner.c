@@ -401,6 +401,24 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 		return err_cleanup(&event_list, NULL, NULL, NULL, rc);
 	}
 
+	/* DEBUG: dump all vertex X values after preprocessing to verify uniqueness */
+	{
+		printf("BCD preprocess debug: boundary vertices (%u):\n", active_env->boundary.vertex_count);
+		for (uint32_t _vi = 0; _vi < active_env->boundary.vertex_count; _vi++)
+			printf("  [%u] x=%.9f  y=%.9f\n", _vi,
+				   active_env->boundary.vertices[_vi].x,
+				   active_env->boundary.vertices[_vi].y);
+		for (uint32_t _oi = 0; _oi < active_env->obstacle_count; _oi++)
+		{
+			printf("BCD preprocess debug: obstacle[%u] vertices (%u):\n",
+				   _oi, active_env->obstacles[_oi].vertex_count);
+			for (uint32_t _vi = 0; _vi < active_env->obstacles[_oi].vertex_count; _vi++)
+				printf("  [%u] x=%.9f  y=%.9f\n", _vi,
+					   active_env->obstacles[_oi].vertices[_vi].x,
+					   active_env->obstacles[_oi].vertices[_vi].y);
+		}
+	}
+
 	va_tracking_mark("Įvykiai");
 	rc = build_bcd_event_list(active_env, &event_list);
 	if (rc != 0)
@@ -411,6 +429,15 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 		return err_cleanup(&event_list, NULL, NULL, NULL, rc);
 	}
 	printf("coverage_path_planning: successfully generated %d events\n", event_list.length);
+	for (int ei = 0; ei < event_list.length; ei++)
+	{
+		bcd_event_t *ev = &event_list.bcd_events[ei];
+		printf("  [%d] type=%-10s vertex=(%.9f, %.9f)\n",
+			   ei,
+			   event_type_to_string(ev->bcd_event_type),
+			   ev->polygon_vertex.x,
+			   ev->polygon_vertex.y);
+	}
 	cvector_vector_type(bcd_cell_t) cell_list = NULL;
 	va_tracking_mark("Ląstelės");
 	rc = compute_bcd_cells(&event_list, &cell_list);

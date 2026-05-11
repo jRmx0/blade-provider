@@ -6,6 +6,7 @@
  */
 
 #include <math.h>
+#include <float.h>
 #include <stdlib.h>
 #include "bcd_preprocess.h"
 #include "../../../../dependencies/allocator/allocator.h"
@@ -21,7 +22,7 @@
 /* Guaranteed minimum separation placed between consecutive projections after
  * resolution.  Using 2× COLLISION_EPSILON ensures the post-nudge gap safely
  * exceeds the detection threshold even after float32 rounding. */
-#define COLLISION_MIN_SEP (COLLISION_EPSILON * 2.0f)
+#define COLLISION_MIN_SEP 0.01
 
 // TYPES -----------------------------------------------------------
 
@@ -93,7 +94,24 @@ int bcd_preprocess_environment(input_environment_t *env, float sweep_direction_d
 
         if (curr - prev < COLLISION_EPSILON)
         {
-            float target = prev + COLLISION_MIN_SEP;
+            /* COLLISION_MIN_SEP is sufficient for small coordinates, but at
+             * large magnitudes (e.g. x ≈ 1e5 m) the float32 ULP exceeds it
+             * and the nudge gets rounded away — leaving the vertex X unchanged.
+             * Use at least 16 ULPs at the relevant magnitude so the nudge
+             * always produces a representable float32 difference. */
+            float mag = fabsf(prev) > fabsf(curr) ? fabsf(prev) : fabsf(curr);
+            if (mag < 1.0f)
+                mag = 1.0f;
+            float dynamic_sep = mag * 16.0f * FLT_EPSILON;
+            float sep = dynamic_sep > COLLISION_MIN_SEP ? dynamic_sep : COLLISION_MIN_SEP;
+
+            float target = prev + sep;
+
+            /* Paranoia: if float32 arithmetic rounded target back to prev,
+             * advance one ULP at a time until it is strictly greater. */
+            while (target <= prev)
+                target = nextafterf(prev, prev + 1.0f);
+
             float delta = target - curr;
 
             polygon_t *poly = entries[i].polygon;

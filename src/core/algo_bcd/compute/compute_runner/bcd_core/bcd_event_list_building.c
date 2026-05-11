@@ -471,7 +471,15 @@ static int compare_events(const void *a,
     else if (event_a->polygon_vertex.x > event_b->polygon_vertex.x)
         return 1;
     else
-        return 0;
+    {
+        /* X coordinates must be strictly unique after bcd_preprocess_environment.
+         * A tie here means preprocessing was skipped or a vertex was not nudged. */
+        fprintf(stderr,
+                "BCD FATAL: compare_events tie at x=%.9f — "
+                "bcd_preprocess_environment guarantee violated\n",
+                event_a->polygon_vertex.x);
+        abort();
+    }
 }
 
 // log_vertex_with_angles(poly, poly.vertices[vertex_index], floor_edge_index, floor_angle, ceiling_edge_index, ceil_angle);
