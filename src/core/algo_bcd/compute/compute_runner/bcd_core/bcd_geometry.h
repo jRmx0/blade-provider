@@ -16,14 +16,6 @@
 point_t bcd_cell_farthest_interior_point(const bcd_cell_t *cell);
 
 /**
- * Returns the midpoint between the ceiling and floor of the cell at a given x.
- * Uses the piecewise-linear boundary chains, so the result correctly tracks
- * concave (obstacle-deflected) boundaries.
- * x must lie within [c_begin.x, c_end.x]; no clamping is performed.
- */
-point_t bcd_cell_midpoint_at_x(const bcd_cell_t *cell, float x);
-
-/**
  * Returns the index of the cell in cell_list that contains point p, or the
  * index of the cell whose x-midpoint is closest to p.x when p lies outside
  * all cells. Returns 0 when cell_list is empty.

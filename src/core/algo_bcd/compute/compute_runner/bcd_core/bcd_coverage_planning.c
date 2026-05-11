@@ -212,28 +212,3 @@ static bool should_backtrack(int *curr_path_index)
     (*curr_path_index)--;
     return (*curr_path_index) < 0;
 }
-
-// PATH_LIST HELPERS
-
-void log_bcd_path_list(const cvector_vector_type(int) * path_list)
-{
-    if (path_list == NULL)
-    {
-        printf("BCD Path List: NULL\n");
-        return;
-    }
-
-    int path_count = cvector_size(*path_list);
-    printf("BCD Path List (%d cells):\n", path_count);
-
-    if (path_count == 0)
-    {
-        printf("  (empty)\n");
-        return;
-    }
-
-    for (int i = 0; i < path_count; i++)
-    {
-        printf("  [%d]: Cell %d\n", i, (*path_list)[i]);
-    }
-}

@@ -273,7 +273,7 @@ point_t bcd_cell_farthest_interior_point(const bcd_cell_t *cell)
     return best;
 }
 
-point_t bcd_cell_midpoint_at_x(const bcd_cell_t *cell, float x)
+static point_t bcd_cell_midpoint_at_x(const bcd_cell_t *cell, float x)
 {
     float ceil_y, floor_y;
     cell_interp_bounds(cell, x, &ceil_y, &floor_y);
