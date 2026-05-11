@@ -295,17 +295,16 @@ int compute_headland(const input_environment_t *env,
     if (offset_polys == NULL)
         return -2;
 
-    // Compute offset polygons — bevel enabled so the headland path rounds
-    // sharp convex corners rather than cutting them with a truncated miter.
-    offset_polys[0] = compute_polygon_vertex_offset(
-        env->boundary.vertices, env->boundary.vertex_count,
-        POLYGON_WINDING_CW, half_width, true);
+    // The terminal has already shrunk env->boundary by headlandWidth, so
+    // env->boundary IS the headland centerline.  Copy vertices directly —
+    // compute_polygon_vertex_offset returns NULL for offset==0.
+    for (uint32_t vi = 0; vi < env->boundary.vertex_count; ++vi)
+        cvector_push_back(offset_polys[0], env->boundary.vertices[vi]);
 
     for (uint32_t k = 0; k < env->obstacle_count; ++k)
     {
-        offset_polys[k + 1] = compute_polygon_vertex_offset(
-            env->obstacles[k].vertices, env->obstacles[k].vertex_count,
-            POLYGON_WINDING_CCW, half_width, true);
+        for (uint32_t vi = 0; vi < env->obstacles[k].vertex_count; ++vi)
+            cvector_push_back(offset_polys[k + 1], env->obstacles[k].vertices[vi]);
     }
 
     // headland_generated flags (slot 0 = zone, slot k+1 = obstacle k)
@@ -447,7 +446,7 @@ int compute_headland(const input_environment_t *env,
             {
                 // Different source polygons: visibility-graph A* in the free space
                 // to guarantee the path avoids all obstacles.
-                nav = find_free_space_path(from_pt, to_pt, env, half_width);
+                nav = find_free_space_path(from_pt, to_pt, env, 0.0f);
             }
 
             if (nav == NULL)
