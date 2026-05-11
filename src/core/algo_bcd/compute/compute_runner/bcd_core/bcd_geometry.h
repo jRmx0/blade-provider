@@ -22,10 +22,4 @@ point_t bcd_cell_farthest_interior_point(const bcd_cell_t *cell);
  */
 int bcd_find_starting_cell(const cvector_vector_type(bcd_cell_t) * cell_list, point_t p);
 
-/**
- * Returns true if point p is contained within the BCD cell's x-range and
- * between its interpolated ceiling and floor at p.x.
- */
-bool bcd_cell_contains_point(const bcd_cell_t *cell, point_t p);
-
 #endif // BCD_GEOMETRY_H

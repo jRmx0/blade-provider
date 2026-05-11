@@ -6,7 +6,6 @@
 
 #include "../../../../../../dependencies/cvector/cvector.h"
 #include "bcd_pq.h"
-#include "bcd_geometry.h"
 
 /* ---------- helpers ---------------------------------------------------- */
 
@@ -153,20 +152,4 @@ cvector_vector_type(int) bcd_astar(int cell_index_from,
     free(closed);
 
     return path;
-}
-
-/* ---------- bcd_find_cell ---------------------------------------------- */
-
-int bcd_find_cell(const cvector_vector_type(bcd_cell_t) * cell_list, point_t p)
-{
-    if (cell_list == NULL || *cell_list == NULL)
-        return -1;
-
-    int cell_count = (int)cvector_size(*cell_list);
-    for (int i = 0; i < cell_count; ++i)
-    {
-        if (bcd_cell_contains_point(&(*cell_list)[i], p))
-            return i;
-    }
-    return -1;
 }
