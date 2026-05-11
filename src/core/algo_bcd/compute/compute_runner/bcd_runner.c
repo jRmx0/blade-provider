@@ -365,7 +365,7 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 	if (env->headland)
 	{
 		va_tracking_mark("Galūlaukiai");
-		int hrc = compute_headland(env, &headland);
+		int hrc = compute_headlandCoverage(env, &headland);
 		if (hrc != 0)
 		{
 			printf("coverage_path_planning: headland generation failed (code %d)\n", hrc);
@@ -510,11 +510,6 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 	// from_pt lies on the headland boundary, not inside any BCD cell, so
 	// compute_connection_motion is not appropriate here — it degrades to a
 	// direct line when from_pt falls outside the first cell's x-range.
-	//
-	// find_free_space_path uses the same half_width offset free-space as
-	// compute_headland used for inter-section transit.  shrunken_zone is at
-	// (path_width - path_overlap) — the BCD area boundary — which is larger than
-	// the headland ring, so half_width is used rather than shrunken_zone.
 	if (has_headland && headland.sections != NULL)
 	{
 		int hl_count = (int)cvector_size(headland.sections);
@@ -529,7 +524,6 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 				point_t to_pt = motion_plan.section[0].ox[0];
 
 				// Route from the last headland waypoint to the first coverage waypoint.
-				// Uses half_width offset free-space (same as compute_headland internally).
 				last_hs->nav = find_free_space_path(from_pt, to_pt, env);
 				if (last_hs->nav == NULL)
 				{
@@ -548,7 +542,6 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 	if (has_headland)
 	{
 		// Route from start_point to the first headland waypoint.
-		// Uses half_width offset free-space (same as compute_headland internally).
 		if (headland.sections != NULL && cvector_size(headland.sections) > 0)
 		{
 			headland_section_t *first_hs = &headland.sections[0];

@@ -54,7 +54,7 @@ typedef struct
  *   -10 two or more expanded obstacles overlap each other
  *   -11 an expanded obstacle escapes the shrunken zone
  */
-int compute_headland(const input_environment_t *env, headland_t *headland);
+int compute_headlandCoverage(const input_environment_t *env, headland_t *headland);
 
 /**
  * Frees all memory owned by a headland_t. Safe to call on a zero-initialised

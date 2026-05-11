@@ -276,8 +276,8 @@ static int trace_polygon_headland(
 
 // IMPLEMENTATION --- compute_headland ----------------------------------
 
-int compute_headland(const input_environment_t *env,
-                     headland_t *headland)
+int compute_headlandCoverage(const input_environment_t *env,
+                             headland_t *headland)
 {
     if (env == NULL || headland == NULL)
         return -1;
