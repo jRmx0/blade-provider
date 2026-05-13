@@ -322,6 +322,73 @@ vg_graph_t *vg_graph_build(const input_environment_t *env,
             adj[j * n + i] = ok;
         }
 
+    /* 4b. Any two nodes that both lie on the same polygon edge are always
+     *     mutually visible — the segment travels along the boundary and is
+     *     collision-free.  vg_segment_is_free incorrectly rejects such pairs
+     *     because Check 1a's ray-casting returns false for on-boundary samples.
+     *
+     *     This covers both consecutive polygon-vertex pairs AND extra nodes
+     *     (e.g. coverage-section endpoints) that land on a polygon edge.
+     *
+     *     For each edge A→B of every polygon, scan all n nodes.  A node lies
+     *     on A→B when:
+     *       (a) cross(AB, AP)² ≤ ε × |AB|²  (collinear to edge)
+     *       (b) t = dot(AP, AB) / |AB|² ∈ [0, 1]  (between A and B)
+     *     Every pair of nodes that both satisfy (a)+(b) for the same edge
+     *     gets adj[ni][nj] forced to true.
+     *
+     *     Complexity: O(E × n²), E = total polygon edges.
+     *     nav_polys is still valid here (released in Step 5). */
+    {
+        for (uint32_t pi = 0; pi < nav_total; ++pi)
+        {
+            if (nav_polys[pi] == NULL)
+                continue;
+            int nv = (int)cvector_size(nav_polys[pi]);
+            for (int vi = 0; vi < nv; ++vi)
+            {
+                point_t A = nav_polys[pi][vi];
+                point_t B = nav_polys[pi][(vi + 1) % nv];
+                float abx = B.x - A.x;
+                float aby = B.y - A.y;
+                float ab_len_sq = abx * abx + aby * aby;
+                if (ab_len_sq < 1e-12f)
+                    continue; /* degenerate edge */
+
+                /* Collinearity tolerance: same ratio as Check 3 in
+                 * vg_segment_is_free (cross² ≤ 1e-6 × |AB|²). */
+                float eps_cross_sq = 1e-6f * ab_len_sq;
+
+                for (int ni = 0; ni < n; ++ni)
+                {
+                    float dxi = nodes[ni].x - A.x;
+                    float dyi = nodes[ni].y - A.y;
+                    float ci = abx * dyi - aby * dxi;
+                    if (ci * ci > eps_cross_sq)
+                        continue;
+                    float ti = (dxi * abx + dyi * aby) / ab_len_sq;
+                    if (ti < -1e-4f || ti > 1.0f + 1e-4f)
+                        continue;
+
+                    for (int nj = ni + 1; nj < n; ++nj)
+                    {
+                        float dxj = nodes[nj].x - A.x;
+                        float dyj = nodes[nj].y - A.y;
+                        float cj = abx * dyj - aby * dxj;
+                        if (cj * cj > eps_cross_sq)
+                            continue;
+                        float tj = (dxj * abx + dyj * aby) / ab_len_sq;
+                        if (tj < -1e-4f || tj > 1.0f + 1e-4f)
+                            continue;
+
+                        adj[ni * n + nj] = true;
+                        adj[nj * n + ni] = true;
+                    }
+                }
+            }
+        }
+    }
+
     /* 5. Release polygon data — the graph only needs nodes + adj. */
     for (uint32_t p = 0; p < nav_total; ++p)
         cvector_free(nav_polys[p]);
