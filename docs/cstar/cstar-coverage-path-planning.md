@@ -564,10 +564,13 @@ end
 
 | Parameter | Description | Constraint |
 |-----------|-------------|-----------|
-| $w$ | Sampling resolution / lap spacing | $w \le 2r_c$ for complete coverage between laps |
-| $r_d$ | Range detector range | Determines sampling front size |
-| $r_c$ | Coverage device range | Determines required $w$ |
-| $\delta$ | Frontier sample spacing multiplier | $\delta \ge 1$, integer |
+| $w$ (`Path Width`) | Sampling resolution / lap spacing | $w > 0$ |
+| $r_d$ (`Sensor Range`) | Range detector range | $r_d > 0$ |
+| $\delta$ (`Frontier Spacing Multiplier`) | Frontier sample spacing multiplier | $\delta \ge 1$, integer |
+| $r_c$ (`Coverage Range`) | **Derived internally** as $r_c = \frac{w}{2}$ | Not user-provided |
+
+Provider integration note:
+- Environment geometry (boundary/zones, obstacles, start point) is supplied via the compute payload's `environment` object and is not exposed as a metadata parameter.
 
 ### Coordinate Frame
 
