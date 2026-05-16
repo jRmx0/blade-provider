@@ -54,28 +54,16 @@ typedef struct
 {
     uint32_t id;
     float path_width;
-    float coverage_grid_cell_size;
-    float path_overlap;
-    float bounce_offset;
-    float target_coverage;
-    float target_distance;
-    uint32_t max_iterations;
     bool track_memory_usage;
     bool headland;
-    float starting_angle; // Initial travel direction in degrees [0, 360]; -1 = pick randomly.
 
     point_t start_point;
     point_t end_point;
 
-    polygon_t boundary;
-
-    polygon_t *obstacles;
+    polygon_t operationalBoundary;   // Shrunken real boundary
+    polygon_t *operationalObstacles; // Expanded real obstacles
     uint32_t obstacle_count;
-
-    polygon_t realworld_boundary;
-    polygon_t *realworld_obstacles;
-    uint32_t realworld_obstacle_count;
-} input_environment_t;
+} cstar_environment_t;
 
 // polygon_t lifecycle
 void free_polygon(polygon_t *polygon);

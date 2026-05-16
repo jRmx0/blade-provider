@@ -3,6 +3,7 @@
 
 #include "cstar_check.h"
 #include "../../../../dependencies/cJSON/cJSON.h"
+#include "../../../../core/core_types.h"
 
 static void cstar_set_result(cstar_check_result_t *result, bool ok, const char *code, const char *message)
 {
@@ -324,28 +325,6 @@ bool cstar_validate_request_json(const char *request_json, cstar_check_result_t 
     {
         cJSON_Delete(root);
         cstar_set_result(result, false, "invalid_path_width", "C* Path Width must be greater than 0.");
-        return false;
-    }
-
-    float sensor_range = 0.0f;
-    if (!cstar_expect_float_parameter(
-            parameters,
-            "Sensor Range",
-            &sensor_range,
-            result,
-            "missing_sensor_range",
-            "C* requires a Sensor Range parameter.",
-            "invalid_sensor_range",
-            "C* Sensor Range must be a number greater than 0."))
-    {
-        cJSON_Delete(root);
-        return false;
-    }
-
-    if (sensor_range <= 0.0f)
-    {
-        cJSON_Delete(root);
-        cstar_set_result(result, false, "invalid_sensor_range", "C* Sensor Range must be greater than 0.");
         return false;
     }
 

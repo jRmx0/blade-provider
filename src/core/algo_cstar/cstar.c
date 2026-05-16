@@ -32,7 +32,7 @@ char *cstar_get_metadata_json(void)
 
 char *cstar_compute(const char *input_environment_json)
 {
-    input_environment_t environment;
+    cstar_environment_t environment;
     cstar_check_result_t check_result;
 
     if (!cstar_validate_request_json(input_environment_json, &check_result))
