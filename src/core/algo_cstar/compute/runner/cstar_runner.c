@@ -6,6 +6,7 @@
 #include "../../../../../dependencies/cvector/cvector.h"
 #include "../../../common/debug_serialize.h"
 #include "core/cstar_rcg.h"
+#include "core/cstar_lap.h"
 #include "core/cstar_sampling.h"
 #include "core/cstar_rcg_growth.h"
 #include "core/cstar_waypoint.h"
@@ -13,6 +14,7 @@
 #include "core/cstar_coverage_hole.h"
 
 #include "core/cstar_rcg.c"
+#include "core/cstar_lap.c"
 #include "core/cstar_sampling.c"
 #include "core/cstar_rcg_growth.c"
 #include "core/cstar_waypoint.c"
@@ -43,31 +45,6 @@ static float cstar_runner_dist(point_t a, point_t b)
     float dx = a.x - b.x;
     float dy = a.y - b.y;
     return sqrtf(dx * dx + dy * dy);
-}
-
-static void cstar_runner_boundary_bbox(const input_environment_t *env,
-                                       float *min_x,
-                                       float *max_x,
-                                       float *min_y,
-                                       float *max_y)
-{
-    *min_x = env->boundary.vertices[0].x;
-    *max_x = env->boundary.vertices[0].x;
-    *min_y = env->boundary.vertices[0].y;
-    *max_y = env->boundary.vertices[0].y;
-
-    for (uint32_t i = 1; i < env->boundary.vertex_count; ++i)
-    {
-        point_t v = env->boundary.vertices[i];
-        if (v.x < *min_x)
-            *min_x = v.x;
-        if (v.x > *max_x)
-            *max_x = v.x;
-        if (v.y < *min_y)
-            *min_y = v.y;
-        if (v.y > *max_y)
-            *max_y = v.y;
-    }
 }
 
 static void cstar_runner_add_point_entry(cJSON *arr, int id, point_t p, const char *label)
@@ -305,7 +282,7 @@ cJSON *cstar_coverage_path_planning_process(input_environment_t *env)
     }
 
     float min_x = 0.0f, max_x = 0.0f, min_y = 0.0f, max_y = 0.0f;
-    cstar_runner_boundary_bbox(env, &min_x, &max_x, &min_y, &max_y);
+    cstar_lap_boundary_bbox(env, &min_x, &max_x, &min_y, &max_y);
     if (sampling_front.laps != NULL)
     {
         int lap_count = (int)cvector_size(sampling_front.laps);

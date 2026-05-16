@@ -24,33 +24,9 @@
 #include <stdlib.h>
 #include <math.h>
 #include "cstar_sampling.h"
+#include "cstar_lap.h"
 
 #define CSTAR_EPSILON 1e-6f
-
-static void cstar_boundary_bbox(const input_environment_t *env,
-                                float *min_x,
-                                float *max_x,
-                                float *min_y,
-                                float *max_y)
-{
-    *min_x = env->boundary.vertices[0].x;
-    *max_x = env->boundary.vertices[0].x;
-    *min_y = env->boundary.vertices[0].y;
-    *max_y = env->boundary.vertices[0].y;
-
-    for (uint32_t i = 1; i < env->boundary.vertex_count; ++i)
-    {
-        point_t v = env->boundary.vertices[i];
-        if (v.x < *min_x)
-            *min_x = v.x;
-        if (v.x > *max_x)
-            *max_x = v.x;
-        if (v.y < *min_y)
-            *min_y = v.y;
-        if (v.y > *max_y)
-            *max_y = v.y;
-    }
-}
 
 static bool cstar_sampling_point_in_polygon(point_t point, const polygon_t *polygon)
 {
@@ -129,6 +105,7 @@ cstar_sampling_front_t cstar_create_sampling_front(point_t prev_pos,
                                                    const input_environment_t *env)
 {
     (void)prev_pos;
+    (void)rd;
     (void)lap_dir;
 
     cstar_sampling_front_t front = {0};
@@ -138,59 +115,7 @@ cstar_sampling_front_t cstar_create_sampling_front(point_t prev_pos,
         return front;
     }
 
-    float min_x = 0.0f, max_x = 0.0f, min_y = 0.0f, max_y = 0.0f;
-    cstar_boundary_bbox(env, &min_x, &max_x, &min_y, &max_y);
-
-    float step = (w > CSTAR_EPSILON) ? w : 1.0f;
-    float sensor = (rd > CSTAR_EPSILON) ? rd : (max_x - min_x);
-
-    float x_start = curr_pos.x - sensor;
-    float x_end = curr_pos.x + sensor;
-    if (x_start < min_x)
-        x_start = min_x;
-    if (x_end > max_x)
-        x_end = max_x;
-
-    if (x_end < x_start)
-    {
-        float clamped_x = curr_pos.x;
-        if (clamped_x < min_x)
-            clamped_x = min_x;
-        if (clamped_x > max_x)
-            clamped_x = max_x;
-
-        cstar_lap_t lap = {0};
-        lap.id = 0;
-        lap.x = clamped_x;
-        lap.node_ids = NULL;
-        lap.node_count = 0;
-        lap.node_capacity = 0;
-        cvector_push_back(front.laps, lap);
-        return front;
-    }
-
-    int lap_id = 0;
-    for (float x = x_start; x <= x_end + CSTAR_EPSILON; x += step)
-    {
-        cstar_lap_t lap = {0};
-        lap.id = lap_id++;
-        lap.x = x;
-        lap.node_ids = NULL;
-        lap.node_count = 0;
-        lap.node_capacity = 0;
-        cvector_push_back(front.laps, lap);
-    }
-
-    if (front.laps == NULL || cvector_size(front.laps) == 0)
-    {
-        cstar_lap_t lap = {0};
-        lap.id = 0;
-        lap.x = curr_pos.x;
-        lap.node_ids = NULL;
-        lap.node_count = 0;
-        lap.node_capacity = 0;
-        cvector_push_back(front.laps, lap);
-    }
+    cstar_lap_generate_full_width(&front, curr_pos, w, env);
 
     return front;
 }
@@ -207,7 +132,7 @@ int cstar_generate_frontier_samples(cstar_sampling_front_t *front,
     }
 
     float min_x = 0.0f, max_x = 0.0f, min_y = 0.0f, max_y = 0.0f;
-    cstar_boundary_bbox(env, &min_x, &max_x, &min_y, &max_y);
+    cstar_lap_boundary_bbox(env, &min_x, &max_x, &min_y, &max_y);
 
     float step = (delta > 0 ? (float)delta : 1.0f) * ((w > CSTAR_EPSILON) ? w : 1.0f);
     int total_added = 0;

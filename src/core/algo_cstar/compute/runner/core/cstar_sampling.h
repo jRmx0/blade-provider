@@ -10,7 +10,7 @@
 
 /**
  * The obstacle-free, unsampled portion of the area discovered in iteration i.
- * Holds the set of laps drawn inside it, ready for frontier sample generation.
+ * Holds the set of laps prepared for frontier sample generation.
  */
 typedef struct
 {
@@ -28,8 +28,8 @@ typedef struct
  * w       - sampling resolution / lap spacing (metres)
  * lap_dir - unit vector parallel to the laps (back-and-forth axis direction)
  *
- * Only unsampled portions of the discovered area are included; regions already
- * sampled in a prior iteration are excluded.
+ * Lap geometry is delegated to the lap-generation module; this function owns
+ * the sampling-front container that frontier samples are later placed onto.
  */
 cstar_sampling_front_t cstar_create_sampling_front(point_t prev_pos,
                                                    point_t curr_pos,
