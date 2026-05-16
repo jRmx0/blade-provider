@@ -38,6 +38,83 @@ static bool cstar_points_equal(point_t a, point_t b)
     return fabsf(a.x - b.x) < 1e-5f && fabsf(a.y - b.y) < 1e-5f;
 }
 
+static float cstar_runner_dist(point_t a, point_t b)
+{
+    float dx = a.x - b.x;
+    float dy = a.y - b.y;
+    return sqrtf(dx * dx + dy * dy);
+}
+
+static void cstar_runner_boundary_bbox(const input_environment_t *env,
+                                       float *min_x,
+                                       float *max_x,
+                                       float *min_y,
+                                       float *max_y)
+{
+    *min_x = env->boundary.vertices[0].x;
+    *max_x = env->boundary.vertices[0].x;
+    *min_y = env->boundary.vertices[0].y;
+    *max_y = env->boundary.vertices[0].y;
+
+    for (uint32_t i = 1; i < env->boundary.vertex_count; ++i)
+    {
+        point_t v = env->boundary.vertices[i];
+        if (v.x < *min_x)
+            *min_x = v.x;
+        if (v.x > *max_x)
+            *max_x = v.x;
+        if (v.y < *min_y)
+            *min_y = v.y;
+        if (v.y > *max_y)
+            *max_y = v.y;
+    }
+}
+
+static void cstar_runner_add_point_entry(cJSON *arr, int id, point_t p, const char *label)
+{
+    cJSON *entry = cJSON_CreateObject();
+    cJSON *point = cJSON_CreateObject();
+    if (entry == NULL || point == NULL)
+    {
+        cJSON_Delete(entry);
+        cJSON_Delete(point);
+        return;
+    }
+
+    cJSON_AddNumberToObject(entry, "id", id);
+    cJSON_AddNumberToObject(point, "x", p.x);
+    cJSON_AddNumberToObject(point, "y", p.y);
+    cJSON_AddItemToObject(entry, "point", point);
+    if (label != NULL)
+    {
+        cJSON_AddStringToObject(entry, "pointLabel", label);
+    }
+    cJSON_AddItemToArray(arr, entry);
+}
+
+static bool cstar_add_debug_layer(cJSON *layers_arr, int id, const char *source, const cJSON *list)
+{
+    if (layers_arr == NULL || source == NULL || list == NULL)
+    {
+        return false;
+    }
+
+    cJSON *layer = cJSON_CreateObject();
+    cJSON *list_copy = cJSON_Duplicate((cJSON *)list, 1);
+    if (layer == NULL || list_copy == NULL)
+    {
+        cJSON_Delete(layer);
+        cJSON_Delete(list_copy);
+        return false;
+    }
+
+    cJSON_AddNumberToObject(layer, "id", id);
+    cJSON_AddStringToObject(layer, "source", source);
+    cJSON_AddItemToObject(layer, "list", list_copy);
+    cJSON_AddItemToArray(layers_arr, layer);
+    return true;
+}
+
 static bool cstar_append_segment(cJSON *segments_arr,
                                  cJSON *typed_arr,
                                  int *segment_id,
@@ -77,6 +154,10 @@ cJSON *cstar_coverage_path_planning_process(input_environment_t *env)
         return cstar_create_runner_error("invalid_boundary", "C* boundary must contain at least 3 vertices.");
     }
 
+    cstar_rcg_t rcg;
+    cstar_rcg_init(&rcg);
+    cstar_sampling_front_t sampling_front = {0};
+
     cJSON *root = cJSON_CreateObject();
     cJSON *coverage_path_plan = cJSON_CreateObject();
     cJSON *segments = cJSON_CreateArray();
@@ -98,6 +179,7 @@ cJSON *cstar_coverage_path_planning_process(input_environment_t *env)
         cJSON_Delete(retreat_transit);
         cJSON_Delete(hole_coverage);
         cJSON_Delete(hole_transit);
+        cstar_rcg_free(&rcg);
         return cstar_create_runner_error("allocation_failed", "C* failed to allocate result JSON.");
     }
 
@@ -110,89 +192,184 @@ cJSON *cstar_coverage_path_planning_process(input_environment_t *env)
     cJSON_AddItemToObject(coverage_path_plan, "holeCoverage", hole_coverage);
     cJSON_AddItemToObject(coverage_path_plan, "holeTransit", hole_transit);
 
+    float w = (env->path_width > 0.0f) ? env->path_width : 1.0f;
+    float rd = (env->target_distance > 0.0f) ? env->target_distance : w;
+    int delta = (env->max_iterations > 0u) ? (int)env->max_iterations : 1;
+
+    point_t lap_dir = {0.0f, 1.0f};
+    sampling_front = cstar_create_sampling_front(env->start_point,
+                                                 env->start_point,
+                                                 rd,
+                                                 w,
+                                                 lap_dir,
+                                                 env);
+    cstar_generate_frontier_samples(&sampling_front, &rcg, w, delta, env);
+    cstar_rcg_expand(&rcg, &sampling_front, w, env);
+
+    int current_node_id = CSTAR_NO_NEIGHBOR;
+    float best_dist = INFINITY;
+    for (int i = 0; i < rcg.node_count; ++i)
+    {
+        if (rcg.nodes[i].state != CSTAR_NODE_OP)
+            continue;
+
+        float d = cstar_runner_dist(env->start_point, rcg.nodes[i].pos);
+        if (d < best_dist)
+        {
+            best_dist = d;
+            current_node_id = i;
+        }
+    }
+
+    int goal_node_id = CSTAR_NO_NEIGHBOR;
+    if (current_node_id != CSTAR_NO_NEIGHBOR)
+    {
+        goal_node_id = cstar_select_goal_node(&rcg, current_node_id);
+    }
+
     int segment_id = 0;
-    point_t start = env->start_point;
-    point_t first_boundary = env->boundary.vertices[0];
-
-    if (!cstar_points_equal(start, first_boundary))
+    if (current_node_id != CSTAR_NO_NEIGHBOR)
     {
-        float xs[2] = {start.x, first_boundary.x};
-        float ys[2] = {start.y, first_boundary.y};
-        if (!cstar_append_segment(segments, coverage_transit, &segment_id, "coverageTransit", xs, ys, 2))
+        point_t current = rcg.nodes[current_node_id].pos;
+        if (!cstar_points_equal(env->start_point, current))
         {
-            cJSON_Delete(root);
-            return cstar_create_runner_error("allocation_failed", "C* failed while building transit segment.");
+            float xs[2] = {env->start_point.x, current.x};
+            float ys[2] = {env->start_point.y, current.y};
+            if (!cstar_append_segment(segments, coverage_transit, &segment_id, "coverageTransit", xs, ys, 2))
+            {
+                cstar_sampling_front_free(&sampling_front);
+                cstar_rcg_free(&rcg);
+                cJSON_Delete(root);
+                return cstar_create_runner_error("allocation_failed", "C* failed while building start transit segment.");
+            }
+        }
+
+        if (goal_node_id != CSTAR_NO_NEIGHBOR)
+        {
+            point_t goal = rcg.nodes[goal_node_id].pos;
+            float xs[2] = {current.x, goal.x};
+            float ys[2] = {current.y, goal.y};
+            if (!cstar_append_segment(segments, coverage, &segment_id, "coverage", xs, ys, 2))
+            {
+                cstar_sampling_front_free(&sampling_front);
+                cstar_rcg_free(&rcg);
+                cJSON_Delete(root);
+                return cstar_create_runner_error("allocation_failed", "C* failed while building first coverage segment.");
+            }
         }
     }
 
-    int boundary_count = (int)env->boundary.vertex_count;
-    int coverage_point_count = boundary_count + 1;
+    cJSON *rcg_link_nodes = cJSON_CreateArray();
+    cJSON *rcg_end_nodes = cJSON_CreateArray();
+    cJSON *rcg_edges = cJSON_CreateArray();
+    cJSON *lap_list = cJSON_CreateArray();
+    cJSON *sampling_front_list = cJSON_CreateArray();
+    cJSON *frontier_sample_list = cJSON_CreateArray();
+    cJSON *retreat_node_list = cJSON_CreateArray();
+    cJSON *coverage_hole_list = cJSON_CreateArray();
 
-    float *coverage_xs = (float *)malloc((size_t)coverage_point_count * sizeof(float));
-    float *coverage_ys = (float *)malloc((size_t)coverage_point_count * sizeof(float));
-    if (coverage_xs == NULL || coverage_ys == NULL)
-    {
-        free(coverage_xs);
-        free(coverage_ys);
-        cJSON_Delete(root);
-        return cstar_create_runner_error("allocation_failed", "C* failed to allocate coverage polyline.");
-    }
+    cJSON_AddItemToObject(root, "rcgLinkNodeList", rcg_link_nodes);
+    cJSON_AddItemToObject(root, "rcgEndNodeList", rcg_end_nodes);
+    cJSON_AddItemToObject(root, "rcgEdgeList", rcg_edges);
+    cJSON_AddItemToObject(root, "lapList", lap_list);
+    cJSON_AddItemToObject(root, "samplingFrontList", sampling_front_list);
+    cJSON_AddItemToObject(root, "frontierSampleList", frontier_sample_list);
+    cJSON_AddItemToObject(root, "retreatNodeList", retreat_node_list);
+    cJSON_AddItemToObject(root, "coverageHoleList", coverage_hole_list);
 
-    for (int i = 0; i < boundary_count; ++i)
+    for (int i = 0; i < rcg.node_count; ++i)
     {
-        coverage_xs[i] = env->boundary.vertices[i].x;
-        coverage_ys[i] = env->boundary.vertices[i].y;
-    }
-    coverage_xs[boundary_count] = env->boundary.vertices[0].x;
-    coverage_ys[boundary_count] = env->boundary.vertices[0].y;
-
-    if (!cstar_append_segment(segments, coverage, &segment_id, "coverage", coverage_xs, coverage_ys, coverage_point_count))
-    {
-        free(coverage_xs);
-        free(coverage_ys);
-        cJSON_Delete(root);
-        return cstar_create_runner_error("allocation_failed", "C* failed while building coverage segment.");
-    }
-
-    point_t end = env->end_point;
-    point_t last_coverage = env->boundary.vertices[0];
-    if (!cstar_points_equal(last_coverage, end))
-    {
-        float xs[2] = {last_coverage.x, end.x};
-        float ys[2] = {last_coverage.y, end.y};
-        if (!cstar_append_segment(segments, coverage_transit, &segment_id, "coverageTransit", xs, ys, 2))
+        cstar_runner_add_point_entry(frontier_sample_list, i + 1, rcg.nodes[i].pos, NULL);
+        if (rcg.nodes[i].is_end_node)
         {
-            free(coverage_xs);
-            free(coverage_ys);
-            cJSON_Delete(root);
-            return cstar_create_runner_error("allocation_failed", "C* failed while building end transit segment.");
+            cstar_runner_add_point_entry(rcg_end_nodes, i + 1, rcg.nodes[i].pos, NULL);
+        }
+        if (rcg.nodes[i].is_link_node)
+        {
+            cstar_runner_add_point_entry(rcg_link_nodes, i + 1, rcg.nodes[i].pos, NULL);
         }
     }
 
-    free(coverage_xs);
-    free(coverage_ys);
+    for (int i = 0; i < rcg.edge_count; ++i)
+    {
+        const cstar_edge_t *edge = &rcg.edges[i];
+        point_t a = rcg.nodes[edge->node_a].pos;
+        point_t b = rcg.nodes[edge->node_b].pos;
+        float xs[2] = {a.x, b.x};
+        float ys[2] = {a.y, b.y};
+        cJSON *segment = debug_build_segment(i + 1, "rcgEdge", xs, ys, 2);
+        if (segment != NULL)
+        {
+            cJSON_AddItemToArray(rcg_edges, segment);
+        }
+    }
 
-    cJSON_AddItemToObject(root, "rcgLinkNodeList", cJSON_CreateArray());
-    cJSON_AddItemToObject(root, "rcgEndNodeList", cJSON_CreateArray());
-    cJSON_AddItemToObject(root, "rcgEdgeList", cJSON_CreateArray());
-    cJSON_AddItemToObject(root, "lapList", cJSON_CreateArray());
-    cJSON_AddItemToObject(root, "samplingFrontList", cJSON_CreateArray());
-    cJSON_AddItemToObject(root, "frontierSampleList", cJSON_CreateArray());
-    cJSON_AddItemToObject(root, "retreatNodeList", cJSON_CreateArray());
-    cJSON_AddItemToObject(root, "coverageHoleList", cJSON_CreateArray());
+    float min_x = 0.0f, max_x = 0.0f, min_y = 0.0f, max_y = 0.0f;
+    cstar_runner_boundary_bbox(env, &min_x, &max_x, &min_y, &max_y);
+    if (sampling_front.laps != NULL)
+    {
+        int lap_count = (int)cvector_size(sampling_front.laps);
+        for (int i = 0; i < lap_count; ++i)
+        {
+            float x = sampling_front.laps[i].x;
+            float xs[2] = {x, x};
+            float ys[2] = {min_y, max_y};
+            cJSON *segment = debug_build_segment(i + 1, "lap", xs, ys, 2);
+            if (segment != NULL)
+            {
+                cJSON_AddItemToArray(lap_list, segment);
+            }
+        }
+    }
+
+    cJSON *front_polygon = cJSON_CreateObject();
+    cJSON *front_vertices = cJSON_CreateArray();
+    if (front_polygon != NULL && front_vertices != NULL)
+    {
+        cJSON_AddNumberToObject(front_polygon, "id", 1);
+        cJSON_AddItemToObject(front_polygon, "vertices", front_vertices);
+        for (uint32_t i = 0; i < env->boundary.vertex_count; ++i)
+        {
+            cJSON *jv = cJSON_CreateObject();
+            cJSON_AddNumberToObject(jv, "x", env->boundary.vertices[i].x);
+            cJSON_AddNumberToObject(jv, "y", env->boundary.vertices[i].y);
+            cJSON_AddItemToArray(front_vertices, jv);
+        }
+        cJSON_AddItemToArray(sampling_front_list, front_polygon);
+    }
+    else
+    {
+        cJSON_Delete(front_polygon);
+        cJSON_Delete(front_vertices);
+    }
 
     cJSON *debug = cJSON_CreateObject();
     cJSON *layers = cJSON_CreateArray();
     if (debug != NULL && layers != NULL)
     {
-        cJSON_AddItemToObject(debug, "layers", layers);
-        cJSON_AddItemToObject(root, "debug", debug);
-    }
-    else
-    {
-        cJSON_Delete(debug);
-        cJSON_Delete(layers);
+        bool debug_ok = true;
+        debug_ok = debug_ok && cstar_add_debug_layer(layers, 10, "rcgLinkNodeList", rcg_link_nodes);
+        debug_ok = debug_ok && cstar_add_debug_layer(layers, 11, "rcgEndNodeList", rcg_end_nodes);
+        debug_ok = debug_ok && cstar_add_debug_layer(layers, 12, "rcgEdgeList", rcg_edges);
+        debug_ok = debug_ok && cstar_add_debug_layer(layers, 13, "lapList", lap_list);
+        debug_ok = debug_ok && cstar_add_debug_layer(layers, 14, "samplingFrontList", sampling_front_list);
+        debug_ok = debug_ok && cstar_add_debug_layer(layers, 15, "frontierSampleList", frontier_sample_list);
+        debug_ok = debug_ok && cstar_add_debug_layer(layers, 16, "retreatNodeList", retreat_node_list);
+        debug_ok = debug_ok && cstar_add_debug_layer(layers, 17, "coverageHoleList", coverage_hole_list);
+
+        if (debug_ok)
+        {
+            cJSON_AddItemToObject(debug, "layers", layers);
+            cJSON_AddItemToObject(root, "debug", debug);
+            debug = NULL;
+            layers = NULL;
+        }
     }
 
+    cJSON_Delete(debug);
+    cJSON_Delete(layers);
+
+    cstar_sampling_front_free(&sampling_front);
+    cstar_rcg_free(&rcg);
     return root;
 }

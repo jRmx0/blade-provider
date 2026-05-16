@@ -33,32 +33,41 @@
 
 int cstar_select_goal_node(const cstar_rcg_t *rcg, int current_node_id)
 {
-    /*
-     * Pseudocode (Algorithm 1):
-     *   node = rcg->nodes[current_node_id]
-     *
-     *   // 1. Left (cross-lap, preferred direction)
-     *   L = node.neighbor_left
-     *   if L != CSTAR_NO_NEIGHBOR && nodes[L].state == CSTAR_NODE_OP:
-     *     return L   // or pick randomly if multiple left candidates exist
-     *
-     *   // 2. Up (same lap, further along)
-     *   U = node.neighbor_up
-     *   if U != CSTAR_NO_NEIGHBOR && nodes[U].state == CSTAR_NODE_OP:
-     *     return U
-     *
-     *   // 3. Down (same lap, closer to lap origin)
-     *   D = node.neighbor_down
-     *   if D != CSTAR_NO_NEIGHBOR && nodes[D].state == CSTAR_NODE_OP:
-     *     return D
-     *
-     *   // 4. Right (cross-lap, fallback)
-     *   R = node.neighbor_right
-     *   if R != CSTAR_NO_NEIGHBOR && nodes[R].state == CSTAR_NODE_OP:
-     *     return R   // or pick randomly if multiple right candidates exist
-     *
-     *   return CSTAR_NO_NEIGHBOR   // dead-end
-     */
+    if (rcg == NULL || current_node_id < 0 || current_node_id >= rcg->node_count)
+    {
+        return CSTAR_NO_NEIGHBOR;
+    }
+
+    const cstar_node_t *node = &rcg->nodes[current_node_id];
+
+    int left = node->neighbor_left;
+    if (left != CSTAR_NO_NEIGHBOR && left < rcg->node_count &&
+        rcg->nodes[left].state == CSTAR_NODE_OP)
+    {
+        return left;
+    }
+
+    int up = node->neighbor_up;
+    if (up != CSTAR_NO_NEIGHBOR && up < rcg->node_count &&
+        rcg->nodes[up].state == CSTAR_NODE_OP)
+    {
+        return up;
+    }
+
+    int down = node->neighbor_down;
+    if (down != CSTAR_NO_NEIGHBOR && down < rcg->node_count &&
+        rcg->nodes[down].state == CSTAR_NODE_OP)
+    {
+        return down;
+    }
+
+    int right = node->neighbor_right;
+    if (right != CSTAR_NO_NEIGHBOR && right < rcg->node_count &&
+        rcg->nodes[right].state == CSTAR_NODE_OP)
+    {
+        return right;
+    }
+
     return CSTAR_NO_NEIGHBOR;
 }
 

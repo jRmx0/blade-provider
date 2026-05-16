@@ -39,30 +39,77 @@
 #include "cstar_rcg_growth.h"
 #include "cstar_rcg.h"
 
+#define CSTAR_EPSILON 1e-6f
+
+static float cstar_rcg_growth_dist(point_t a, point_t b)
+{
+    float dx = a.x - b.x;
+    float dy = a.y - b.y;
+    return sqrtf(dx * dx + dy * dy);
+}
+
 void cstar_rcg_expand(cstar_rcg_t *rcg,
                       const cstar_sampling_front_t *front,
                       float w,
                       const input_environment_t *env)
 {
-    /*
-     * Pseudocode:
-     *   for each lap L in front->laps:
-     *     for each node id v in L.node_ids:  // added by cstar_generate_frontier_samples
-     *
-     *       // Same-lap edges (up and down within the same lap)
-     *       U = previous node on L (if any)
-     *       D = next    node on L (if any)
-     *       if U != CSTAR_NO_NEIGHBOR: cstar_rcg_add_edge(rcg, v, U, env)
-     *       if D != CSTAR_NO_NEIGHBOR: cstar_rcg_add_edge(rcg, v, D, env)
-     *
-     *       // Cross-lap edges to the adjacent-left and adjacent-right laps.
-     *       for each node u on the adjacent-left lap:
-     *         if euclidean_dist(nodes[v].pos, nodes[u].pos) <= sqrt(2)*w:
-     *           cstar_rcg_add_edge(rcg, v, u, env)  // sets neighbor_left / right
-     *       for each node u on the adjacent-right lap:
-     *         if euclidean_dist(nodes[v].pos, nodes[u].pos) <= sqrt(2)*w:
-     *           cstar_rcg_add_edge(rcg, v, u, env)
-     */
+    if (rcg == NULL || front == NULL || front->laps == NULL)
+    {
+        return;
+    }
+
+    int lap_count = (int)cvector_size(front->laps);
+    float cross_limit = sqrtf(2.0f) * ((w > CSTAR_EPSILON) ? w : 1.0f);
+
+    for (int lap_index = 0; lap_index < lap_count; ++lap_index)
+    {
+        const cstar_lap_t *lap = &front->laps[lap_index];
+        if (lap->node_ids == NULL)
+        {
+            continue;
+        }
+
+        int node_count = (int)cvector_size(lap->node_ids);
+        for (int i = 0; i < node_count; ++i)
+        {
+            int node_id = lap->node_ids[i];
+            if (i > 0)
+            {
+                cstar_rcg_add_edge(rcg, node_id, lap->node_ids[i - 1], env);
+            }
+            if (i + 1 < node_count)
+            {
+                cstar_rcg_add_edge(rcg, node_id, lap->node_ids[i + 1], env);
+            }
+        }
+    }
+
+    for (int lap_index = 0; lap_index + 1 < lap_count; ++lap_index)
+    {
+        const cstar_lap_t *left_lap = &front->laps[lap_index];
+        const cstar_lap_t *right_lap = &front->laps[lap_index + 1];
+        if (left_lap->node_ids == NULL || right_lap->node_ids == NULL)
+        {
+            continue;
+        }
+
+        int left_count = (int)cvector_size(left_lap->node_ids);
+        int right_count = (int)cvector_size(right_lap->node_ids);
+        for (int li = 0; li < left_count; ++li)
+        {
+            int left_id = left_lap->node_ids[li];
+            point_t lp = rcg->nodes[left_id].pos;
+            for (int ri = 0; ri < right_count; ++ri)
+            {
+                int right_id = right_lap->node_ids[ri];
+                point_t rp = rcg->nodes[right_id].pos;
+                if (cstar_rcg_growth_dist(lp, rp) <= cross_limit + CSTAR_EPSILON)
+                {
+                    cstar_rcg_add_edge(rcg, left_id, right_id, env);
+                }
+            }
+        }
+    }
 }
 
 void cstar_rcg_prune(cstar_rcg_t *rcg,
@@ -71,65 +118,43 @@ void cstar_rcg_prune(cstar_rcg_t *rcg,
                      float w,
                      const input_environment_t *env)
 {
-    /*
-     * Pseudocode:
-     *   // Include boundary nodes because expansion may have made them inessential.
-     *   candidate_nodes = union(new nodes from F_i,
-     *                           boundary_node_ids[0..boundary_count-1])
-     *
-     *   repeat until no removals occur in this pass:
-     *     for each node v in candidate_nodes:
-     *       if NOT cstar_node_is_essential(rcg, v, w, env):
-     *         if v has same-lap neighbours on both sides:  // mid-lap node
-     *           cstar_rcg_merge_lap_edge(rcg, v)
-     *         cstar_rcg_remove_node(rcg, v)
-     *
-     *     for each edge (u, v) in rcg->edges:
-     *       if NOT cstar_edge_is_essential(rcg, u, v, w, env):
-     *         cstar_rcg_remove_edge(rcg, u, v)
-     */
+    (void)rcg;
+    (void)boundary_node_ids;
+    (void)boundary_count;
+    (void)w;
+    (void)env;
 }
 
 bool cstar_node_is_essential(const cstar_rcg_t *rcg, int node_id,
                              float w, const input_environment_t *env)
 {
-    /*
-     * Pseudocode (Definition III.8):
-     *   node = rcg->nodes[node_id]
-     *
-     *   // (a) Frontier node: B(node.pos, w) contains unknown area.
-     *   if cstar_is_frontier_sample(node.pos, w, env):
-     *     return true
-     *
-     *   // (b) Lap end node.
-     *   if node.is_end_node:
-     *     return true
-     *
-     *   // (c) Non-end node that is the sole / closest-obstacle link
-     *   //     to an end node on an adjacent lap.
-     *   for dir in {left, right}:
-     *     adj = node.neighbor_<dir>
-     *     if adj != CSTAR_NO_NEIGHBOR && nodes[adj].is_end_node:
-     *       if closest_same_lap_link_to(rcg, adj) == node_id:
-     *         return true
-     *
-     *   return false
-     */
+    if (rcg == NULL || node_id < 0 || node_id >= rcg->node_count)
+    {
+        return false;
+    }
+
+    const cstar_node_t *node = &rcg->nodes[node_id];
+    if (node->is_end_node)
+    {
+        return true;
+    }
+
+    if (cstar_is_frontier_sample(node->pos, w, env))
+    {
+        return true;
+    }
+
     return false;
 }
 
 bool cstar_edge_is_essential(const cstar_rcg_t *rcg, int node_a, int node_b,
                              float w, const input_environment_t *env)
 {
-    /*
-     * Pseudocode (Definition III.9):
-     *   if NOT cstar_node_is_essential(rcg, node_a, w, env): return false
-     *   if NOT cstar_node_is_essential(rcg, node_b, w, env): return false
-     *
-     *   // Conservative rule: both endpoints essential -> edge essential.
-     *   // A stricter check could verify there is no shorter alternative path;
-     *   // the conservative rule is sufficient for the paper's coverage proof.
-     *   return true
-     */
-    return false;
+    if (rcg == NULL)
+    {
+        return false;
+    }
+
+    return cstar_node_is_essential(rcg, node_a, w, env) &&
+           cstar_node_is_essential(rcg, node_b, w, env);
 }
