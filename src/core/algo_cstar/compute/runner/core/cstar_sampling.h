@@ -28,8 +28,9 @@ typedef struct
  * w       - sampling resolution / lap spacing (metres)
  * lap_dir - unit vector parallel to the laps (back-and-forth axis direction)
  *
- * Lap geometry is delegated to the lap-generation module; this function owns
- * the sampling-front container that frontier samples are later placed onto.
+ * Lap geometry is delegated to the preprocessing lap-generation module; this
+ * function owns the sampling-front container that frontier samples are later
+ * placed onto.
  */
 cstar_sampling_front_t cstar_create_sampling_front(point_t prev_pos,
                                                    point_t curr_pos,

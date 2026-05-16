@@ -1,7 +1,7 @@
 #ifndef CSTAR_LAP_H
 #define CSTAR_LAP_H
 
-#include "cstar_sampling.h"
+#include "../cstar_sampling.h"
 
 /**
  * Computes the axis-aligned bounding box of the environment boundary.

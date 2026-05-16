@@ -6,7 +6,7 @@
 #include "../../../../../dependencies/cvector/cvector.h"
 #include "../../../common/debug_serialize.h"
 #include "core/cstar_rcg.h"
-#include "core/cstar_lap.h"
+#include "core/preprocess/cstar_lap.h"
 #include "core/cstar_sampling.h"
 #include "core/cstar_rcg_growth.h"
 #include "core/cstar_waypoint.h"
@@ -14,7 +14,7 @@
 #include "core/cstar_coverage_hole.h"
 
 #include "core/cstar_rcg.c"
-#include "core/cstar_lap.c"
+#include "core/preprocess/cstar_lap.c"
 #include "core/cstar_sampling.c"
 #include "core/cstar_rcg_growth.c"
 #include "core/cstar_waypoint.c"

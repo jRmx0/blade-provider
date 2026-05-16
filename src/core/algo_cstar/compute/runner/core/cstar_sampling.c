@@ -24,7 +24,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include "cstar_sampling.h"
-#include "cstar_lap.h"
+#include "preprocess/cstar_lap.h"
 
 #define CSTAR_EPSILON 1e-6f
 
