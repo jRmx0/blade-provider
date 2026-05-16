@@ -1,6 +1,6 @@
 import { fileURLToPath } from "url";
 import type { ServerContext } from "../types/apiTypes";
-import { getCoreMetadata } from "./coreBridge";
+import { getCoreMetadata, executeCoreCompute, CoreComputeError } from "./coreBridge";
 import { log } from "./logger";
 import { isRecord, parseRequestJsonBody } from "./jsonUtil";
 import type {
@@ -57,7 +57,7 @@ function emptyResponse(status = 204) {
 function buildCorsHeaders(): Headers {
     const headers = new Headers();
     headers.set("Access-Control-Allow-Origin", "*");
-    headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    headers.set("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
     headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
     headers.set("Access-Control-Max-Age", "86400");
 
@@ -252,6 +252,108 @@ async function handleComputeStatus(request: Request, context: ServerContext, job
     return jsonResponse(job satisfies ComputeJobState, 200);
 }
 
+// ─── Debug session handlers ───────────────────────────────────────────────────
+
+async function handleDebugStart(request: Request, context: ServerContext) {
+    if (request.method !== "POST") {
+        return methodNotAllowed(request, ["POST", "OPTIONS"]);
+    }
+
+    const parsedBody = await parseRequestJsonBody(request);
+    if (!parsedBody.ok) {
+        return jsonResponse(parsedBody.errorBody, 400);
+    }
+
+    log.debug("[debug] Starting debug session:", JSON.stringify(parsedBody.value, null, 2));
+
+    let result: Record<string, unknown>;
+    try {
+        result = executeCoreCompute(parsedBody.value);
+    } catch (err) {
+        const body: ErrorResponse = {
+            error: {
+                code: err instanceof CoreComputeError ? err.code : "compute_error",
+                message: err instanceof Error ? err.message : String(err),
+            },
+        };
+        return jsonResponse(body, 422);
+    }
+
+    const session = context.debugSessions.create(result);
+    log.info(`[debug] Session created: ${session.sessionId} (${session.segments.length} steps)`);
+
+    return jsonResponse({
+        sessionId: session.sessionId,
+        totalSteps: session.segments.length,
+        stepIndex: session.stepIndex,
+        createdAt: session.createdAt,
+    }, 201);
+}
+
+async function handleDebugStep(request: Request, context: ServerContext, sessionId: string) {
+    if (request.method !== "POST") {
+        return methodNotAllowed(request, ["POST", "OPTIONS"]);
+    }
+
+    const result = context.debugSessions.step(sessionId);
+    if (!result) {
+        const body: ErrorResponse = {
+            error: {
+                code: "session_not_found_or_exhausted",
+                message: `No debug session found for id ${sessionId}, or all steps have been revealed.`,
+            },
+        };
+        return jsonResponse(body, 404);
+    }
+
+    log.info(`[debug] Step ${result.stepIndex}/${result.totalSteps} for session ${sessionId}`);
+    return jsonResponse(result, 200);
+}
+
+async function handleDebugRestart(request: Request, context: ServerContext, sessionId: string) {
+    if (request.method !== "POST") {
+        return methodNotAllowed(request, ["POST", "OPTIONS"]);
+    }
+
+    const session = context.debugSessions.restart(sessionId);
+    if (!session) {
+        const body: ErrorResponse = {
+            error: {
+                code: "session_not_found",
+                message: `No debug session found for id ${sessionId}.`,
+            },
+        };
+        return jsonResponse(body, 404);
+    }
+
+    log.info(`[debug] Restarted session ${sessionId}`);
+    return jsonResponse({
+        sessionId: session.sessionId,
+        totalSteps: session.segments.length,
+        stepIndex: session.stepIndex,
+    }, 200);
+}
+
+async function handleDebugStop(request: Request, context: ServerContext, sessionId: string) {
+    if (request.method !== "DELETE") {
+        return methodNotAllowed(request, ["DELETE", "OPTIONS"]);
+    }
+
+    const deleted = context.debugSessions.delete(sessionId);
+    if (!deleted) {
+        const body: ErrorResponse = {
+            error: {
+                code: "session_not_found",
+                message: `No debug session found for id ${sessionId}.`,
+            },
+        };
+        return jsonResponse(body, 404);
+    }
+
+    log.info(`[debug] Session stopped: ${sessionId}`);
+    return emptyResponse(204);
+}
+
 async function handleRoot(request: Request, context: ServerContext) {
     if (request.method !== "GET") {
         return methodNotAllowed(request, ["GET", "OPTIONS"]);
@@ -291,6 +393,26 @@ export async function routeRequest(request: Request, context: ServerContext) {
 
     if (url.pathname === "/compute") {
         return handleComputeSubmission(request, context);
+    }
+
+    // Debug session routes — must be matched before generic /compute/:jobId
+    if (url.pathname === "/compute/debug") {
+        return handleDebugStart(request, context);
+    }
+
+    const debugStepMatch = /^\/compute\/debug\/([^/]+)\/step$/.exec(url.pathname);
+    if (debugStepMatch?.[1]) {
+        return handleDebugStep(request, context, decodeURIComponent(debugStepMatch[1]));
+    }
+
+    const debugRestartMatch = /^\/compute\/debug\/([^/]+)\/restart$/.exec(url.pathname);
+    if (debugRestartMatch?.[1]) {
+        return handleDebugRestart(request, context, decodeURIComponent(debugRestartMatch[1]));
+    }
+
+    const debugSessionMatch = /^\/compute\/debug\/([^/]+)$/.exec(url.pathname);
+    if (debugSessionMatch?.[1]) {
+        return handleDebugStop(request, context, decodeURIComponent(debugSessionMatch[1]));
     }
 
     const jobMatch = /^\/compute\/([^/]+)$/.exec(url.pathname);

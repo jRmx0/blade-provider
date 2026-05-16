@@ -1,4 +1,5 @@
 import type { InMemoryJobStore } from "../job/jobStore";
+import type { DebugSessionStore } from "../job/debugSessionStore";
 
 export type LogLevel = "error" | "warn" | "info" | "debug";
 
@@ -15,5 +16,6 @@ export interface ComputeProcessHandle {
 export interface ServerContext {
     config: ProviderConfig;
     jobs: InMemoryJobStore;
+    debugSessions: DebugSessionStore;
     processHandle: ComputeProcessHandle;
 }
