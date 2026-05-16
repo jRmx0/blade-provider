@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include "../../../../common/clog.h"
 #include "../../../../../../dependencies/cvector/cvector.h"
 #include "../../../../../../dependencies/allocator/allocator.h"
 #include "../../../internal.h"
@@ -137,7 +138,7 @@ int compute_bcd_cells(const bcd_event_list_t *event_list,
 
         if (rc != 0)
         {
-            fprintf(stderr, "Error handling event %d (type %d): %d\n", i, curr_evt_type, rc);
+            LOG_ERROR("Error handling event %d (type %d): %d", i, curr_evt_type, rc);
             return rc;
         }
     }
@@ -178,18 +179,18 @@ static int handle_in(const bcd_event_t curr_evt,
     in_find_prev_cell(curr_evt, cell_list, &prev_cell_index, &c_point, &f_point);
     if (prev_cell_index == -1)
     {
-        printf("Error: No previous cell found for IN event\n");
+        LOG_ERROR("No previous cell found for IN event");
         return -3;
     }
 
     if (cvector_size((*cell_list)[prev_cell_index].ceiling_edge_list) == 0)
     {
-        printf("Error: prev_cell has empty ceiling_edge_list in handle_in\n");
+        LOG_ERROR("prev_cell has empty ceiling_edge_list in handle_in");
         return -4;
     }
     if (cvector_size((*cell_list)[prev_cell_index].floor_edge_list) == 0)
     {
-        printf("Error: prev_cell has empty floor_edge_list in handle_in\n");
+        LOG_ERROR("prev_cell has empty floor_edge_list in handle_in");
         return -5;
     }
 
@@ -254,7 +255,7 @@ static void in_find_prev_cell(const bcd_event_t curr_evt,
 {
     if (!cell_list || !*cell_list)
     {
-        printf("BCD Cell List: NULL or empty\n");
+        LOG_WARN("BCD cell list is NULL or empty (in_find_prev_cell)");
         return;
     }
 
@@ -329,7 +330,7 @@ static int handle_side_out(const bcd_event_t curr_evt,
 
     if (cell_index >= cvector_size(*cell_list))
     {
-        printf("Error: No matching cell found in handle_side_out\n");
+        LOG_ERROR("No matching cell found in handle_side_out");
         return -6;
     }
 
@@ -355,7 +356,7 @@ static int handle_out(const bcd_event_t curr_evt,
 
     if (top_cell_index == -1)
     {
-        printf("Error: Failed to find top cell in handle_out\n");
+        LOG_ERROR("Failed to find top cell in handle_out");
         return -1;
     }
 
@@ -367,7 +368,7 @@ static int handle_out(const bcd_event_t curr_evt,
 
     if (bottom_cell_index == -1)
     {
-        printf("Error: Failed to find bottom cell in handle_out\n");
+        LOG_ERROR("Failed to find bottom cell in handle_out");
         return -1;
     }
 
@@ -422,7 +423,8 @@ static void out_find_top_cell(const bcd_event_t curr_evt,
 {
     if (!cell_list || !*cell_list)
     {
-        printf("BCD Cell List: NULL or empty\n");
+        LOG_WARN("BCD cell list is NULL or empty (out_find_top_cell)");
+        *top_cell_index = -1;
         return;
     }
 
@@ -447,7 +449,7 @@ static void out_find_top_cell(const bcd_event_t curr_evt,
 
     if (i >= cvector_size(*cell_list))
     {
-        printf("Error: No matching top cell found in out_find_top_cell\n");
+        LOG_ERROR("No matching top cell found in out_find_top_cell");
         *top_cell_index = -1;
         return;
     }
@@ -456,7 +458,7 @@ static void out_find_top_cell(const bcd_event_t curr_evt,
 
     if (cvector_size((*cell_list)[*top_cell_index].ceiling_edge_list) == 0)
     {
-        printf("Error: Invalid top_cell or empty ceiling_edge_list in out_find_top_cell\n");
+        LOG_ERROR("Invalid top_cell or empty ceiling_edge_list in out_find_top_cell");
         *top_cell_index = -1;
         return;
     }
@@ -472,7 +474,8 @@ static void out_find_bottom_cell(const bcd_event_t curr_evt,
 {
     if (!cell_list || !*cell_list)
     {
-        printf("BCD Cell List: NULL or empty\n");
+        LOG_WARN("BCD cell list is NULL or empty (out_find_bottom_cell)");
+        *bottom_cell_index = -1;
         return;
     }
 
@@ -497,7 +500,7 @@ static void out_find_bottom_cell(const bcd_event_t curr_evt,
 
     if (i >= cvector_size(*cell_list))
     {
-        printf("Error: No matching bottom cell found in out_find_bottom_cell\n");
+        LOG_ERROR("No matching bottom cell found in out_find_bottom_cell");
         *bottom_cell_index = -1;
         return;
     }
@@ -506,7 +509,7 @@ static void out_find_bottom_cell(const bcd_event_t curr_evt,
 
     if (cvector_size((*cell_list)[*bottom_cell_index].floor_edge_list) == 0)
     {
-        printf("Error: Invalid bottom_cell or empty floor_edge_list in out_find_bottom_cell\n");
+        LOG_ERROR("Invalid bottom_cell or empty floor_edge_list in out_find_bottom_cell");
         *bottom_cell_index = -1;
         return;
     }
@@ -540,7 +543,7 @@ static int handle_floor(const bcd_event_t curr_evt,
 
     if (i >= cvector_size(*cell_list))
     {
-        printf("Error: No matching cell found in handle_floor\n");
+        LOG_ERROR("No matching cell found in handle_floor");
         return -7;
     }
 
@@ -570,7 +573,7 @@ static int handle_ceiling(const bcd_event_t curr_evt,
 
     if (i >= cvector_size(*cell_list))
     {
-        printf("Error: No matching cell found in handle_ceiling\n");
+        LOG_ERROR("No matching cell found in handle_ceiling");
         return -8;
     }
 

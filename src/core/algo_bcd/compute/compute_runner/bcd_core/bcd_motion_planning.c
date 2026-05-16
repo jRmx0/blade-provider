@@ -1,5 +1,5 @@
-#include <stdio.h>
 #include <stdbool.h>
+#include "../../../../common/clog.h"
 #include "../../../../../../dependencies/cvector/cvector.h"
 
 #include "bcd_cell_computation.h"
@@ -67,85 +67,75 @@ int compute_bcd_motion(cvector_vector_type(bcd_cell_t) * cell_list,
 
 void log_bcd_motion(const bcd_motion_plan_t motion_plan)
 {
-    printf("BCD Motion Plan:\n");
+    if (!_clog_is_debug())
+        return;
+
+    LOG_DEBUG("BCD Motion Plan:");
 
     if (motion_plan.section == NULL)
     {
-        printf("  (NULL motion plan)\n");
+        LOG_DEBUG("  (NULL motion plan)");
         return;
     }
 
     int section_count = cvector_size(motion_plan.section);
-    printf("  Total sections: %d\n", section_count);
+    LOG_DEBUG("  Total sections: %d", section_count);
 
     if (section_count == 0)
     {
-        printf("  (no sections)\n");
+        LOG_DEBUG("  (no sections)");
         return;
     }
 
     for (int i = 0; i < section_count; i++)
     {
         const cell_motion_plan_t *section = &motion_plan.section[i];
-        printf("  Section %d:\n", i);
+        LOG_DEBUG("  Section %d:", i);
 
         // Log coverage motion (ox)
         if (section->ox == NULL)
         {
-            printf("    Coverage: (NULL point list)\n");
+            LOG_DEBUG("    Coverage: (NULL point list)");
         }
         else
         {
             int point_count = cvector_size(section->ox);
-            printf("    Coverage points: %d (continuous path)\n", point_count);
+            LOG_DEBUG("    Coverage points: %d (continuous path)", point_count);
 
             if (point_count == 0)
             {
-                printf("    Coverage: (no points)\n");
+                LOG_DEBUG("    Coverage: (no points)");
             }
             else
             {
-                // Log the continuous path points
-                printf("    Path: ");
                 for (int j = 0; j < point_count; j++)
                 {
                     point_t point = section->ox[j];
-                    printf("(%.2f, %.2f)", point.x, point.y);
-                    if (j < point_count - 1)
-                    {
-                        printf(" -> ");
-                    }
-
-                    // Break line every 4 points for readability
-                    if ((j + 1) % 4 == 0 && j < point_count - 1)
-                    {
-                        printf("\n          ");
-                    }
+                    LOG_DEBUG("      Path %d: (%.2f, %.2f)", j, point.x, point.y);
                 }
-                printf("\n");
             }
         }
 
         // Log navigation motion (nav)
         if (section->nav == NULL)
         {
-            printf("    Navigation: (NULL point list)\n");
+            LOG_DEBUG("    Navigation: (NULL point list)");
         }
         else
         {
             int nav_count = cvector_size(section->nav);
-            printf("    Navigation points: %d\n", nav_count);
+            LOG_DEBUG("    Navigation points: %d", nav_count);
 
             if (nav_count == 0)
             {
-                printf("    Navigation: (no points)\n");
+                LOG_DEBUG("    Navigation: (no points)");
             }
             else
             {
                 for (int j = 0; j < nav_count; j++)
                 {
                     point_t nav_point = section->nav[j];
-                    printf("      Nav %d: (%.2f, %.2f)\n", j, nav_point.x, nav_point.y);
+                    LOG_DEBUG("      Nav %d: (%.2f, %.2f)", j, nav_point.x, nav_point.y);
                 }
             }
         }

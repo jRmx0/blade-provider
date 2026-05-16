@@ -3,6 +3,7 @@
 #include <string.h>
 #include <math.h>
 #include "bcd_runner.h"
+#include "../../../common/clog.h"
 #include "../../../../../dependencies/cJSON/cJSON.h"
 #include "../../../../../dependencies/cvector/cvector.h"
 #include "../../../../../dependencies/allocator/allocator.h"
@@ -368,7 +369,7 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 		int hrc = compute_headlandCoverage(env, &headland);
 		if (hrc != 0)
 		{
-			printf("coverage_path_planning: headland generation failed (code %d)\n", hrc);
+			LOG_ERROR("coverage_path_planning: headland generation failed (code %d)", hrc);
 			free_headland(&headland);
 
 			const char *err_code =
@@ -386,8 +387,8 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 		else
 		{
 			has_headland = true;
-			printf("coverage_path_planning: headland generated %zu section(s)\n",
-				   cvector_size(headland.sections));
+			LOG_DEBUG("coverage_path_planning: headland generated %zu section(s)",
+					  cvector_size(headland.sections));
 		}
 	}
 
@@ -395,7 +396,7 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 	int rc = bcd_preprocess_environment(active_env, 0.0f);
 	if (rc != 0)
 	{
-		printf("coverage_path_planning: environment preprocessing failed (code %d)\n", rc);
+		LOG_ERROR("coverage_path_planning: environment preprocessing failed (code %d)", rc);
 		if (has_headland)
 			free_headland(&headland);
 		return err_cleanup(&event_list, NULL, NULL, NULL, rc);
@@ -403,19 +404,19 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 
 	/* DEBUG: dump all vertex X values after preprocessing to verify uniqueness */
 	{
-		printf("BCD preprocess debug: boundary vertices (%u):\n", active_env->boundary.vertex_count);
+		LOG_DEBUG("BCD preprocess: boundary vertices (%u):", active_env->boundary.vertex_count);
 		for (uint32_t _vi = 0; _vi < active_env->boundary.vertex_count; _vi++)
-			printf("  [%u] x=%.9f  y=%.9f\n", _vi,
-				   active_env->boundary.vertices[_vi].x,
-				   active_env->boundary.vertices[_vi].y);
+			LOG_DEBUG("  [%u] x=%.9f  y=%.9f", _vi,
+					  active_env->boundary.vertices[_vi].x,
+					  active_env->boundary.vertices[_vi].y);
 		for (uint32_t _oi = 0; _oi < active_env->obstacle_count; _oi++)
 		{
-			printf("BCD preprocess debug: obstacle[%u] vertices (%u):\n",
-				   _oi, active_env->obstacles[_oi].vertex_count);
+			LOG_DEBUG("BCD preprocess: obstacle[%u] vertices (%u):",
+					  _oi, active_env->obstacles[_oi].vertex_count);
 			for (uint32_t _vi = 0; _vi < active_env->obstacles[_oi].vertex_count; _vi++)
-				printf("  [%u] x=%.9f  y=%.9f\n", _vi,
-					   active_env->obstacles[_oi].vertices[_vi].x,
-					   active_env->obstacles[_oi].vertices[_vi].y);
+				LOG_DEBUG("  [%u] x=%.9f  y=%.9f", _vi,
+						  active_env->obstacles[_oi].vertices[_vi].x,
+						  active_env->obstacles[_oi].vertices[_vi].y);
 		}
 	}
 
@@ -423,32 +424,32 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 	rc = build_bcd_event_list(active_env, &event_list);
 	if (rc != 0)
 	{
-		printf("coverage_path_planning: BCD event list generation failed (code %d)\n", rc);
+		LOG_ERROR("coverage_path_planning: BCD event list generation failed (code %d)", rc);
 		if (has_headland)
 			free_headland(&headland);
 		return err_cleanup(&event_list, NULL, NULL, NULL, rc);
 	}
-	printf("coverage_path_planning: successfully generated %d events\n", event_list.length);
+	LOG_DEBUG("coverage_path_planning: successfully generated %d events", event_list.length);
 	for (int ei = 0; ei < event_list.length; ei++)
 	{
 		bcd_event_t *ev = &event_list.bcd_events[ei];
-		printf("  [%d] type=%-10s vertex=(%.9f, %.9f)\n",
-			   ei,
-			   event_type_to_string(ev->bcd_event_type),
-			   ev->polygon_vertex.x,
-			   ev->polygon_vertex.y);
+		LOG_DEBUG("  [%d] type=%-10s vertex=(%.9f, %.9f)",
+				  ei,
+				  event_type_to_string(ev->bcd_event_type),
+				  ev->polygon_vertex.x,
+				  ev->polygon_vertex.y);
 	}
 	cvector_vector_type(bcd_cell_t) cell_list = NULL;
 	va_tracking_mark("Ląstelės");
 	rc = compute_bcd_cells(&event_list, &cell_list);
 	if (rc != 0)
 	{
-		printf("coverage_path_planning: BCD cell computation failed (code %d)\n", rc);
+		LOG_ERROR("coverage_path_planning: BCD cell computation failed (code %d)", rc);
 		if (has_headland)
 			free_headland(&headland);
 		return err_cleanup(&event_list, &cell_list, NULL, NULL, rc);
 	}
-	printf("coverage_path_planning: successfully generated %zu cells\n", cvector_size(cell_list));
+	LOG_DEBUG("coverage_path_planning: successfully generated %zu cells", cvector_size(cell_list));
 	// log_bcd_cell_list((const cvector_vector_type(bcd_cell_t) *) &cell_list);
 
 	cvector_vector_type(int) path_list = NULL;
@@ -459,12 +460,12 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 	rc = compute_bcd_path_list(&cell_list, starting_cell_index, &path_list);
 	if (rc != 0)
 	{
-		printf("coverage_path_planning: BCD path computation failed (code %d)\n", rc);
+		LOG_ERROR("coverage_path_planning: BCD path computation failed (code %d)", rc);
 		if (has_headland)
 			free_headland(&headland);
 		return err_cleanup(&event_list, &cell_list, &path_list, NULL, rc);
 	}
-	printf("coverage_path_planning: successfully generated path with %zu visits\n", cvector_size(path_list));
+	LOG_DEBUG("coverage_path_planning: successfully generated path with %zu visits", cvector_size(path_list));
 	// log_bcd_path_list((const cvector_vector_type(int) *)&path_list);
 
 	bcd_motion_plan_t motion_plan = {0};
@@ -476,7 +477,7 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 							active_env->end_point);
 	if (rc != 0)
 	{
-		printf("coverage_path_planning: BCD motion computation failed (code %d)\n", rc);
+		LOG_ERROR("coverage_path_planning: BCD motion computation failed (code %d)", rc);
 		if (has_headland)
 			free_headland(&headland);
 		return err_cleanup(&event_list, &cell_list, &path_list, &motion_plan, rc);
@@ -844,7 +845,7 @@ static void log_event_list(const bcd_event_list_t *event_list)
 
 	if (event_list->bcd_events != NULL && event_list->length > 0)
 	{
-		printf("coverage_path_planning: event list preview:\n");
+		LOG_DEBUG("coverage_path_planning: event list preview:");
 		for (int i = 0; i < event_list->length; i++)
 		{
 			const char *type_str = "UNKNOWN";
@@ -889,9 +890,9 @@ static void log_event_list(const bcd_event_list_t *event_list)
 			case BCD_NONE:
 				break;
 			}
-			printf("  Event %d: (%.2f, %.2f) type=%s polygon=%s\n",
-				   i, event_list->bcd_events[i].polygon_vertex.x, event_list->bcd_events[i].polygon_vertex.y,
-				   type_str, event_list->bcd_events[i].polygon_type == BOUNDARY ? "BOUNDARY" : "OBSTACLE");
+			LOG_DEBUG("  Event %d: (%.2f, %.2f) type=%s polygon=%s",
+					  i, event_list->bcd_events[i].polygon_vertex.x, event_list->bcd_events[i].polygon_vertex.y,
+					  type_str, event_list->bcd_events[i].polygon_type == BOUNDARY ? "BOUNDARY" : "OBSTACLE");
 		}
 	}
 }

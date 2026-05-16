@@ -137,17 +137,44 @@ async function launchComputeProcess(
     await proc.stdin.end();
     log.debug("[compute] stdin closed");
 
-    void new Response(proc.stderr).text().then((stderrText) => {
-        if (stderrText.trim()) {
-            log.error("[compute] Process stderr:", stderrText.trim());
-        }
-    });
-
     let responded = false;
-    const [stdoutText, exitCode] = await Promise.all([
+    const [stdoutText, stderrText, exitCode] = await Promise.all([
         new Response(proc.stdout).text(),
+        new Response(proc.stderr).text(),
         proc.exited,
     ]);
+
+    if (stderrText.trim()) {
+        const stderrLines = stderrText
+            .split(/\r?\n/)
+            .map((line) => line.trim())
+            .filter(Boolean);
+
+        for (const line of stderrLines) {
+            const levelMatch = line.match(/^\[(error|warn|info|debug)\]\s*(.*)$/i);
+            if (levelMatch) {
+                const level = levelMatch[1]?.toLowerCase();
+                const message = levelMatch[2] || "(empty message)";
+
+                if (level === "error") {
+                    log.error("[compute]", message);
+                } else if (level === "warn") {
+                    log.warn("[compute]", message);
+                } else if (level === "info") {
+                    log.info("[compute]", message);
+                } else {
+                    log.debug("[compute]", message);
+                }
+                continue;
+            }
+
+            if (exitCode === 0) {
+                log.warn("[compute] Process stderr:", line);
+            } else {
+                log.error("[compute] Process stderr:", line);
+            }
+        }
+    }
 
     log.info("[compute] Process exited with code:", exitCode);
     {
@@ -280,11 +307,11 @@ async function handleDebugStart(request: Request, context: ServerContext) {
     }
 
     const session = context.debugSessions.create(result);
-    log.info(`[debug] Session created: ${session.sessionId} (${session.segments.length} steps)`);
+    log.info(`Session created: ${session.sessionId} (${session.totalSteps} steps)`);
 
     return jsonResponse({
         sessionId: session.sessionId,
-        totalSteps: session.segments.length,
+        totalSteps: session.totalSteps,
         stepIndex: session.stepIndex,
         createdAt: session.createdAt,
     }, 201);
@@ -306,7 +333,27 @@ async function handleDebugStep(request: Request, context: ServerContext, session
         return jsonResponse(body, 404);
     }
 
-    log.info(`[debug] Step ${result.stepIndex}/${result.totalSteps} for session ${sessionId}`);
+    log.debug(`Step ${result._debug.stepIndex}/${result._debug.totalSteps} for session ${sessionId}`);
+    return jsonResponse(result, 200);
+}
+
+async function handleDebugFastForward(request: Request, context: ServerContext, sessionId: string) {
+    if (request.method !== "POST") {
+        return methodNotAllowed(request, ["POST", "OPTIONS"]);
+    }
+
+    const result = context.debugSessions.fastForward(sessionId);
+    if (!result) {
+        const body: ErrorResponse = {
+            error: {
+                code: "session_not_found_or_exhausted",
+                message: `No debug session found for id ${sessionId}, or all steps have already been revealed.`,
+            },
+        };
+        return jsonResponse(body, 404);
+    }
+
+    log.debug(`Fast Forward: jumped to final step ${result._debug.stepIndex}/${result._debug.totalSteps} for session ${sessionId}`);
     return jsonResponse(result, 200);
 }
 
@@ -326,10 +373,10 @@ async function handleDebugRestart(request: Request, context: ServerContext, sess
         return jsonResponse(body, 404);
     }
 
-    log.info(`[debug] Restarted session ${sessionId}`);
+    log.debug(`Restarted session ${sessionId}`);
     return jsonResponse({
         sessionId: session.sessionId,
-        totalSteps: session.segments.length,
+        totalSteps: session.totalSteps,
         stepIndex: session.stepIndex,
     }, 200);
 }
@@ -350,7 +397,7 @@ async function handleDebugStop(request: Request, context: ServerContext, session
         return jsonResponse(body, 404);
     }
 
-    log.info(`[debug] Session stopped: ${sessionId}`);
+    log.info(`Session stopped: ${sessionId}`);
     return emptyResponse(204);
 }
 
@@ -403,6 +450,11 @@ export async function routeRequest(request: Request, context: ServerContext) {
     const debugStepMatch = /^\/compute\/debug\/([^/]+)\/step$/.exec(url.pathname);
     if (debugStepMatch?.[1]) {
         return handleDebugStep(request, context, decodeURIComponent(debugStepMatch[1]));
+    }
+
+    const debugFastForwardMatch = /^\/compute\/debug\/([^/]+)\/fast-forward$/.exec(url.pathname);
+    if (debugFastForwardMatch?.[1]) {
+        return handleDebugFastForward(request, context, decodeURIComponent(debugFastForwardMatch[1]));
     }
 
     const debugRestartMatch = /^\/compute\/debug\/([^/]+)\/restart$/.exec(url.pathname);

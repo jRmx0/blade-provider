@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdbool.h>
+#include "../../../../common/clog.h"
 #include "../../../../../../dependencies/cvector/cvector.h"
 #include "bcd_coverage_planning.h"
 #include "bcd_pathfinding.h"
@@ -33,14 +34,14 @@ int compute_bcd_path_list(cvector_vector_type(bcd_cell_t) * cell_list,
 {
     if (cell_list == NULL || path_list == NULL)
     {
-        printf("compute_bcd_path_list: Invalid input parameters\n");
+        LOG_ERROR("compute_bcd_path_list: Invalid input parameters");
         return -1;
     }
 
     int cell_count = cvector_size(*cell_list);
     if (cell_count == 0)
     {
-        printf("compute_bcd_path_list: No cells to process\n");
+        LOG_WARN("compute_bcd_path_list: No cells to process");
         return 0;
     }
 
@@ -48,8 +49,8 @@ int compute_bcd_path_list(cvector_vector_type(bcd_cell_t) * cell_list,
         starting_cell_index = 0;
     if (starting_cell_index < 0 || starting_cell_index >= cell_count)
     {
-        printf("compute_bcd_path_list: Invalid starting_cell_index=%d (cell_count=%d)\n",
-               starting_cell_index, cell_count);
+        LOG_ERROR("compute_bcd_path_list: Invalid starting_cell_index=%d (cell_count=%d)",
+                  starting_cell_index, cell_count);
         return -3;
     }
 
@@ -67,16 +68,16 @@ int compute_bcd_path_list(cvector_vector_type(bcd_cell_t) * cell_list,
     {
         if (curr_path_index < 0 || curr_path_index >= (int)cvector_size(*path_list))
         {
-            printf("compute_bcd_path_list: Invalid curr_path_index=%d (path_size=%zu)\n",
-                   curr_path_index, cvector_size(*path_list));
+            LOG_ERROR("compute_bcd_path_list: Invalid curr_path_index=%d (path_size=%zu)",
+                      curr_path_index, cvector_size(*path_list));
             return -4;
         }
 
         int current_cell = (*path_list)[curr_path_index];
         if (current_cell < 0 || current_cell >= cell_count)
         {
-            printf("compute_bcd_path_list: Invalid current_cell=%d (cell_count=%d)\n",
-                   current_cell, cell_count);
+            LOG_ERROR("compute_bcd_path_list: Invalid current_cell=%d (cell_count=%d)",
+                      current_cell, cell_count);
             return -5;
         }
         int next_cell = find_unvisited_neighbor(current_cell, cell_list);
@@ -107,7 +108,7 @@ int compute_bcd_path_list(cvector_vector_type(bcd_cell_t) * cell_list,
 
             if (should_backtrack(&curr_path_index))
             {
-                printf("compute_bcd_path_list: backtracking exhausted, cell graph may be disconnected\n");
+                LOG_WARN("compute_bcd_path_list: backtracking exhausted, cell graph may be disconnected");
                 return -2;
             }
         }
