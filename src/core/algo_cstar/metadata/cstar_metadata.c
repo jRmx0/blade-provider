@@ -4,11 +4,11 @@
 char *cstar_build_metadata_json(void)
 {
     const char *format_values[] = {
-        BCD_METADATA_FORMAT_POLYGON};
+        METADATA_FORMAT_POLYGON};
     const char *type_values[] = {
-        BCD_METADATA_TYPE_ONLINE};
+        METADATA_TYPE_ONLINE};
     const char *coordsystem_values[] = {
-        BCD_METADATA_COORDSYSTEM_CARTESIAN};
+        METADATA_COORDSYSTEM_CARTESIAN};
 
     cJSON *algorithm = cJSON_CreateObject();
     if (algorithm == NULL)
@@ -28,13 +28,13 @@ char *cstar_build_metadata_json(void)
 
     cJSON_AddItemToObject(algorithm, "parameters", parameters);
 
-    metadata_add_parameter(parameters, 1, "Format", BCD_METADATA_PARAM_TYPE_ENUM, format_values, 1, BCD_METADATA_FORMAT_POLYGON, BCD_METADATA_PARAM_SECTION_ENVIRONMENT, BCD_METADATA_APP_HANDLER_ENVIRONMENT_FORMAT, 0, 0.0, 0, 0.0, NULL);
-    metadata_add_parameter(parameters, 2, "Type", BCD_METADATA_PARAM_TYPE_ENUM, type_values, 1, BCD_METADATA_TYPE_OFFLINE, BCD_METADATA_PARAM_SECTION_ENVIRONMENT, BCD_METADATA_APP_HANDLER_ENVIRONMENT_TYPE, 0, 0.0, 0, 0.0, NULL);
-    metadata_add_parameter(parameters, 3, "Coordinate System", BCD_METADATA_PARAM_TYPE_ENUM, coordsystem_values, 1, BCD_METADATA_COORDSYSTEM_CARTESIAN, BCD_METADATA_PARAM_SECTION_ENVIRONMENT, BCD_METADATA_APP_HANDLER_ENVIRONMENT_COORDSYSTEM, 0, 0.0, 0, 0.0, NULL);
+    metadata_add_parameter(parameters, 1, "Format", METADATA_PARAM_TYPE_ENUM, format_values, 1, METADATA_FORMAT_POLYGON, METADATA_PARAM_SECTION_ENVIRONMENT, METADATA_APP_HANDLER_ENVIRONMENT_FORMAT, 0, 0.0, 0, 0.0, NULL);
+    metadata_add_parameter(parameters, 2, "Type", METADATA_PARAM_TYPE_ENUM, type_values, 1, METADATA_TYPE_OFFLINE, METADATA_PARAM_SECTION_ENVIRONMENT, METADATA_APP_HANDLER_ENVIRONMENT_TYPE, 0, 0.0, 0, 0.0, NULL);
+    metadata_add_parameter(parameters, 3, "Coordinate System", METADATA_PARAM_TYPE_ENUM, coordsystem_values, 1, METADATA_COORDSYSTEM_CARTESIAN, METADATA_PARAM_SECTION_ENVIRONMENT, METADATA_APP_HANDLER_ENVIRONMENT_COORDSYSTEM, 0, 0.0, 0, 0.0, NULL);
 
-    metadata_add_parameter(parameters, 4, "Path Width", BCD_METADATA_PARAM_TYPE_DECIMAL, NULL, 0, "20", BCD_METADATA_PARAM_SECTION_COVERAGE_PATH, BCD_METADATA_APP_HANDLER_NONE, 1, 0.0, 0, 0.0, NULL);
-    metadata_add_parameter(parameters, 5, "Sensor Range", BCD_METADATA_PARAM_TYPE_DECIMAL, NULL, 0, "300", BCD_METADATA_PARAM_SECTION_COVERAGE_PATH, BCD_METADATA_APP_HANDLER_NONE, 1, 0.0, 0, 0.0, NULL);
-    metadata_add_parameter(parameters, 6, "Frontier Spacing Multiplier", BCD_METADATA_PARAM_TYPE_INTEGER, NULL, 0, "1", BCD_METADATA_PARAM_SECTION_COVERAGE_PATH, BCD_METADATA_APP_HANDLER_NONE, 1, 1.0, 0, 0.0, NULL);
+    metadata_add_parameter(parameters, 4, "Path Width", METADATA_PARAM_TYPE_DECIMAL, NULL, 0, "20", METADATA_PARAM_SECTION_COVERAGE_PATH, METADATA_APP_HANDLER_NONE, 1, 0.0, 0, 0.0, NULL);
+    metadata_add_parameter(parameters, 5, "Sensor Range", METADATA_PARAM_TYPE_DECIMAL, NULL, 0, "300", METADATA_PARAM_SECTION_COVERAGE_PATH, METADATA_APP_HANDLER_NONE, 1, 0.0, 0, 0.0, NULL);
+    metadata_add_parameter(parameters, 6, "Frontier Spacing Multiplier", METADATA_PARAM_TYPE_INTEGER, NULL, 0, "1", METADATA_PARAM_SECTION_COVERAGE_PATH, METADATA_APP_HANDLER_NONE, 1, 1.0, 0, 0.0, NULL);
 
     /* ── Layers ─────────────────────────────────────────────────────────── */
 

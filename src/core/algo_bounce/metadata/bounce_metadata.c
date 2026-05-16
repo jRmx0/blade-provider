@@ -39,16 +39,16 @@ char *bounce_build_metadata_json(void)
     cJSON_AddItemToObject(algorithm, "layers", layers);
     cJSON_AddItemToObject(algorithm, "metrics", metrics);
 
-    metadata_add_parameter(parameters, 1, "Path Width", BCD_METADATA_PARAM_TYPE_DECIMAL, NULL, 0, "20", BCD_METADATA_PARAM_SECTION_COVERAGE_PATH, BCD_METADATA_APP_HANDLER_NONE, 1, 0.0, 0, 0.0, NULL);
-    metadata_add_parameter(parameters, 2, "Random Bounce Offset", BCD_METADATA_PARAM_TYPE_DECIMAL, NULL, 0, "40", BCD_METADATA_PARAM_SECTION_COVERAGE_PATH, BCD_METADATA_APP_HANDLER_NONE, 1, 0.0, 1, 100.0, "ratio");
-    metadata_add_parameter(parameters, 3, "Target Coverage", BCD_METADATA_PARAM_TYPE_DECIMAL, NULL, 0, "95", BCD_METADATA_PARAM_SECTION_COVERAGE_PATH, BCD_METADATA_APP_HANDLER_NONE, 1, 0.0, 1, 100.0, "ratio");
-    metadata_add_parameter(parameters, 4, "Target Distance", BCD_METADATA_PARAM_TYPE_DECIMAL, NULL, 0, "", BCD_METADATA_PARAM_SECTION_COVERAGE_PATH, BCD_METADATA_APP_HANDLER_NONE, 1, 0.0, 0, 0.0, NULL);
-    metadata_add_parameter(parameters, 5, "Max Iterations", BCD_METADATA_PARAM_TYPE_INTEGER, NULL, 0, "10000", BCD_METADATA_PARAM_SECTION_COVERAGE_PATH, BCD_METADATA_APP_HANDLER_NONE, 1, 1.0, 1, 1000000.0, "unitless");
-    metadata_add_parameter(parameters, 6, "Seed", BCD_METADATA_PARAM_TYPE_STRING, NULL, 0, "", BCD_METADATA_PARAM_SECTION_COVERAGE_PATH, BCD_METADATA_APP_HANDLER_NONE, 0, 0.0, 0, 0.0, NULL);
-    metadata_add_parameter(parameters, 7, "Starting Angle", BCD_METADATA_PARAM_TYPE_DECIMAL, NULL, 0, "", BCD_METADATA_PARAM_SECTION_COVERAGE_PATH, BCD_METADATA_APP_HANDLER_NONE, 1, 0.0, 1, 360.0, "unitless");
-    metadata_add_parameter(parameters, 8, "Coverage Grid Cell Size", BCD_METADATA_PARAM_TYPE_DECIMAL, NULL, 0, "10", BCD_METADATA_PARAM_SECTION_COVERAGE_PATH, BCD_METADATA_APP_HANDLER_NONE, 1, 0.0, 0, 0.0, NULL);
-    metadata_add_parameter(parameters, 9, "Headland", BCD_METADATA_PARAM_TYPE_BOOLEAN, NULL, 0, "true", BCD_METADATA_PARAM_SECTION_COVERAGE_PATH, BCD_METADATA_APP_HANDLER_NONE, 0, 0.0, 0, 0.0, NULL);
-    metadata_add_parameter(parameters, 10, "Headland Width", BCD_METADATA_PARAM_TYPE_DECIMAL, NULL, 0, "10", BCD_METADATA_PARAM_SECTION_COVERAGE_PATH, BCD_METADATA_APP_HANDLER_NONE, 1, 0.0, 0, 0.0, NULL);
+    metadata_add_parameter(parameters, 1, "Path Width", METADATA_PARAM_TYPE_DECIMAL, NULL, 0, "20", METADATA_PARAM_SECTION_COVERAGE_PATH, METADATA_APP_HANDLER_NONE, 1, 0.0, 0, 0.0, NULL);
+    metadata_add_parameter(parameters, 2, "Random Bounce Offset", METADATA_PARAM_TYPE_DECIMAL, NULL, 0, "40", METADATA_PARAM_SECTION_COVERAGE_PATH, METADATA_APP_HANDLER_NONE, 1, 0.0, 1, 100.0, "ratio");
+    metadata_add_parameter(parameters, 3, "Target Coverage", METADATA_PARAM_TYPE_DECIMAL, NULL, 0, "95", METADATA_PARAM_SECTION_COVERAGE_PATH, METADATA_APP_HANDLER_NONE, 1, 0.0, 1, 100.0, "ratio");
+    metadata_add_parameter(parameters, 4, "Target Distance", METADATA_PARAM_TYPE_DECIMAL, NULL, 0, "", METADATA_PARAM_SECTION_COVERAGE_PATH, METADATA_APP_HANDLER_NONE, 1, 0.0, 0, 0.0, NULL);
+    metadata_add_parameter(parameters, 5, "Max Iterations", METADATA_PARAM_TYPE_INTEGER, NULL, 0, "10000", METADATA_PARAM_SECTION_COVERAGE_PATH, METADATA_APP_HANDLER_NONE, 1, 1.0, 1, 1000000.0, "unitless");
+    metadata_add_parameter(parameters, 6, "Seed", METADATA_PARAM_TYPE_STRING, NULL, 0, "", METADATA_PARAM_SECTION_COVERAGE_PATH, METADATA_APP_HANDLER_NONE, 0, 0.0, 0, 0.0, NULL);
+    metadata_add_parameter(parameters, 7, "Starting Angle", METADATA_PARAM_TYPE_DECIMAL, NULL, 0, "", METADATA_PARAM_SECTION_COVERAGE_PATH, METADATA_APP_HANDLER_NONE, 1, 0.0, 1, 360.0, "unitless");
+    metadata_add_parameter(parameters, 8, "Coverage Grid Cell Size", METADATA_PARAM_TYPE_DECIMAL, NULL, 0, "10", METADATA_PARAM_SECTION_COVERAGE_PATH, METADATA_APP_HANDLER_NONE, 1, 0.0, 0, 0.0, NULL);
+    metadata_add_parameter(parameters, 9, "Headland", METADATA_PARAM_TYPE_BOOLEAN, NULL, 0, "true", METADATA_PARAM_SECTION_COVERAGE_PATH, METADATA_APP_HANDLER_NONE, 0, 0.0, 0, 0.0, NULL);
+    metadata_add_parameter(parameters, 10, "Headland Width", METADATA_PARAM_TYPE_DECIMAL, NULL, 0, "10", METADATA_PARAM_SECTION_COVERAGE_PATH, METADATA_APP_HANDLER_NONE, 1, 0.0, 0, 0.0, NULL);
 
     // Coverage layer
     {
