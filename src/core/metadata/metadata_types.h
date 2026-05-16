@@ -1,138 +1,156 @@
 #ifndef METADATA_TYPES_H
 #define METADATA_TYPES_H
 
-typedef enum {
-    BCD_METADATA_PARAM_SECTION_UNSPECIFIED = 0,
-    BCD_METADATA_PARAM_SECTION_GENERAL,
-    BCD_METADATA_PARAM_SECTION_COVERAGE_PATH,
-    BCD_METADATA_PARAM_SECTION_ENVIRONMENT,
-    BCD_METADATA_PARAM_SECTION_OBJECT,
-    BCD_METADATA_PARAM_SECTION_EXECUTION
-} bcd_metadata_param_section_t;
+/* ── Style Attribute Keys ─────────────────────────────────────────────────── */
 
-typedef enum {
-    BCD_METADATA_PARAM_TYPE_INTEGER = 0,
-    BCD_METADATA_PARAM_TYPE_DECIMAL,
-    BCD_METADATA_PARAM_TYPE_BOOLEAN,
-    BCD_METADATA_PARAM_TYPE_STRING,
-    BCD_METADATA_PARAM_TYPE_ENUM
-} bcd_metadata_param_type_t;
+/* General */
+#define METADATA_STYLE_ATTR_KEY_VISIBLE "Visible"
+#define METADATA_STYLE_ATTR_KEY_Z_INDEX "Z-Index"
+/* Point — Marker Shape */
+#define METADATA_STYLE_ATTR_KEY_POINT_SHAPE "Point Shape"
+#define METADATA_STYLE_ATTR_KEY_POINT_RADIUS "Point Radius"
+/* Point — Overlap */
+#define METADATA_STYLE_ATTR_KEY_POINT_OVERLAP_SPACING "Point Overlap Spacing"
+#define METADATA_STYLE_ATTR_KEY_POINT_OVERLAP_LAYOUT "Point Overlap Layout"
+/* Point — Border */
+#define METADATA_STYLE_ATTR_KEY_POINT_BORDER_COLOR "Point Border Color"
+#define METADATA_STYLE_ATTR_KEY_POINT_BORDER_WIDTH "Point Border Width"
+#define METADATA_STYLE_ATTR_KEY_POINT_BORDER_STYLE "Point Border Style"
+/* Point — Fill */
+#define METADATA_STYLE_ATTR_KEY_POINT_FILL_COLOR "Point Fill Color"
+/* Point — Id Label */
+#define METADATA_STYLE_ATTR_KEY_POINT_ID_COLOR "Point ID Color"
+#define METADATA_STYLE_ATTR_KEY_POINT_ID_FONT_SIZE "Point ID Font Size"
+#define METADATA_STYLE_ATTR_KEY_POINT_ID_FONT_WEIGHT "Point ID Font Weight"
+#define METADATA_STYLE_ATTR_KEY_POINT_ID_PLACEMENT "Point ID Placement"
+#define METADATA_STYLE_ATTR_KEY_POINT_ID_OFFSET "Point ID Offset"
+/* Point — Text Label */
+#define METADATA_STYLE_ATTR_KEY_POINT_LABEL_COLOR "Point Label Color"
+#define METADATA_STYLE_ATTR_KEY_POINT_LABEL_FONT_SIZE "Point Label Font Size"
+#define METADATA_STYLE_ATTR_KEY_POINT_LABEL_FONT_WEIGHT "Point Label Font Weight"
+#define METADATA_STYLE_ATTR_KEY_POINT_LABEL_PLACEMENT "Point Label Placement"
+#define METADATA_STYLE_ATTR_KEY_POINT_LABEL_OFFSET "Point Label Offset"
+/* Line — Edge */
+#define METADATA_STYLE_ATTR_KEY_LINE_EDGE_COLOR "Line Edge Color"
+#define METADATA_STYLE_ATTR_KEY_LINE_EDGE_WIDTH "Line Edge Width"
+#define METADATA_STYLE_ATTR_KEY_LINE_EDGE_STYLE "Line Edge Style"
+/* Line — Arrow */
+#define METADATA_STYLE_ATTR_KEY_LINE_ARROW_START "Line Arrow Start"
+#define METADATA_STYLE_ATTR_KEY_LINE_ARROW_END "Line Arrow End"
+#define METADATA_STYLE_ATTR_KEY_LINE_ARROW_MID "Line Arrow Mid"
+#define METADATA_STYLE_ATTR_KEY_LINE_ARROW_MID_SPACING "Line Arrow Mid Spacing"
+#define METADATA_STYLE_ATTR_KEY_LINE_ARROW_SIZE "Line Arrow Size"
+/* Polygon — Edge */
+#define METADATA_STYLE_ATTR_KEY_POLYGON_EDGE_COLOR "Polygon Edge Color"
+#define METADATA_STYLE_ATTR_KEY_POLYGON_EDGE_WIDTH "Polygon Edge Width"
+#define METADATA_STYLE_ATTR_KEY_POLYGON_EDGE_STYLE "Polygon Edge Style"
+/* Polygon — Fill */
+#define METADATA_STYLE_ATTR_KEY_POLYGON_FILL_COLOR "Polygon Fill Color"
+#define METADATA_STYLE_ATTR_KEY_POLYGON_FILL_STYLE "Polygon Fill Style"
+/* Polygon — ID */
+#define METADATA_STYLE_ATTR_KEY_POLYGON_ID_COLOR "Polygon ID Color"
+#define METADATA_STYLE_ATTR_KEY_POLYGON_ID_FONT_SIZE "Polygon ID Font Size"
+#define METADATA_STYLE_ATTR_KEY_POLYGON_ID_FONT_WEIGHT "Polygon ID Font Weight"
+#define METADATA_STYLE_ATTR_KEY_POLYGON_ID_SHAPE "Polygon ID Shape"
+#define METADATA_STYLE_ATTR_KEY_POLYGON_ID_RADIUS "Polygon ID Radius"
+#define METADATA_STYLE_ATTR_KEY_POLYGON_ID_BORDER_COLOR "Polygon ID Border Color"
+#define METADATA_STYLE_ATTR_KEY_POLYGON_ID_BORDER_WIDTH "Polygon ID Border Width"
+#define METADATA_STYLE_ATTR_KEY_POLYGON_ID_BORDER_STYLE "Polygon ID Border Style"
+#define METADATA_STYLE_ATTR_KEY_POLYGON_ID_FILL_COLOR "Polygon ID Fill Color"
+#define METADATA_STYLE_ATTR_KEY_POLYGON_ID_PLACEMENT "Polygon ID Placement"
+#define METADATA_STYLE_ATTR_KEY_POLYGON_ID_OFFSET "Polygon ID Offset"
 
-typedef enum {
-	BCD_METADATA_APP_HANDLER_NONE = 0,
-	BCD_METADATA_APP_HANDLER_ENVIRONMENT_FORMAT,
-	BCD_METADATA_APP_HANDLER_ENVIRONMENT_TYPE,
-	BCD_METADATA_APP_HANDLER_ENVIRONMENT_COORDSYSTEM
-} bcd_metadata_app_handler_t;
+/* ── Parameter Sections ─────────────────────────────────────────────────── */
 
-typedef enum {
-    BCD_METADATA_FORMAT_POLYGON = 0,
-    BCD_METADATA_FORMAT_GRID
-} bcd_metadata_format_t;
+#define METADATA_PARAM_SECTION_UNSPECIFIED NULL
+#define METADATA_PARAM_SECTION_GENERAL "General"
+#define METADATA_PARAM_SECTION_COVERAGE_PATH "Coverage Path"
+#define METADATA_PARAM_SECTION_ENVIRONMENT "Environment"
+#define METADATA_PARAM_SECTION_OBJECT "Object"
+#define METADATA_PARAM_SECTION_EXECUTION "Execution"
+#define METADATA_PARAM_SECTION_PERFORMANCE "Performance"
 
-typedef enum {
-    BCD_METADATA_TYPE_OFFLINE = 0,
-    BCD_METADATA_TYPE_ONLINE
-} bcd_metadata_type_t;
+/* ── Parameter Types ────────────────────────────────────────────────────── */
 
-typedef enum {
-    BCD_METADATA_COORDSYSTEM_DECIMAL = 0,
-    BCD_METADATA_COORDSYSTEM_LATLONG
-} bcd_metadata_coordsystem_t;
+#define METADATA_PARAM_TYPE_INTEGER "Integer"
+#define METADATA_PARAM_TYPE_DECIMAL "Decimal"
+#define METADATA_PARAM_TYPE_BOOLEAN "Boolean"
+#define METADATA_PARAM_TYPE_STRING "String"
+#define METADATA_PARAM_TYPE_ENUM "Enum"
 
-static inline const char *metadata_param_section_to_string(bcd_metadata_param_section_t section)
+/* ── App Handlers ───────────────────────────────────────────────────────── */
+
+#define METADATA_APP_HANDLER_NONE NULL
+#define METADATA_APP_HANDLER_ENVIRONMENT_FORMAT "env.format"
+#define METADATA_APP_HANDLER_ENVIRONMENT_TYPE "env.type"
+#define METADATA_APP_HANDLER_ENVIRONMENT_COORDSYSTEM "env.coordsystem"
+
+/* ── Environment Parameter Values ──────────────────────────────────────── */
+
+#define METADATA_FORMAT_POLYGON "Polygon"
+#define METADATA_FORMAT_GRID "Grid"
+
+#define METADATA_TYPE_OFFLINE "Off-Line"
+#define METADATA_TYPE_ONLINE "On-Line"
+
+#define METADATA_COORDSYSTEM_CARTESIAN "Cartesian"
+#define METADATA_COORDSYSTEM_GEOGRAPHIC "Geographic"
+
+/* ── Metric Types ───────────────────────────────────────────────────────── */
+
+#define METADATA_METRIC_TYPE_SINGLE_VALUE "Single-value"
+#define METADATA_METRIC_TYPE_TIME_SERIES "Time-series"
+
+/* ── Style Types ────────────────────────────────────────────────────────── */
+
+#define METADATA_STYLE_TYPE_BOOLEAN "Boolean"
+#define METADATA_STYLE_TYPE_INTEGER "Integer"
+#define METADATA_STYLE_TYPE_COLOR "Color"
+#define METADATA_STYLE_TYPE_PIXELS "Pixels"
+#define METADATA_STYLE_TYPE_POINT_SHAPE_ENUM "PointShapeEnum"
+#define METADATA_STYLE_TYPE_POLYGON_ID_SHAPE_ENUM "PolygonIDShapeEnum"
+#define METADATA_STYLE_TYPE_STROKE_STYLE_ENUM "StrokeStyleEnum"
+#define METADATA_STYLE_TYPE_FILL_STYLE_ENUM "FillStyleEnum"
+#define METADATA_STYLE_TYPE_OVERLAP_LAYOUT_ENUM "OverlapLayoutEnum"
+#define METADATA_STYLE_TYPE_PLACEMENT_ENUM "PlacementEnum"
+#define METADATA_STYLE_TYPE_FONT_WEIGHT_ENUM "FontWeightEnum"
+#define METADATA_STYLE_TYPE_LINE_ARROW_START_ENUM "LineArrowStartEnum"
+#define METADATA_STYLE_TYPE_LINE_ARROW_END_ENUM "LineArrowEndEnum"
+#define METADATA_STYLE_TYPE_LINE_ARROW_MID_ENUM "LineArrowMidEnum"
+
+/* Line Arrow Start values (LineArrowStartEnum) */
+#define METADATA_LINE_ARROW_START_ARROW "line_start_arrow"
+#define METADATA_LINE_ARROW_START_ARROW_NOTCH "line_start_arrow_notch"
+
+/* Line Arrow End values (LineArrowEndEnum) */
+#define METADATA_LINE_ARROW_END_ARROW "line_end_arrow"
+#define METADATA_LINE_ARROW_END_ARROW_NOTCH "line_end_arrow_notch"
+
+/* Line Arrow Mid values (LineArrowMidEnum) */
+#define METADATA_LINE_ARROW_MID_START_ARROW "line_start_arrow"
+#define METADATA_LINE_ARROW_MID_START_ARROW_NOTCH "line_start_arrow_notch"
+#define METADATA_LINE_ARROW_MID_END_ARROW "line_end_arrow"
+#define METADATA_LINE_ARROW_MID_END_ARROW_NOTCH "line_end_arrow_notch"
+
+typedef enum
 {
-    switch (section)
+    METADATA_DEBUG_LAYER_TYPE_POINT = 0,
+    METADATA_DEBUG_LAYER_TYPE_LINE,
+    METADATA_DEBUG_LAYER_TYPE_POLYGON
+} metadata_debug_layer_type_t;
+
+static inline const char *metadata_debug_layer_type_to_string(metadata_debug_layer_type_t layer_type)
+{
+    switch (layer_type)
     {
-    case BCD_METADATA_PARAM_SECTION_UNSPECIFIED:
-        return (const char *)0;
-    case BCD_METADATA_PARAM_SECTION_GENERAL:
-        return "General";
-    case BCD_METADATA_PARAM_SECTION_COVERAGE_PATH:
-        return "Coverage path";
-    case BCD_METADATA_PARAM_SECTION_ENVIRONMENT:
-        return "Environment";
-    case BCD_METADATA_PARAM_SECTION_OBJECT:
-        return "Object";
-    case BCD_METADATA_PARAM_SECTION_EXECUTION:
-        return "Execution";
-    default:
-        return (const char *)0;
-    }
-}
-
-static inline const char *metadata_param_type_to_string(bcd_metadata_param_type_t param_type)
-{
-    switch (param_type)
-    {
-    case BCD_METADATA_PARAM_TYPE_INTEGER:
-        return "Integer";
-    case BCD_METADATA_PARAM_TYPE_DECIMAL:
-        return "Decimal";
-    case BCD_METADATA_PARAM_TYPE_BOOLEAN:
-        return "Boolean";
-    case BCD_METADATA_PARAM_TYPE_STRING:
-        return "String";
-    case BCD_METADATA_PARAM_TYPE_ENUM:
-        return "Enum";
-    default:
-        return "String";
-    }
-}
-
-static inline const char *metadata_app_handler_to_string(bcd_metadata_app_handler_t app_handler)
-{
-	switch (app_handler)
-	{
-	case BCD_METADATA_APP_HANDLER_NONE:
-		return (const char *)0;
-	case BCD_METADATA_APP_HANDLER_ENVIRONMENT_FORMAT:
-        return "env.format";
-	case BCD_METADATA_APP_HANDLER_ENVIRONMENT_TYPE:
-        return "env.type";
-	case BCD_METADATA_APP_HANDLER_ENVIRONMENT_COORDSYSTEM:
-        return "env.coordsystem";
-	default:
-		return (const char *)0;
-    }
-}
-
-static inline const char *metadata_format_to_string(bcd_metadata_format_t format)
-{
-    switch (format)
-    {
-    case BCD_METADATA_FORMAT_POLYGON:
+    case METADATA_DEBUG_LAYER_TYPE_POINT:
+        return "Point";
+    case METADATA_DEBUG_LAYER_TYPE_LINE:
+        return "Line";
+    case METADATA_DEBUG_LAYER_TYPE_POLYGON:
         return "Polygon";
-    case BCD_METADATA_FORMAT_GRID:
-        return "Grid";
     default:
-        return "Polygon";
-    }
-}
-
-static inline const char *metadata_type_to_string(bcd_metadata_type_t type)
-{
-    switch (type)
-    {
-    case BCD_METADATA_TYPE_OFFLINE:
-        return "Off-Line";
-    case BCD_METADATA_TYPE_ONLINE:
-        return "On-Line";
-    default:
-        return "Off-Line";
-    }
-}
-
-static inline const char *metadata_coordsystem_to_string(bcd_metadata_coordsystem_t coordsystem)
-{
-    switch (coordsystem)
-    {
-    case BCD_METADATA_COORDSYSTEM_DECIMAL:
-        return "Decimal";
-    case BCD_METADATA_COORDSYSTEM_LATLONG:
-        return "Lat/Long";
-    default:
-        return "Decimal";
+        return "Point";
     }
 }
 

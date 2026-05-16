@@ -1,13 +1,13 @@
+import { fileURLToPath } from "url";
 import type { ServerContext } from "../types/apiTypes";
-import {
-    executeCoreCompute,
-    getCoreMetadata,
-    CoreComputeError,
-} from "./coreBridge";
+import { getCoreMetadata, executeCoreCompute, CoreComputeError } from "./coreBridge";
+import { log } from "./logger";
 import { isRecord, parseRequestJsonBody } from "./jsonUtil";
 import type {
     ComputeAcceptedResponse,
     ComputeJobState,
+    ComputeProcessRequest,
+    ComputeProcessResponse,
     ErrorResponse,
     HealthResponse,
 } from "../types/providerTypes";
@@ -17,9 +17,14 @@ function getQueuedAlgorithmName(rawBody: unknown): string {
         return "Unknown algorithm";
     }
 
-    return typeof rawBody.algorithmName === "string" && rawBody.algorithmName.trim() !== ""
-        ? rawBody.algorithmName.trim()
-        : "Unknown algorithm";
+    const algorithmId = rawBody.algorithmId;
+    if (typeof algorithmId !== "number") {
+        return "Unknown algorithm";
+    }
+
+    const metadata = getCoreMetadata();
+    const algorithm = metadata.algorithms.find((a) => a.id === algorithmId);
+    return algorithm?.name ?? "Unknown algorithm";
 }
 
 function getQueuedRequestId(rawBody: unknown): string | undefined {
@@ -52,7 +57,7 @@ function emptyResponse(status = 204) {
 function buildCorsHeaders(): Headers {
     const headers = new Headers();
     headers.set("Access-Control-Allow-Origin", "*");
-    headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    headers.set("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
     headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
     headers.set("Access-Control-Max-Age", "86400");
 
@@ -104,20 +109,121 @@ async function handleMetadata(request: Request, context: ServerContext) {
     return jsonResponse(getCoreMetadata(), 200);
 }
 
-async function runComputeJob(
+async function launchComputeProcess(
     jobId: string,
     rawBody: unknown,
     context: ServerContext,
 ) {
+    if (context.processHandle.activeProcess !== null) {
+        context.processHandle.activeProcess.kill();
+        context.processHandle.activeProcess = null;
+    }
+
+    const processScriptPath = fileURLToPath(new URL("../job/computeProcess.ts", import.meta.url));
+    log.debug("[compute] Spawning process:", processScriptPath);
+    const proc = Bun.spawn(["bun", processScriptPath], {
+        stdin: "pipe",
+        stdout: "pipe",
+        stderr: "pipe",
+    });
+
+    context.processHandle.activeProcess = proc;
     context.jobs.markRunning(jobId);
 
-    try {
-        const result = executeCoreCompute(rawBody);
-        context.jobs.markCompleted(jobId, result);
-    } catch (error) {
+    const request: ComputeProcessRequest = { jobId, payload: rawBody };
+    const stdinPayload = JSON.stringify(request) + "\n";
+    log.debug("[compute] Writing to child stdin:", stdinPayload.length, "bytes");
+    proc.stdin.write(stdinPayload);
+    await proc.stdin.end();
+    log.debug("[compute] stdin closed");
+
+    let responded = false;
+    const [stdoutText, stderrText, exitCode] = await Promise.all([
+        new Response(proc.stdout).text(),
+        new Response(proc.stderr).text(),
+        proc.exited,
+    ]);
+
+    if (stderrText.trim()) {
+        const stderrLines = stderrText
+            .split(/\r?\n/)
+            .map((line) => line.trim())
+            .filter(Boolean);
+
+        for (const line of stderrLines) {
+            const levelMatch = line.match(/^\[(error|warn|info|debug)\]\s*(.*)$/i);
+            if (levelMatch) {
+                const level = levelMatch[1]?.toLowerCase();
+                const message = levelMatch[2] || "(empty message)";
+
+                if (level === "error") {
+                    log.error("[compute]", message);
+                } else if (level === "warn") {
+                    log.warn("[compute]", message);
+                } else if (level === "info") {
+                    log.info("[compute]", message);
+                } else {
+                    log.debug("[compute]", message);
+                }
+                continue;
+            }
+
+            if (exitCode === 0) {
+                log.warn("[compute] Process stderr:", line);
+            } else {
+                log.error("[compute] Process stderr:", line);
+            }
+        }
+    }
+
+    log.info("[compute] Process exited with code:", exitCode);
+    {
+        const outputLines = stdoutText.split(/\r?\n/).filter(Boolean);
+        const jsonLineIndex = outputLines.findLastIndex((l) => l.trimStart().startsWith("{"));
+        const debugLines = jsonLineIndex === -1 ? outputLines : outputLines.slice(0, jsonLineIndex);
+        const jsonLine = jsonLineIndex !== -1 ? outputLines[jsonLineIndex] : undefined;
+        if (debugLines.length > 0) {
+            log.debug("[compute] Debug output:\n" + debugLines.join("\n"));
+        }
+        if (jsonLine) {
+            try {
+                log.debug("[compute] Response JSON:\n" + JSON.stringify(JSON.parse(jsonLine), null, 2));
+            } catch {
+                log.error("[compute] Response JSON (unparseable):", jsonLine);
+            }
+        }
+    }
+
+    context.processHandle.activeProcess = null;
+
+    const lines = stdoutText.split("\n").map((l) => l.trim()).filter(Boolean);
+    let jsonLine: string | undefined;
+    for (let i = lines.length - 1; i >= 0; i--) {
+        const l = lines[i];
+        if (l !== undefined && l.startsWith("{")) {
+            jsonLine = l;
+            break;
+        }
+    }
+
+    if (jsonLine) {
+        try {
+            const response = JSON.parse(jsonLine) as ComputeProcessResponse;
+            responded = true;
+            if (response.type === "completed") {
+                context.jobs.markCompleted(response.jobId, response.result);
+            } else {
+                context.jobs.markFailed(response.jobId, response.error);
+            }
+        } catch {
+            // JSON line found but failed to parse — fall through to crash handler
+        }
+    }
+
+    if (!responded) {
         context.jobs.markFailed(jobId, {
-            code: error instanceof CoreComputeError ? error.code : "compute_failed",
-            message: error instanceof Error ? error.message : String(error),
+            code: "process_crash",
+            message: `Compute process exited with code ${exitCode} without returning a result.`,
         });
     }
 }
@@ -132,12 +238,15 @@ async function handleComputeSubmission(request: Request, context: ServerContext)
         return jsonResponse(parsedBody.errorBody, 400);
     }
 
+    log.debug("[compute] Incoming request:", JSON.stringify(parsedBody.value, null, 2));
+
     const queuedJob = context.jobs.createQueued({
         algorithmName: getQueuedAlgorithmName(parsedBody.value),
         requestId: getQueuedRequestId(parsedBody.value),
     });
 
-    void runComputeJob(queuedJob.jobId, parsedBody.value, context);
+    log.info(`[compute] Job queued: ${queuedJob.jobId} (${queuedJob.algorithmName})`);
+    void launchComputeProcess(queuedJob.jobId, parsedBody.value, context);
 
     const origin = new URL(request.url).origin;
     const responseBody: ComputeAcceptedResponse = {
@@ -168,6 +277,128 @@ async function handleComputeStatus(request: Request, context: ServerContext, job
     }
 
     return jsonResponse(job satisfies ComputeJobState, 200);
+}
+
+// ─── Debug session handlers ───────────────────────────────────────────────────
+
+async function handleDebugStart(request: Request, context: ServerContext) {
+    if (request.method !== "POST") {
+        return methodNotAllowed(request, ["POST", "OPTIONS"]);
+    }
+
+    const parsedBody = await parseRequestJsonBody(request);
+    if (!parsedBody.ok) {
+        return jsonResponse(parsedBody.errorBody, 400);
+    }
+
+    log.debug("[debug] Starting debug session:", JSON.stringify(parsedBody.value, null, 2));
+
+    let result: Record<string, unknown>;
+    try {
+        result = executeCoreCompute(parsedBody.value);
+    } catch (err) {
+        const body: ErrorResponse = {
+            error: {
+                code: err instanceof CoreComputeError ? err.code : "compute_error",
+                message: err instanceof Error ? err.message : String(err),
+            },
+        };
+        return jsonResponse(body, 422);
+    }
+
+    const session = context.debugSessions.create(result);
+    log.info(`Session created: ${session.sessionId} (${session.totalSteps} steps)`);
+
+    return jsonResponse({
+        sessionId: session.sessionId,
+        totalSteps: session.totalSteps,
+        stepIndex: session.stepIndex,
+        createdAt: session.createdAt,
+    }, 201);
+}
+
+async function handleDebugStep(request: Request, context: ServerContext, sessionId: string) {
+    if (request.method !== "POST") {
+        return methodNotAllowed(request, ["POST", "OPTIONS"]);
+    }
+
+    const result = context.debugSessions.step(sessionId);
+    if (!result) {
+        const body: ErrorResponse = {
+            error: {
+                code: "session_not_found_or_exhausted",
+                message: `No debug session found for id ${sessionId}, or all steps have been revealed.`,
+            },
+        };
+        return jsonResponse(body, 404);
+    }
+
+    log.debug(`Step ${result._debug.stepIndex}/${result._debug.totalSteps} for session ${sessionId}`);
+    return jsonResponse(result, 200);
+}
+
+async function handleDebugFastForward(request: Request, context: ServerContext, sessionId: string) {
+    if (request.method !== "POST") {
+        return methodNotAllowed(request, ["POST", "OPTIONS"]);
+    }
+
+    const result = context.debugSessions.fastForward(sessionId);
+    if (!result) {
+        const body: ErrorResponse = {
+            error: {
+                code: "session_not_found_or_exhausted",
+                message: `No debug session found for id ${sessionId}, or all steps have already been revealed.`,
+            },
+        };
+        return jsonResponse(body, 404);
+    }
+
+    log.debug(`Fast Forward: jumped to final step ${result._debug.stepIndex}/${result._debug.totalSteps} for session ${sessionId}`);
+    return jsonResponse(result, 200);
+}
+
+async function handleDebugRestart(request: Request, context: ServerContext, sessionId: string) {
+    if (request.method !== "POST") {
+        return methodNotAllowed(request, ["POST", "OPTIONS"]);
+    }
+
+    const session = context.debugSessions.restart(sessionId);
+    if (!session) {
+        const body: ErrorResponse = {
+            error: {
+                code: "session_not_found",
+                message: `No debug session found for id ${sessionId}.`,
+            },
+        };
+        return jsonResponse(body, 404);
+    }
+
+    log.debug(`Restarted session ${sessionId}`);
+    return jsonResponse({
+        sessionId: session.sessionId,
+        totalSteps: session.totalSteps,
+        stepIndex: session.stepIndex,
+    }, 200);
+}
+
+async function handleDebugStop(request: Request, context: ServerContext, sessionId: string) {
+    if (request.method !== "DELETE") {
+        return methodNotAllowed(request, ["DELETE", "OPTIONS"]);
+    }
+
+    const deleted = context.debugSessions.delete(sessionId);
+    if (!deleted) {
+        const body: ErrorResponse = {
+            error: {
+                code: "session_not_found",
+                message: `No debug session found for id ${sessionId}.`,
+            },
+        };
+        return jsonResponse(body, 404);
+    }
+
+    log.info(`Session stopped: ${sessionId}`);
+    return emptyResponse(204);
 }
 
 async function handleRoot(request: Request, context: ServerContext) {
@@ -209,6 +440,31 @@ export async function routeRequest(request: Request, context: ServerContext) {
 
     if (url.pathname === "/compute") {
         return handleComputeSubmission(request, context);
+    }
+
+    // Debug session routes — must be matched before generic /compute/:jobId
+    if (url.pathname === "/compute/debug") {
+        return handleDebugStart(request, context);
+    }
+
+    const debugStepMatch = /^\/compute\/debug\/([^/]+)\/step$/.exec(url.pathname);
+    if (debugStepMatch?.[1]) {
+        return handleDebugStep(request, context, decodeURIComponent(debugStepMatch[1]));
+    }
+
+    const debugFastForwardMatch = /^\/compute\/debug\/([^/]+)\/fast-forward$/.exec(url.pathname);
+    if (debugFastForwardMatch?.[1]) {
+        return handleDebugFastForward(request, context, decodeURIComponent(debugFastForwardMatch[1]));
+    }
+
+    const debugRestartMatch = /^\/compute\/debug\/([^/]+)\/restart$/.exec(url.pathname);
+    if (debugRestartMatch?.[1]) {
+        return handleDebugRestart(request, context, decodeURIComponent(debugRestartMatch[1]));
+    }
+
+    const debugSessionMatch = /^\/compute\/debug\/([^/]+)$/.exec(url.pathname);
+    if (debugSessionMatch?.[1]) {
+        return handleDebugStop(request, context, decodeURIComponent(debugSessionMatch[1]));
     }
 
     const jobMatch = /^\/compute\/([^/]+)$/.exec(url.pathname);

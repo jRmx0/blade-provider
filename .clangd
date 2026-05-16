@@ -1,6 +1,8 @@
 Diagnostics:
   Suppress:
     - redefinition_different_typedef
+    - builtin_definition
+    - conflicting_types
 CompileFlags:
   Compiler: C:/mingw64/bin/gcc.exe
   BuiltinHeaders: QueryDriver

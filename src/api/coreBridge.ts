@@ -1,11 +1,11 @@
 import { cc, CString, type Pointer } from "bun:ffi";
 
-import type { ComputeResult, MetadataResponse } from "../types/providerTypes";
+import type { MetadataResponse } from "../types/providerTypes";
 import { isRecord, parseJsonString } from "./jsonUtil";
 
 const coreSymbols = cc({
     source: "./src/core/dispatcher.c",
-    include: ["./dependencies/tcc-headers"],
+    include: ["./dependencies/tcc-headers", "./dependencies/tcc-headers/winapi"],
     flags: ["-w"],
     symbols: {
         dispatch_metadata_json: {
@@ -56,9 +56,9 @@ export function getCoreMetadata(): MetadataResponse {
     );
 }
 
-export function executeCoreCompute(requestPayload: unknown): ComputeResult {
+export function executeCoreCompute(requestPayload: unknown): Record<string, unknown> {
     const requestJsonCString = Buffer.from(`${JSON.stringify(requestPayload)}\0`, "utf8");
-    const payload = readCorePayload<ComputeResult | CoreErrorPayload>(
+    const payload = readCorePayload<Record<string, unknown> | CoreErrorPayload>(
         coreSymbols.dispatch_compute_json(requestJsonCString),
         "Provider core compute returned a null pointer.",
     );
@@ -74,5 +74,5 @@ export function executeCoreCompute(requestPayload: unknown): ComputeResult {
         throw new CoreComputeError(code, message);
     }
 
-    return payload as ComputeResult;
+    return payload as Record<string, unknown>;
 }

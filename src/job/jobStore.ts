@@ -1,11 +1,11 @@
-import type { ComputeJobError, ComputeJobState, ComputeResult } from "../types/providerTypes";
+import type { ComputeJobError, ComputeJobState } from "../types/providerTypes";
 
 function cloneJobState(jobState: ComputeJobState): ComputeJobState {
     return structuredClone(jobState);
 }
 
 export class InMemoryJobStore {
-    private readonly jobs = new Map<string, ComputeJobState>();
+    private job: ComputeJobState | null = null;
 
     createQueued(input: { algorithmName: string; requestId?: string }): ComputeJobState {
         const jobState: ComputeJobState = {
@@ -16,51 +16,47 @@ export class InMemoryJobStore {
             createdAt: new Date().toISOString(),
         };
 
-        this.jobs.set(jobState.jobId, jobState);
+        this.job = jobState;
         return cloneJobState(jobState);
     }
 
     get(jobId: string): ComputeJobState | undefined {
-        const jobState = this.jobs.get(jobId);
-        return jobState ? cloneJobState(jobState) : undefined;
+        if (this.job?.jobId !== jobId) {
+            return undefined;
+        }
+        return cloneJobState(this.job);
     }
 
     markRunning(jobId: string): ComputeJobState | undefined {
-        const jobState = this.jobs.get(jobId);
-        if (!jobState) {
+        if (this.job?.jobId !== jobId) {
             return undefined;
         }
 
-        jobState.status = "running";
-        jobState.startedAt = new Date().toISOString();
-        this.jobs.set(jobId, jobState);
-        return cloneJobState(jobState);
+        this.job.status = "running";
+        this.job.startedAt = new Date().toISOString();
+        return cloneJobState(this.job);
     }
 
-    markCompleted(jobId: string, result: ComputeResult): ComputeJobState | undefined {
-        const jobState = this.jobs.get(jobId);
-        if (!jobState) {
+    markCompleted(jobId: string, result: Record<string, unknown>): ComputeJobState | undefined {
+        if (this.job?.jobId !== jobId) {
             return undefined;
         }
 
-        jobState.status = "completed";
-        jobState.result = structuredClone(result);
-        jobState.completedAt = new Date().toISOString();
-        jobState.error = undefined;
-        this.jobs.set(jobId, jobState);
-        return cloneJobState(jobState);
+        this.job.status = "completed";
+        this.job.result = structuredClone(result);
+        this.job.completedAt = new Date().toISOString();
+        this.job.error = undefined;
+        return cloneJobState(this.job);
     }
 
     markFailed(jobId: string, error: ComputeJobError): ComputeJobState | undefined {
-        const jobState = this.jobs.get(jobId);
-        if (!jobState) {
+        if (this.job?.jobId !== jobId) {
             return undefined;
         }
 
-        jobState.status = "failed";
-        jobState.error = { ...error };
-        jobState.completedAt = new Date().toISOString();
-        this.jobs.set(jobId, jobState);
-        return cloneJobState(jobState);
+        this.job.status = "failed";
+        this.job.error = { ...error };
+        this.job.completedAt = new Date().toISOString();
+        return cloneJobState(this.job);
     }
 }

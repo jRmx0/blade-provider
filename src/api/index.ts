@@ -1,11 +1,15 @@
 import type { ServerContext } from "../types/apiTypes";
 import { InMemoryJobStore } from "../job/jobStore";
+import { DebugSessionStore } from "../job/debugSessionStore";
 import { getProviderConfig } from "./envParser";
+import { log } from "./logger";
 import { routeRequest } from "./server";
 
 const context: ServerContext = {
 	config: getProviderConfig(),
 	jobs: new InMemoryJobStore(),
+	debugSessions: new DebugSessionStore(),
+	processHandle: { activeProcess: null },
 };
 
 const server = Bun.serve({
@@ -30,4 +34,4 @@ const server = Bun.serve({
 	},
 });
 
-console.log(`Blade Provider listening on ${server.url}`);
+log.info(`Blade Provider listening on ${server.url}`);

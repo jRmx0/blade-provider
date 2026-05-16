@@ -2,9 +2,11 @@
  * internal.h
  *
  * Private shared definitions for the BCD algorithm module.
- * Contains internal structs, types, constants, and helper function
- * signatures used across metadata/bcd_metadata.c and compute/ files.
- * Must not be included outside of algo_bcd/.
+ * Contains BCD-specific internal structs, types, constants, and helper
+ * function signatures used across metadata/bcd_metadata.c and compute/ files.
+ *
+ * Fundamental geometry and environment types (point_t, polygon_t,
+ * input_environment_t, etc.) are in src/core/core_types.h, included below.
  *
  * Included by: metadata/bcd_metadata.c, bcd_compute.c, step files
  */
@@ -14,57 +16,13 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include "../../../dependencies/cJSON/cJSON.h"
+#include "../core_types.h"
 
-typedef struct
-{
-    float x;
-    float y;
-} point_t;
-
-typedef struct
-{
-    point_t begin;
-    point_t end;
-} polygon_edge_t;
-
-typedef enum {
-    POLYGON_WINDING_UNKNOWN = 0,
-    POLYGON_WINDING_CW = 1,         // Boundary winding type
-    POLYGON_WINDING_CCW = 2         // Obstacle winding type
-} polygon_winding_t;
-
-typedef enum {
-    BOUNDARY,
-    OBSTACLE
-} polygon_type_t;
-
-typedef struct
-{
-    polygon_winding_t winding;
-
-    point_t *vertices;
-    uint32_t vertex_count;
-
-    polygon_edge_t *edges;
-    uint32_t edge_count;   
-} polygon_t;
-
-typedef struct
-{
-    uint32_t id;
-    float path_width;
-    float path_overlap;
-
-    polygon_t boundary;
-
-    polygon_t *obstacles;
-    uint32_t obstacle_count;
-} input_environment_t;
-
-// Processes the input environment JSON and returns a newly allocated JSON string
-// with shape: { "status": "ok", "event_list": [ ... ], "cell_list": [ ... ], "path_list": [ ... ], "motion_plan": { ... } } on success, or
-// { "status": "error", "message": "..." } on failure. Caller must free().
-char *coverage_path_planning_process(const char *input_environment_json);
+// Runs the BCD computation pipeline on a pre-validated, pre-parsed environment.
+// Returns a cJSON object owned by the caller.
+// Mutates env in-place (preprocessing resolves sweep-axis vertex collisions).
+cJSON *coverage_path_planning_process(input_environment_t *env);
 
 // API calls
 

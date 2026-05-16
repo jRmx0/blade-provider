@@ -15,10 +15,12 @@
  */
 
 #include <stdlib.h>
-#include <string.h>
 #include "../../dependencies/cJSON/cJSON.c"
+#include "../../dependencies/allocator/allocator.c"
+#include "common/debug_serialize.c"
 #include "algo_bcd/bcd.c"
-#include "algo_mock/mock_algo.c"
+#include "algo_bounce/bounce.c"
+#include "algo_cstar/cstar.c"
 
 static cJSON *parse_algorithm_metadata_json(char *algorithm_json)
 {
@@ -48,30 +50,12 @@ static char *create_dispatch_error_json(const char *code, const char *message)
 	return json;
 }
 
-static char *clone_string(const char *value)
-{
-	if (value == NULL)
-	{
-		return NULL;
-	}
-
-	size_t length = strlen(value);
-	char *copy = (char *)malloc(length + 1);
-	if (copy == NULL)
-	{
-		return NULL;
-	}
-
-	memcpy(copy, value, length + 1);
-	return copy;
-}
-
-static char *parse_requested_algorithm_name(const char *request_json, char **error_json_out)
+static int parse_requested_algorithm_id(const char *request_json, int *algorithm_id_out, char **error_json_out)
 {
 	if (request_json == NULL)
 	{
 		*error_json_out = create_dispatch_error_json("invalid_request", "Compute request JSON is required.");
-		return NULL;
+		return 0;
 	}
 
 	cJSON *root = cJSON_Parse(request_json);
@@ -79,34 +63,31 @@ static char *parse_requested_algorithm_name(const char *request_json, char **err
 	{
 		cJSON_Delete(root);
 		*error_json_out = create_dispatch_error_json("invalid_request", "Compute request body must be a JSON object.");
-		return NULL;
+		return 0;
 	}
 
-	const cJSON *algorithm_name = cJSON_GetObjectItemCaseSensitive(root, "algorithmName");
-	if (!cJSON_IsString(algorithm_name) || algorithm_name->valuestring == NULL || algorithm_name->valuestring[0] == '\0')
+	const cJSON *algorithm_id = cJSON_GetObjectItemCaseSensitive(root, "algorithmId");
+	if (!cJSON_IsNumber(algorithm_id))
 	{
 		cJSON_Delete(root);
-		*error_json_out = create_dispatch_error_json("missing_algorithm", "algorithmName is required.");
-		return NULL;
+		*error_json_out = create_dispatch_error_json("missing_algorithm", "algorithmId is required.");
+		return 0;
 	}
 
-	char *result = clone_string(algorithm_name->valuestring);
+	*algorithm_id_out = (int)algorithm_id->valuedouble;
 	cJSON_Delete(root);
-	if (result == NULL)
-	{
-		*error_json_out = create_dispatch_error_json("internal_error", "Failed to allocate algorithm name.");
-		return NULL;
-	}
-
-	return result;
+	return 1;
 }
 
 char *dispatch_metadata_json(void)
 {
 	cJSON *response = cJSON_CreateObject();
 	cJSON *algorithms = cJSON_CreateArray();
+
 	cJSON *bcd_algorithm = NULL;
-	cJSON *mock_algorithm = NULL;
+	cJSON *bounce_algorithm = NULL;
+	cJSON *cstar_algorithm = NULL;
+
 	if (response == NULL || algorithms == NULL)
 	{
 		cJSON_Delete(response);
@@ -122,17 +103,22 @@ char *dispatch_metadata_json(void)
 		cJSON_Delete(response);
 		return NULL;
 	}
-
-	cJSON_AddItemToArray(algorithms, bcd_algorithm);
-
-	mock_algorithm = parse_algorithm_metadata_json(mock_algo_get_metadata_json());
-	if (mock_algorithm == NULL)
+	bounce_algorithm = parse_algorithm_metadata_json(bounce_get_metadata_json());
+	if (bounce_algorithm == NULL)
+	{
+		cJSON_Delete(response);
+		return NULL;
+	}
+	cstar_algorithm = parse_algorithm_metadata_json(cstar_get_metadata_json());
+	if (cstar_algorithm == NULL)
 	{
 		cJSON_Delete(response);
 		return NULL;
 	}
 
-	cJSON_AddItemToArray(algorithms, mock_algorithm);
+	cJSON_AddItemToArray(algorithms, bcd_algorithm);
+	cJSON_AddItemToArray(algorithms, bounce_algorithm);
+	cJSON_AddItemToArray(algorithms, cstar_algorithm);
 
 	char *json = cJSON_PrintUnformatted(response);
 	cJSON_Delete(response);
@@ -142,27 +128,27 @@ char *dispatch_metadata_json(void)
 char *dispatch_compute_json(const char *request_json)
 {
 	char *error_json = NULL;
-	char *algorithm_name = parse_requested_algorithm_name(request_json, &error_json);
-	if (algorithm_name == NULL)
+	int algorithm_id = 0;
+	if (!parse_requested_algorithm_id(request_json, &algorithm_id, &error_json))
 	{
 		return error_json;
 	}
 
-	if (strcmp(algorithm_name, "Boustrophedon Cellular Decomposition") == 0)
+	if (algorithm_id == 1)
 	{
-		char *result = bcd_compute(request_json);
-		free(algorithm_name);
-		return result;
+		return bcd_compute(request_json);
 	}
 
-	if (strcmp(algorithm_name, "Mock Metadata Matrix") == 0)
+	if (algorithm_id == 2)
 	{
-		char *result = mock_algo_compute(request_json);
-		free(algorithm_name);
-		return result;
+		return bounce_compute(request_json);
 	}
 
-	free(algorithm_name);
+	if (algorithm_id == 3)
+	{
+		return cstar_compute(request_json);
+	}
+
 	return create_dispatch_error_json("unknown_algorithm", "Unknown algorithm requested.");
 }
 
