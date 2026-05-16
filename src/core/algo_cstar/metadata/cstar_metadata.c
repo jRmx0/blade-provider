@@ -29,7 +29,7 @@ char *cstar_build_metadata_json(void)
     cJSON_AddItemToObject(algorithm, "parameters", parameters);
 
     metadata_add_parameter(parameters, 1, "Format", METADATA_PARAM_TYPE_ENUM, format_values, 1, METADATA_FORMAT_POLYGON, METADATA_PARAM_SECTION_ENVIRONMENT, METADATA_APP_HANDLER_ENVIRONMENT_FORMAT, 0, 0.0, 0, 0.0, NULL);
-    metadata_add_parameter(parameters, 2, "Type", METADATA_PARAM_TYPE_ENUM, type_values, 1, METADATA_TYPE_OFFLINE, METADATA_PARAM_SECTION_ENVIRONMENT, METADATA_APP_HANDLER_ENVIRONMENT_TYPE, 0, 0.0, 0, 0.0, NULL);
+    metadata_add_parameter(parameters, 2, "Type", METADATA_PARAM_TYPE_ENUM, type_values, 1, METADATA_TYPE_ONLINE, METADATA_PARAM_SECTION_ENVIRONMENT, METADATA_APP_HANDLER_ENVIRONMENT_TYPE, 0, 0.0, 0, 0.0, NULL);
     metadata_add_parameter(parameters, 3, "Coordinate System", METADATA_PARAM_TYPE_ENUM, coordsystem_values, 1, METADATA_COORDSYSTEM_CARTESIAN, METADATA_PARAM_SECTION_ENVIRONMENT, METADATA_APP_HANDLER_ENVIRONMENT_COORDSYSTEM, 0, 0.0, 0, 0.0, NULL);
 
     metadata_add_parameter(parameters, 4, "Path Width", METADATA_PARAM_TYPE_DECIMAL, NULL, 0, "20", METADATA_PARAM_SECTION_COVERAGE_PATH, METADATA_APP_HANDLER_NONE, 1, 0.0, 0, 0.0, NULL);
