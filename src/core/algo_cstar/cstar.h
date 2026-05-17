@@ -68,7 +68,7 @@ typedef enum
 /**
  * A node in the Rapidly Covering Graph (RCG).
  *
- * Directional neighbors are expressed as indices into cstar_rcg_t.nodes.
+ * Directional neighbors are expressed as stable node IDs.
  * CSTAR_NO_NEIGHBOR (-1) means no neighbor in that direction.
  *
  * Directions are defined in a fixed coordinate frame whose vertical axis
@@ -77,7 +77,7 @@ typedef enum
  */
 typedef struct
 {
-    int id;
+    int id; // Stable node identity assigned at creation time; may differ from node index after pruning.
     point_t pos;
     cstar_node_state_t state;
 
@@ -86,12 +86,12 @@ typedef struct
     bool is_link_node;   // true if created by the state-update step
     bool is_start_point; // true if this node is the sampling node at env->start_point
 
-    int neighbor_up;   // same lap, increasing-y direction
-    int neighbor_down; // same lap, decreasing-y direction
+    int neighbor_up;   // same lap, increasing-y direction (node ID)
+    int neighbor_down; // same lap, decreasing-y direction (node ID)
 
-    int neighbors_left[CSTAR_MAX_CROSS_LAP_NEIGHBORS]; // left adjacent lap (multiple)
+    int neighbors_left[CSTAR_MAX_CROSS_LAP_NEIGHBORS]; // left adjacent lap (node IDs)
     int neighbors_left_count;
-    int neighbors_right[CSTAR_MAX_CROSS_LAP_NEIGHBORS]; // right adjacent lap (multiple)
+    int neighbors_right[CSTAR_MAX_CROSS_LAP_NEIGHBORS]; // right adjacent lap (node IDs)
     int neighbors_right_count;
 } cstar_node_t;
 
@@ -101,8 +101,8 @@ typedef struct
 
 typedef struct
 {
-    int node_a;
-    int node_b;
+    int node_a; // node ID
+    int node_b; // node ID
     float cost; // Euclidean distance
 } cstar_edge_t;
 
@@ -115,6 +115,7 @@ typedef struct
     cstar_node_t *nodes;
     int node_count;
     int node_capacity;
+    int next_node_id;
 
     cstar_edge_t *edges;
     int edge_count;

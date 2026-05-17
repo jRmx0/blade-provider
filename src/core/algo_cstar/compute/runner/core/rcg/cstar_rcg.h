@@ -35,7 +35,7 @@ void cstar_rcg_free(cstar_rcg_t *rcg);
 // -------------------------------------------------------------------------
 
 /**
- * Adds a new node to the RCG and returns its node ID.
+ * Adds a new node to the RCG and returns its stable node ID.
  *
  * Allocates a new node in the rcg->nodes array, initializes its position
  * and lap association, and returns its ID. The node is initially unvisited
@@ -48,7 +48,7 @@ void cstar_rcg_free(cstar_rcg_t *rcg);
  *   is_end  - Whether this node touches an obstacle or boundary
  *
  * Returns:
- *   Node ID (0-based index into rcg->nodes) on success
+ *   Stable node ID on success
  *   CSTAR_NO_NEIGHBOR (-1) on allocation failure
  */
 int cstar_rcg_add_node(cstar_rcg_t *rcg,
@@ -56,5 +56,26 @@ int cstar_rcg_add_node(cstar_rcg_t *rcg,
                        int lap_id,
                        bool is_end,
                        bool is_start_point);
+
+/**
+ * Resolves a stable node ID to its current index in rcg->nodes.
+ *
+ * Returns CSTAR_NO_NEIGHBOR when the node ID does not exist.
+ */
+int cstar_rcg_index_from_node_id(const cstar_rcg_t *rcg, int node_id);
+
+/**
+ * Returns an immutable node pointer by stable node ID.
+ *
+ * Returns NULL when node ID does not exist.
+ */
+const cstar_node_t *cstar_rcg_get_node_by_id(const cstar_rcg_t *rcg, int node_id);
+
+/**
+ * Returns a mutable node pointer by stable node ID.
+ *
+ * Returns NULL when node ID does not exist.
+ */
+cstar_node_t *cstar_rcg_get_node_by_id_mut(cstar_rcg_t *rcg, int node_id);
 
 #endif // CSTAR_RCG_H

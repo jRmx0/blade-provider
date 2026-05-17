@@ -18,6 +18,7 @@ void cstar_rcg_init(cstar_rcg_t *rcg)
     rcg->nodes = NULL;
     rcg->node_count = 0;
     rcg->node_capacity = 0;
+    rcg->next_node_id = 0;
 
     rcg->edges = NULL;
     rcg->edge_count = 0;
@@ -38,6 +39,7 @@ void cstar_rcg_free(cstar_rcg_t *rcg)
     }
     rcg->node_count = 0;
     rcg->node_capacity = 0;
+    rcg->next_node_id = 0;
 
     if (rcg->edges != NULL)
     {
@@ -64,7 +66,7 @@ int cstar_rcg_add_node(cstar_rcg_t *rcg,
     }
 
     cstar_node_t new_node = {0};
-    new_node.id = rcg->node_count;
+    new_node.id = rcg->next_node_id;
     new_node.pos = pos;
     new_node.state = CSTAR_NODE_OP;
 
@@ -80,9 +82,50 @@ int cstar_rcg_add_node(cstar_rcg_t *rcg,
 
     cvector_push_back(rcg->nodes, new_node);
 
-    int node_id = rcg->node_count;
+    int node_id = new_node.id;
+    rcg->next_node_id++;
     rcg->node_count = (int)cvector_size(rcg->nodes);
     rcg->node_capacity = (int)cvector_capacity(rcg->nodes);
 
     return node_id;
+}
+
+int cstar_rcg_index_from_node_id(const cstar_rcg_t *rcg, int node_id)
+{
+    if (rcg == NULL || rcg->nodes == NULL || node_id == CSTAR_NO_NEIGHBOR)
+    {
+        return CSTAR_NO_NEIGHBOR;
+    }
+
+    for (int i = 0; i < rcg->node_count; ++i)
+    {
+        if (rcg->nodes[i].id == node_id)
+        {
+            return i;
+        }
+    }
+
+    return CSTAR_NO_NEIGHBOR;
+}
+
+const cstar_node_t *cstar_rcg_get_node_by_id(const cstar_rcg_t *rcg, int node_id)
+{
+    int idx = cstar_rcg_index_from_node_id(rcg, node_id);
+    if (idx == CSTAR_NO_NEIGHBOR)
+    {
+        return NULL;
+    }
+
+    return &rcg->nodes[idx];
+}
+
+cstar_node_t *cstar_rcg_get_node_by_id_mut(cstar_rcg_t *rcg, int node_id)
+{
+    int idx = cstar_rcg_index_from_node_id(rcg, node_id);
+    if (idx == CSTAR_NO_NEIGHBOR)
+    {
+        return NULL;
+    }
+
+    return &rcg->nodes[idx];
 }

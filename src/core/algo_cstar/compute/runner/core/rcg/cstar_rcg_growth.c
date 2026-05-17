@@ -35,7 +35,13 @@ static void cstar_rcg_add_edge(cstar_rcg_t *rcg,
                                int node_b,
                                float cost)
 {
-    if (rcg == NULL || node_a < 0 || node_b < 0 || node_a >= rcg->node_count || node_b >= rcg->node_count)
+    if (rcg == NULL)
+    {
+        return;
+    }
+
+    if (cstar_rcg_index_from_node_id(rcg, node_a) == CSTAR_NO_NEIGHBOR ||
+        cstar_rcg_index_from_node_id(rcg, node_b) == CSTAR_NO_NEIGHBOR)
     {
         return;
     }
@@ -51,7 +57,7 @@ static void cstar_rcg_add_edge(cstar_rcg_t *rcg,
 }
 
 /**
- * Connectivity check using BFS: verifies all nodes are reachable from node 0.
+ * Connectivity check using BFS: verifies all nodes are reachable from the first node.
  */
 static bool cstar_rcg_is_connected(const cstar_rcg_t *rcg)
 {
@@ -80,7 +86,7 @@ static bool cstar_rcg_is_connected(const cstar_rcg_t *rcg)
     int queue_front = 0;
     int queue_back = 0;
 
-    // Start from node 0
+    // Start from first node index
     queue[queue_back++] = 0;
     visited[0] = true;
     int visited_count = 1;
@@ -93,37 +99,37 @@ static bool cstar_rcg_is_connected(const cstar_rcg_t *rcg)
             continue;
         }
 
-        cstar_node_t *current = &rcg->nodes[current_id];
+        const cstar_node_t *current = &rcg->nodes[current_id];
 
         // Explore all neighbors
         int same_lap_neighbors[] = {current->neighbor_up, current->neighbor_down};
         for (int i = 0; i < 2; ++i)
         {
-            int neighbor_id = same_lap_neighbors[i];
-            if (neighbor_id != CSTAR_NO_NEIGHBOR && !visited[neighbor_id] && neighbor_id < rcg->node_count)
+            int neighbor_idx = cstar_rcg_index_from_node_id(rcg, same_lap_neighbors[i]);
+            if (neighbor_idx != CSTAR_NO_NEIGHBOR && !visited[neighbor_idx])
             {
-                visited[neighbor_id] = true;
-                queue[queue_back++] = neighbor_id;
+                visited[neighbor_idx] = true;
+                queue[queue_back++] = neighbor_idx;
                 visited_count++;
             }
         }
         for (int i = 0; i < current->neighbors_left_count; ++i)
         {
-            int neighbor_id = current->neighbors_left[i];
-            if (neighbor_id >= 0 && neighbor_id < rcg->node_count && !visited[neighbor_id])
+            int neighbor_idx = cstar_rcg_index_from_node_id(rcg, current->neighbors_left[i]);
+            if (neighbor_idx != CSTAR_NO_NEIGHBOR && !visited[neighbor_idx])
             {
-                visited[neighbor_id] = true;
-                queue[queue_back++] = neighbor_id;
+                visited[neighbor_idx] = true;
+                queue[queue_back++] = neighbor_idx;
                 visited_count++;
             }
         }
         for (int i = 0; i < current->neighbors_right_count; ++i)
         {
-            int neighbor_id = current->neighbors_right[i];
-            if (neighbor_id >= 0 && neighbor_id < rcg->node_count && !visited[neighbor_id])
+            int neighbor_idx = cstar_rcg_index_from_node_id(rcg, current->neighbors_right[i]);
+            if (neighbor_idx != CSTAR_NO_NEIGHBOR && !visited[neighbor_idx])
             {
-                visited[neighbor_id] = true;
-                queue[queue_back++] = neighbor_id;
+                visited[neighbor_idx] = true;
+                queue[queue_back++] = neighbor_idx;
                 visited_count++;
             }
         }
@@ -199,15 +205,17 @@ bool cstar_rcg_expand_graph(cstar_rcg_t *rcg,
         {
             int node_id_lower = lap->node_ids[i];
             int node_id_upper = lap->node_ids[i + 1];
+            int node_idx_lower = cstar_rcg_index_from_node_id(rcg, node_id_lower);
+            int node_idx_upper = cstar_rcg_index_from_node_id(rcg, node_id_upper);
 
-            if (node_id_lower < 0 || node_id_lower >= rcg->node_count ||
-                node_id_upper < 0 || node_id_upper >= rcg->node_count)
+            if (node_idx_lower == CSTAR_NO_NEIGHBOR ||
+                node_idx_upper == CSTAR_NO_NEIGHBOR)
             {
                 continue;
             }
 
-            cstar_node_t *node_lower = &rcg->nodes[node_id_lower];
-            cstar_node_t *node_upper = &rcg->nodes[node_id_upper];
+            cstar_node_t *node_lower = &rcg->nodes[node_idx_lower];
+            cstar_node_t *node_upper = &rcg->nodes[node_idx_upper];
 
             float cost = cstar_rcg_node_distance(node_lower, node_upper);
             if (cost > w + CSTAR_RCG_EPSILON)
@@ -216,11 +224,11 @@ bool cstar_rcg_expand_graph(cstar_rcg_t *rcg,
             }
 
             // Set bidirectional neighbors
-            node_lower->neighbor_up = node_id_upper;
-            node_upper->neighbor_down = node_id_lower;
+            node_lower->neighbor_up = node_upper->id;
+            node_upper->neighbor_down = node_lower->id;
 
             // Add edge for same-lap connectivity
-            cstar_rcg_add_edge(rcg, node_id_lower, node_id_upper, cost);
+            cstar_rcg_add_edge(rcg, node_lower->id, node_upper->id, cost);
         }
     }
 
@@ -245,38 +253,40 @@ bool cstar_rcg_expand_graph(cstar_rcg_t *rcg,
         for (int i = 0; i < lap_left->node_count; ++i)
         {
             int left_node_id = lap_left->node_ids[i];
-            if (left_node_id < 0 || left_node_id >= rcg->node_count)
+            int left_node_idx = cstar_rcg_index_from_node_id(rcg, left_node_id);
+            if (left_node_idx == CSTAR_NO_NEIGHBOR)
             {
                 continue;
             }
 
-            cstar_node_t *left_node = &rcg->nodes[left_node_id];
+            cstar_node_t *left_node = &rcg->nodes[left_node_idx];
 
             for (int j = 0; j < lap_right->node_count; ++j)
             {
                 int right_node_id = lap_right->node_ids[j];
-                if (right_node_id < 0 || right_node_id >= rcg->node_count)
+                int right_node_idx = cstar_rcg_index_from_node_id(rcg, right_node_id);
+                if (right_node_idx == CSTAR_NO_NEIGHBOR)
                 {
                     continue;
                 }
 
-                cstar_node_t *right_node = &rcg->nodes[right_node_id];
+                cstar_node_t *right_node = &rcg->nodes[right_node_idx];
                 float distance = cstar_rcg_node_distance(left_node, right_node);
 
                 // Connect if within cross-lap threshold
                 if (distance <= cross_lap_threshold + CSTAR_RCG_EPSILON)
                 {
-                    cstar_rcg_add_edge(rcg, left_node_id, right_node_id, distance);
-
                     // Re-fetch pointers: cstar_rcg_add_edge only grows rcg->edges,
                     // but re-fetch nodes defensively in case of future refactors.
-                    left_node = &rcg->nodes[left_node_id];
-                    right_node = &rcg->nodes[right_node_id];
+                    left_node = &rcg->nodes[left_node_idx];
+                    right_node = &rcg->nodes[right_node_idx];
 
                     if (left_node->neighbors_right_count < CSTAR_MAX_CROSS_LAP_NEIGHBORS)
-                        left_node->neighbors_right[left_node->neighbors_right_count++] = right_node_id;
+                        left_node->neighbors_right[left_node->neighbors_right_count++] = right_node->id;
                     if (right_node->neighbors_left_count < CSTAR_MAX_CROSS_LAP_NEIGHBORS)
-                        right_node->neighbors_left[right_node->neighbors_left_count++] = left_node_id;
+                        right_node->neighbors_left[right_node->neighbors_left_count++] = left_node->id;
+
+                    cstar_rcg_add_edge(rcg, left_node->id, right_node->id, distance);
                 }
             }
         }

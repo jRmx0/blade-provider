@@ -30,47 +30,52 @@
  */
 
 #include "cstar_waypoint.h"
+#include "../rcg/cstar_rcg.h"
 
 int cstar_select_goal_node(const cstar_rcg_t *rcg, int current_node_id)
 {
-    if (rcg == NULL || current_node_id < 0 || current_node_id >= rcg->node_count)
+    if (rcg == NULL)
     {
         return CSTAR_NO_NEIGHBOR;
     }
 
-    const cstar_node_t *node = &rcg->nodes[current_node_id];
+    const cstar_node_t *node = cstar_rcg_get_node_by_id(rcg, current_node_id);
+    if (node == NULL)
+    {
+        return CSTAR_NO_NEIGHBOR;
+    }
 
     for (int i = 0; i < node->neighbors_left_count; ++i)
     {
-        int left = node->neighbors_left[i];
-        if (left >= 0 && left < rcg->node_count &&
-            rcg->nodes[left].state == CSTAR_NODE_OP)
+        int left_id = node->neighbors_left[i];
+        const cstar_node_t *left = cstar_rcg_get_node_by_id(rcg, left_id);
+        if (left != NULL && left->state == CSTAR_NODE_OP)
         {
-            return left;
+            return left_id;
         }
     }
 
-    int up = node->neighbor_up;
-    if (up != CSTAR_NO_NEIGHBOR && up < rcg->node_count &&
-        rcg->nodes[up].state == CSTAR_NODE_OP)
+    int up_id = node->neighbor_up;
+    const cstar_node_t *up = cstar_rcg_get_node_by_id(rcg, up_id);
+    if (up_id != CSTAR_NO_NEIGHBOR && up != NULL && up->state == CSTAR_NODE_OP)
     {
-        return up;
+        return up_id;
     }
 
-    int down = node->neighbor_down;
-    if (down != CSTAR_NO_NEIGHBOR && down < rcg->node_count &&
-        rcg->nodes[down].state == CSTAR_NODE_OP)
+    int down_id = node->neighbor_down;
+    const cstar_node_t *down = cstar_rcg_get_node_by_id(rcg, down_id);
+    if (down_id != CSTAR_NO_NEIGHBOR && down != NULL && down->state == CSTAR_NODE_OP)
     {
-        return down;
+        return down_id;
     }
 
     for (int i = 0; i < node->neighbors_right_count; ++i)
     {
-        int right = node->neighbors_right[i];
-        if (right >= 0 && right < rcg->node_count &&
-            rcg->nodes[right].state == CSTAR_NODE_OP)
+        int right_id = node->neighbors_right[i];
+        const cstar_node_t *right = cstar_rcg_get_node_by_id(rcg, right_id);
+        if (right != NULL && right->state == CSTAR_NODE_OP)
         {
-            return right;
+            return right_id;
         }
     }
 

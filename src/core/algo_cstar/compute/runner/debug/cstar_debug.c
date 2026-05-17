@@ -2,6 +2,7 @@
 #include <stdlib.h>
 
 #include "cstar_debug.h"
+#include "../core/rcg/cstar_rcg.h"
 #include "../core/preprocess/cstar_lap.h"
 
 #define CSTAR_DEBUG_LAYER_COUNT 7
@@ -355,14 +356,16 @@ bool cstar_debug_export_rcg_nodes(cstar_debug_t *debug_state,
 
     for (int i = 0; i < rcg->node_count; ++i)
     {
-        if (!cstar_debug_append_point(&debug_state->frontier_sample_list, i + 1, rcg->nodes[i].pos))
+        int node_debug_id = rcg->nodes[i].id + 1;
+
+        if (!cstar_debug_append_point(&debug_state->frontier_sample_list, node_debug_id, rcg->nodes[i].pos))
         {
             return false;
         }
 
         if (rcg->nodes[i].is_end_node)
         {
-            if (!cstar_debug_append_point(&debug_state->rcg_end_nodes, i + 1, rcg->nodes[i].pos))
+            if (!cstar_debug_append_point(&debug_state->rcg_end_nodes, node_debug_id, rcg->nodes[i].pos))
             {
                 return false;
             }
@@ -370,7 +373,7 @@ bool cstar_debug_export_rcg_nodes(cstar_debug_t *debug_state,
 
         if (rcg->nodes[i].is_link_node)
         {
-            if (!cstar_debug_append_point(&debug_state->rcg_link_nodes, i + 1, rcg->nodes[i].pos))
+            if (!cstar_debug_append_point(&debug_state->rcg_link_nodes, node_debug_id, rcg->nodes[i].pos))
             {
                 return false;
             }
@@ -391,9 +394,16 @@ bool cstar_debug_export_rcg_edges(cstar_debug_t *debug_state,
     for (int i = 0; i < rcg->edge_count; ++i)
     {
         const cstar_edge_t *edge = &rcg->edges[i];
+        int node_a_idx = cstar_rcg_index_from_node_id(rcg, edge->node_a);
+        int node_b_idx = cstar_rcg_index_from_node_id(rcg, edge->node_b);
+        if (node_a_idx == CSTAR_NO_NEIGHBOR || node_b_idx == CSTAR_NO_NEIGHBOR)
+        {
+            continue;
+        }
+
         point_t path[2] = {
-            rcg->nodes[edge->node_a].pos,
-            rcg->nodes[edge->node_b].pos};
+            rcg->nodes[node_a_idx].pos,
+            rcg->nodes[node_b_idx].pos};
 
         if (!cstar_debug_append_segment(&debug_state->rcg_edges, i + 1, "rcgEdge", path, 2))
         {

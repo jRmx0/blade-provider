@@ -2,7 +2,7 @@
 #include "cstar_rcg_prunning.h"
 #include <stdlib.h>
 #include <stdbool.h>
-#include "../../../../cstar.h"
+#include "cstar_rcg.h"
 #include "../../../../../../../dependencies/cvector/cvector.h"
 
 // Prune the RCG, leaving only end nodes and edges between them.
@@ -34,9 +34,10 @@ void cstar_rcg_prune_to_end_nodes(cstar_rcg_t *rcg)
             for (int k = 0; k < n->neighbors_right_count && !keep; ++k)
             {
                 int m_id = n->neighbors_right[k];
-                if (m_id >= 0 && m_id < rcg->node_count)
+                int m_idx = cstar_rcg_index_from_node_id(rcg, m_id);
+                if (m_idx != CSTAR_NO_NEIGHBOR)
                 {
-                    const cstar_node_t *m = &rcg->nodes[m_id];
+                    const cstar_node_t *m = &rcg->nodes[m_idx];
                     if (m->is_end_node && m->neighbors_left_count == 1)
                         keep = 1;
                 }
@@ -44,9 +45,10 @@ void cstar_rcg_prune_to_end_nodes(cstar_rcg_t *rcg)
             for (int k = 0; k < n->neighbors_left_count && !keep; ++k)
             {
                 int m_id = n->neighbors_left[k];
-                if (m_id >= 0 && m_id < rcg->node_count)
+                int m_idx = cstar_rcg_index_from_node_id(rcg, m_id);
+                if (m_idx != CSTAR_NO_NEIGHBOR)
                 {
-                    const cstar_node_t *m = &rcg->nodes[m_id];
+                    const cstar_node_t *m = &rcg->nodes[m_idx];
                     if (m->is_end_node && m->neighbors_right_count == 1)
                         keep = 1;
                 }
@@ -63,9 +65,10 @@ void cstar_rcg_prune_to_end_nodes(cstar_rcg_t *rcg)
                 for (int k = 0; k < count && !keep; ++k)
                 {
                     int nx_id = adj[k];
-                    if (nx_id < 0 || nx_id >= rcg->node_count)
+                    int nx_idx = cstar_rcg_index_from_node_id(rcg, nx_id);
+                    if (nx_idx == CSTAR_NO_NEIGHBOR)
                         continue;
-                    const cstar_node_t *nx = &rcg->nodes[nx_id];
+                    const cstar_node_t *nx = &rcg->nodes[nx_idx];
                     if (!nx->is_end_node)
                         continue;
 
@@ -79,19 +82,20 @@ void cstar_rcg_prune_to_end_nodes(cstar_rcg_t *rcg)
                     for (int m = 0; m < neighbor_count; ++m)
                     {
                         int nb_id = neighbor_ids[m];
-                        if (nb_id < 0 || nb_id >= rcg->node_count)
+                        int nb_idx = cstar_rcg_index_from_node_id(rcg, nb_id);
+                        if (nb_idx == CSTAR_NO_NEIGHBOR)
                             continue;
-                        const cstar_node_t *nb = &rcg->nodes[nb_id];
+                        const cstar_node_t *nb = &rcg->nodes[nb_idx];
                         if (nb->lap_id != n_lap)
                             continue;
-                        if (nb_id == i)
+                        if (nb->id == n->id)
                             found_n = 1;
                         if (nb->is_end_node)
                             all_non_end = 0;
                         float min_obst_dist = -1.0f;
                         for (uint32_t o = 0; o < rcg->node_count; ++o)
                         {
-                            if (o == nx_id)
+                            if ((int)o == nx_idx)
                                 continue;
                             const cstar_node_t *ob = &rcg->nodes[o];
                             if (!ob->is_end_node)
@@ -108,8 +112,11 @@ void cstar_rcg_prune_to_end_nodes(cstar_rcg_t *rcg)
                         float min_edge_dist = 0.0f;
                         if (min_idx != -1)
                         {
-                            float min_nb_x = rcg->nodes[neighbor_ids[min_idx]].pos.x;
-                            float min_nb_y = rcg->nodes[neighbor_ids[min_idx]].pos.y;
+                            int min_nb_idx = cstar_rcg_index_from_node_id(rcg, neighbor_ids[min_idx]);
+                            if (min_nb_idx == CSTAR_NO_NEIGHBOR)
+                                continue;
+                            float min_nb_x = rcg->nodes[min_nb_idx].pos.x;
+                            float min_nb_y = rcg->nodes[min_nb_idx].pos.y;
                             min_edge_dist = (min_nb_x - nx->pos.x) * (min_nb_x - nx->pos.x) + (min_nb_y - nx->pos.y) * (min_nb_y - nx->pos.y);
                         }
                         int closer = 0;
@@ -123,7 +130,7 @@ void cstar_rcg_prune_to_end_nodes(cstar_rcg_t *rcg)
                             min_idx = m;
                         }
                     }
-                    if (found_n && all_non_end && min_idx != -1 && neighbor_ids[min_idx] == i)
+                    if (found_n && all_non_end && min_idx != -1 && neighbor_ids[min_idx] == n->id)
                     {
                         keep = 1;
                     }
@@ -139,38 +146,67 @@ void cstar_rcg_prune_to_end_nodes(cstar_rcg_t *rcg)
 
     // Step 2: Build new node array with only kept nodes
     cstar_node_t *new_nodes = NULL;
-    int *old_to_new = (int *)malloc(rcg->node_count * sizeof(int));
     int idx = 0;
     for (int i = 0; i < rcg->node_count; ++i)
     {
         if (keep_node[i])
         {
             cvector_push_back(new_nodes, rcg->nodes[i]);
-            old_to_new[i] = idx++;
-        }
-        else
-        {
-            old_to_new[i] = -1;
+            idx++;
         }
     }
 
-    // Step 3: Remove edges not between two kept nodes
+    // Step 3: Remove adjacency references to pruned nodes (IDs are preserved).
+    for (int i = 0; i < idx; ++i)
+    {
+        cstar_node_t *node = &new_nodes[i];
+
+        int up_idx = cstar_rcg_index_from_node_id(rcg, node->neighbor_up);
+        if (up_idx == CSTAR_NO_NEIGHBOR || !keep_node[up_idx])
+            node->neighbor_up = CSTAR_NO_NEIGHBOR;
+
+        int down_idx = cstar_rcg_index_from_node_id(rcg, node->neighbor_down);
+        if (down_idx == CSTAR_NO_NEIGHBOR || !keep_node[down_idx])
+            node->neighbor_down = CSTAR_NO_NEIGHBOR;
+
+        int left_write = 0;
+        for (int k = 0; k < node->neighbors_left_count; ++k)
+        {
+            int neighbor_id = node->neighbors_left[k];
+            int neighbor_idx = cstar_rcg_index_from_node_id(rcg, neighbor_id);
+            if (neighbor_idx != CSTAR_NO_NEIGHBOR && keep_node[neighbor_idx])
+            {
+                node->neighbors_left[left_write++] = neighbor_id;
+            }
+        }
+        node->neighbors_left_count = left_write;
+
+        int right_write = 0;
+        for (int k = 0; k < node->neighbors_right_count; ++k)
+        {
+            int neighbor_id = node->neighbors_right[k];
+            int neighbor_idx = cstar_rcg_index_from_node_id(rcg, neighbor_id);
+            if (neighbor_idx != CSTAR_NO_NEIGHBOR && keep_node[neighbor_idx])
+            {
+                node->neighbors_right[right_write++] = neighbor_id;
+            }
+        }
+        node->neighbors_right_count = right_write;
+    }
+
+    // Step 4: Remove edges not between two kept nodes
     cstar_edge_t *new_edges = NULL;
     for (int i = 0; i < rcg->edge_count; ++i)
     {
-        int a = rcg->edges[i].node_a;
-        int b = rcg->edges[i].node_b;
-        if (a >= 0 && b >= 0 && keep_node[a] && keep_node[b])
+        int a_idx = cstar_rcg_index_from_node_id(rcg, rcg->edges[i].node_a);
+        int b_idx = cstar_rcg_index_from_node_id(rcg, rcg->edges[i].node_b);
+        if (a_idx != CSTAR_NO_NEIGHBOR && b_idx != CSTAR_NO_NEIGHBOR && keep_node[a_idx] && keep_node[b_idx])
         {
-            // Remap node indices
-            cstar_edge_t e = rcg->edges[i];
-            e.node_a = old_to_new[a];
-            e.node_b = old_to_new[b];
-            cvector_push_back(new_edges, e);
+            cvector_push_back(new_edges, rcg->edges[i]);
         }
     }
 
-    // Step 4: Replace old arrays
+    // Step 5: Replace old arrays
     cvector_free(rcg->nodes);
     rcg->nodes = new_nodes;
     rcg->node_count = (int)cvector_size(new_nodes);
@@ -180,7 +216,7 @@ void cstar_rcg_prune_to_end_nodes(cstar_rcg_t *rcg)
     rcg->edges = new_edges;
     rcg->edge_count = (int)cvector_size(new_edges);
     rcg->edge_capacity = (int)cvector_capacity(new_edges);
+    rcg->next_node_id = (rcg->next_node_id < 0) ? 0 : rcg->next_node_id;
 
     free(keep_node);
-    free(old_to_new);
 }
