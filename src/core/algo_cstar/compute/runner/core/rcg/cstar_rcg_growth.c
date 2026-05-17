@@ -185,52 +185,7 @@ bool cstar_rcg_expand_graph(cstar_rcg_t *rcg,
     float w = env->path_width;
     float cross_lap_threshold = sqrtf(2.0f) * w;
 
-    // -----------------------------------------------------------------------
-    // Stage 1: Same-lap vertical connectivity
-    // -----------------------------------------------------------------------
-    // For each lap, connect adjacent nodes (already ordered by y-position)
-    // via neighbor_up and neighbor_down pointers.
-
-    for (int lap_idx = 0; lap_idx < lap_count; ++lap_idx)
-    {
-        cstar_lap_t *lap = &laps[lap_idx];
-
-        if (lap->node_ids == NULL || lap->node_count < 1)
-        {
-            continue;
-        }
-
-        // Connect consecutive nodes on the same lap
-        for (int i = 0; i < lap->node_count - 1; ++i)
-        {
-            int node_id_lower = lap->node_ids[i];
-            int node_id_upper = lap->node_ids[i + 1];
-            int node_idx_lower = cstar_rcg_index_from_node_id(rcg, node_id_lower);
-            int node_idx_upper = cstar_rcg_index_from_node_id(rcg, node_id_upper);
-
-            if (node_idx_lower == CSTAR_NO_NEIGHBOR ||
-                node_idx_upper == CSTAR_NO_NEIGHBOR)
-            {
-                continue;
-            }
-
-            cstar_node_t *node_lower = &rcg->nodes[node_idx_lower];
-            cstar_node_t *node_upper = &rcg->nodes[node_idx_upper];
-
-            float cost = cstar_rcg_node_distance(node_lower, node_upper);
-            if (cost > w + CSTAR_RCG_EPSILON)
-            {
-                continue;
-            }
-
-            // Set bidirectional neighbors
-            node_lower->neighbor_up = node_upper->id;
-            node_upper->neighbor_down = node_lower->id;
-
-            // Add edge for same-lap connectivity
-            cstar_rcg_add_edge(rcg, node_lower->id, node_upper->id, cost);
-        }
-    }
+    // (Vertical lap edge creation removed)
 
     // -----------------------------------------------------------------------
     // Stage 2: Cross-lap horizontal connectivity
