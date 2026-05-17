@@ -83,6 +83,7 @@ typedef struct
 
     int lap_id;          // index of the lap this node belongs to
     bool is_end_node;    // true if this node touches an obstacle or boundary
+    bool is_surrounded_node; // true if node touches border (zone or obstacle) from top AND bottom
     bool is_link_node;   // true if created by the state-update step
     bool is_start_point; // true if this node is the sampling node at env->start_point
 

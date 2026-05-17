@@ -55,6 +55,7 @@ int cstar_rcg_add_node(cstar_rcg_t *rcg,
                        point_t pos,
                        int lap_id,
                        bool is_end,
+                       bool is_surrounded_node,
                        bool is_start_point);
 
 /**
