@@ -254,7 +254,7 @@ void cstar_parser_free_environment(cstar_environment_t *environment)
         {
             free_polygon(&environment->operationalObstacles[i]);
         }
-        free(environment->operationalObstacles);
+        va_free(environment->operationalObstacles);
         environment->operationalObstacles = NULL;
     }
 
