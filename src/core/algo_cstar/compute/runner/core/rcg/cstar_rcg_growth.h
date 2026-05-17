@@ -2,7 +2,6 @@
 #define CSTAR_RCG_GROWTH_H
 
 #include "../../../../cstar.h"
-#include "../sampling/cstar_sampling.h"
 
 // -------------------------------------------------------------------------
 // Expansion

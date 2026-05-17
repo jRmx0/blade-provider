@@ -62,8 +62,8 @@ cvector_vector_type(cvector_vector_type(int))
      *         if nb == CSTAR_NO_NEIGHBOR || visited[nb]: continue
      *         visited[nb] = true
      *         if nodes[nb].state == CSTAR_NODE_CL: continue
-     *         if cstar_is_frontier_sample(nodes[nb].pos, w, env):
-     *           is_hole = false   // touches unknown area - not enclosed
+    *         if nodes[nb].is_end_node:
+    *           is_hole = false   // touches boundary/edge node - not enclosed
      *         enqueue nb
      *
      *     if is_hole && cvector_size(component) > 0:

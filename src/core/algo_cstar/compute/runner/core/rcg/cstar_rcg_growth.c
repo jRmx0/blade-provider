@@ -128,6 +128,9 @@ void cstar_rcg_prune(cstar_rcg_t *rcg,
 bool cstar_node_is_essential(const cstar_rcg_t *rcg, int node_id,
                              float w, const cstar_environment_t *env)
 {
+    (void)w;
+    (void)env;
+
     if (rcg == NULL || node_id < 0 || node_id >= rcg->node_count)
     {
         return false;
@@ -135,11 +138,6 @@ bool cstar_node_is_essential(const cstar_rcg_t *rcg, int node_id,
 
     const cstar_node_t *node = &rcg->nodes[node_id];
     if (node->is_end_node)
-    {
-        return true;
-    }
-
-    if (cstar_is_frontier_sample(node->pos, w, env))
     {
         return true;
     }

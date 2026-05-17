@@ -3,12 +3,6 @@
 
 #include "../../../../cstar.h"
 
-/**
- * Returns true if sample s is a frontier sample for the currently-known
- * operational boundary.
- */
-bool cstar_is_frontier_sample(point_t s, float w, const cstar_environment_t *env);
-
 int cstar_generate_frontier_samples(cstar_rcg_t *rcg,
                                     float w,
                                     int delta,

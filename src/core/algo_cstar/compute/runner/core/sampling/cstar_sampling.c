@@ -100,22 +100,6 @@ static bool cstar_sampling_point_is_free(point_t point, const cstar_environment_
     return true;
 }
 
-bool cstar_is_frontier_sample(point_t s, float w, const cstar_environment_t *env)
-{
-    if (env == NULL || env->operationalBoundary.vertices == NULL || env->operationalBoundary.vertex_count < 3u)
-    {
-        return false;
-    }
-
-    /*
-     * Boundary-only frontier criterion (current phase):
-     * a sample is considered frontier if it lies within distance w from the
-     * operational boundary edges.
-     */
-    float frontier_tol = (w > CSTAR_EPSILON) ? w : CSTAR_EPSILON;
-    return cstar_sampling_point_on_boundary(s, &env->operationalBoundary, frontier_tol);
-}
-
 int cstar_generate_frontier_samples(cstar_rcg_t *rcg,
                                     float w,
                                     int delta,
@@ -137,6 +121,22 @@ int cstar_generate_frontier_samples(cstar_rcg_t *rcg,
     cstar_lap_boundary_bbox(env, &min_x, &max_x, &min_y, &max_y);
 
     float step = ((delta > 0 ? (float)delta : 1.0f) * ((w > CSTAR_EPSILON) ? w : 1.0f));
+    float anchor_y = env->start_point.y;
+    int first_sample_index = (int)ceilf(((min_y - anchor_y) / step) - CSTAR_EPSILON);
+    int last_sample_index = (int)floorf(((max_y - anchor_y) / step) + CSTAR_EPSILON);
+
+    int start_lap_index = 0;
+    float closest_lap_dx = fabsf(laps[0].x - env->start_point.x);
+    for (int i = 1; i < lap_count; ++i)
+    {
+        float dx = fabsf(laps[i].x - env->start_point.x);
+        if (dx < closest_lap_dx)
+        {
+            closest_lap_dx = dx;
+            start_lap_index = i;
+        }
+    }
+
     int total_added = 0;
 
     for (int lap_index = 0; lap_index < lap_count; ++lap_index)
@@ -151,16 +151,35 @@ int cstar_generate_frontier_samples(cstar_rcg_t *rcg,
             lap->node_capacity = 0;
         }
 
-        for (float y = min_y; y <= max_y + CSTAR_EPSILON; y += step)
+        /* Force first sample at start point on nearest start lap. */
+        bool forced_start_sample_added = false;
+        if (lap_index == start_lap_index)
         {
-            point_t sample = {lap->x, y};
+            point_t start_sample = {env->start_point.x, env->start_point.y};
+            if (cstar_sampling_point_is_free(start_sample, env))
+            {
+                int start_node_id = cstar_rcg_add_node(rcg, start_sample, lap->id, false);
+                if (start_node_id != CSTAR_NO_NEIGHBOR)
+                {
+                    cvector_push_back(lap->node_ids, start_node_id);
+                    forced_start_sample_added = true;
+                    total_added++;
+                }
+            }
+        }
 
-            if (!cstar_sampling_point_is_free(sample, env))
+        for (int sample_index = first_sample_index; sample_index <= last_sample_index; ++sample_index)
+        {
+            float y = anchor_y + ((float)sample_index * step);
+
+            if (forced_start_sample_added && fabsf(y - env->start_point.y) <= CSTAR_EPSILON)
             {
                 continue;
             }
 
-            if (!cstar_is_frontier_sample(sample, w, env))
+            point_t sample = {lap->x, y};
+
+            if (!cstar_sampling_point_is_free(sample, env))
             {
                 continue;
             }
@@ -177,12 +196,6 @@ int cstar_generate_frontier_samples(cstar_rcg_t *rcg,
 
         lap->node_count = (int)cvector_size(lap->node_ids);
         lap->node_capacity = cvector_capacity(lap->node_ids);
-
-        if (lap->node_count > 0)
-        {
-            rcg->nodes[lap->node_ids[0]].is_end_node = true;
-            rcg->nodes[lap->node_ids[lap->node_count - 1]].is_end_node = true;
-        }
     }
 
     return total_added;
