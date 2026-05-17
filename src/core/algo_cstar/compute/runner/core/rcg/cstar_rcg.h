@@ -1,7 +1,7 @@
 #ifndef CSTAR_RCG_H
 #define CSTAR_RCG_H
 
-#include "../../../internal.h"
+#include "../../../../internal.h"
 
 /**
  * Initialises an empty RCG. Must be paired with cstar_rcg_free().
@@ -24,7 +24,7 @@ int cstar_rcg_add_node(cstar_rcg_t *rcg, point_t pos, int lap_id, bool is_end_no
  * Returns true if the edge was added, false if it would cross an obstacle.
  */
 bool cstar_rcg_add_edge(cstar_rcg_t *rcg, int node_a, int node_b,
-                        const input_environment_t *env);
+                        const cstar_environment_t *env);
 
 /**
  * Removes a node by index. Clears all neighbour references pointing to it.
@@ -49,7 +49,7 @@ void cstar_rcg_merge_lap_edge(cstar_rcg_t *rcg, int node_id);
  * obstacle-free space (no polygon edge crossings, not inside any obstacle).
  */
 bool cstar_rcg_edge_is_collision_free(point_t a, point_t b,
-                                      const input_environment_t *env);
+                                      const cstar_environment_t *env);
 
 /**
  * Marks node node_id as CSTAR_NODE_CL (visited).

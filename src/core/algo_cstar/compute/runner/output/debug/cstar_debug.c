@@ -171,7 +171,7 @@ bool cstar_debug_export_rcg_edges(cstar_debug_t *debug_state,
 
 bool cstar_debug_export_laps(cstar_debug_t *debug_state,
                              const cstar_sampling_front_t *front,
-                             const input_environment_t *env)
+                             const cstar_environment_t *env)
 {
     if (debug_state == NULL || front == NULL || env == NULL)
     {
@@ -204,7 +204,7 @@ bool cstar_debug_export_laps(cstar_debug_t *debug_state,
 }
 
 bool cstar_debug_export_sampling_front_polygon(cstar_debug_t *debug_state,
-                                               const input_environment_t *env)
+                                               const cstar_environment_t *env)
 {
     if (debug_state == NULL || env == NULL)
     {
@@ -222,7 +222,7 @@ bool cstar_debug_export_sampling_front_polygon(cstar_debug_t *debug_state,
 
     cJSON_AddNumberToObject(front_polygon, "id", 1);
     cJSON_AddItemToObject(front_polygon, "vertices", front_vertices);
-    for (uint32_t i = 0; i < env->boundary.vertex_count; ++i)
+    for (uint32_t i = 0; i < env->operationalBoundary.vertex_count; ++i)
     {
         cJSON *jv = cJSON_CreateObject();
         if (jv == NULL)
@@ -230,8 +230,8 @@ bool cstar_debug_export_sampling_front_polygon(cstar_debug_t *debug_state,
             cJSON_Delete(front_polygon);
             return false;
         }
-        cJSON_AddNumberToObject(jv, "x", env->boundary.vertices[i].x);
-        cJSON_AddNumberToObject(jv, "y", env->boundary.vertices[i].y);
+        cJSON_AddNumberToObject(jv, "x", env->operationalBoundary.vertices[i].x);
+        cJSON_AddNumberToObject(jv, "y", env->operationalBoundary.vertices[i].y);
         cJSON_AddItemToArray(front_vertices, jv);
     }
 

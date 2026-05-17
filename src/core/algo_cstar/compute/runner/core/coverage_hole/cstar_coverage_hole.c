@@ -35,7 +35,7 @@ cvector_vector_type(cvector_vector_type(int))
                                 int current_node_id,
                                 int goal_node_id,
                                 float w,
-                                const input_environment_t *env)
+                                const cstar_environment_t *env)
 {
     /*
      * Pseudocode (BFS flood-fill hole detection):
@@ -85,7 +85,7 @@ cvector_vector_type(int)
                                  const int *hole_nodes,
                                  int hole_count,
                                  float w,
-                                 const input_environment_t *env)
+                                 const cstar_environment_t *env)
 {
     /*
      * Pseudocode (Algorithm 3):

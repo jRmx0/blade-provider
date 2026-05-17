@@ -1,8 +1,8 @@
 #ifndef CSTAR_DEAD_END_H
 #define CSTAR_DEAD_END_H
 
-#include "../../../internal.h"
-#include "../../../../../../dependencies/cvector/cvector.h"
+#include "../../../../internal.h"
+#include "../../../../../../../dependencies/cvector/cvector.h"
 
 // -------------------------------------------------------------------------
 // Dead-end detection

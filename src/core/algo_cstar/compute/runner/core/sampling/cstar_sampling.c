@@ -24,7 +24,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include "cstar_sampling.h"
-#include "preprocess/cstar_lap.h"
+#include "../preprocess/cstar_lap.h"
 
 #define CSTAR_EPSILON 1e-6f
 
@@ -79,16 +79,16 @@ static float cstar_dist_point_segment(point_t p, point_t a, point_t b)
     return sqrtf(dx * dx + dy * dy);
 }
 
-static bool cstar_point_is_free(point_t p, const input_environment_t *env)
+static bool cstar_point_is_free(point_t p, const cstar_environment_t *env)
 {
-    if (!cstar_sampling_point_in_polygon(p, &env->boundary))
+    if (!cstar_sampling_point_in_polygon(p, &env->operationalBoundary))
     {
         return false;
     }
 
     for (uint32_t i = 0; i < env->obstacle_count; ++i)
     {
-        if (cstar_sampling_point_in_polygon(p, &env->obstacles[i]))
+        if (cstar_sampling_point_in_polygon(p, &env->operationalObstacles[i]))
         {
             return false;
         }
@@ -102,7 +102,7 @@ cstar_sampling_front_t cstar_create_sampling_front(point_t prev_pos,
                                                    float rd,
                                                    float w,
                                                    point_t lap_dir,
-                                                   const input_environment_t *env)
+                                                   const cstar_environment_t *env)
 {
     (void)prev_pos;
     (void)rd;
@@ -110,7 +110,7 @@ cstar_sampling_front_t cstar_create_sampling_front(point_t prev_pos,
 
     cstar_sampling_front_t front = {0};
 
-    if (env == NULL || env->boundary.vertices == NULL || env->boundary.vertex_count < 3u)
+    if (env == NULL || env->operationalBoundary.vertices == NULL || env->operationalBoundary.vertex_count < 3u)
     {
         return front;
     }
@@ -124,7 +124,7 @@ int cstar_generate_frontier_samples(cstar_sampling_front_t *front,
                                     cstar_rcg_t *rcg,
                                     float w,
                                     int delta,
-                                    const input_environment_t *env)
+                                    const cstar_environment_t *env)
 {
     if (front == NULL || rcg == NULL || env == NULL || front->laps == NULL)
     {
@@ -184,19 +184,19 @@ int cstar_generate_frontier_samples(cstar_sampling_front_t *front,
     return total_added;
 }
 
-bool cstar_is_frontier_sample(point_t s, float w, const input_environment_t *env)
+bool cstar_is_frontier_sample(point_t s, float w, const cstar_environment_t *env)
 {
-    if (env == NULL || env->boundary.vertices == NULL || env->boundary.vertex_count < 3u)
+    if (env == NULL || env->operationalBoundary.vertices == NULL || env->operationalBoundary.vertex_count < 3u)
     {
         return false;
     }
 
     float range = (w > CSTAR_EPSILON) ? w : 1.0f;
 
-    for (uint32_t i = 0; i < env->boundary.vertex_count; ++i)
+    for (uint32_t i = 0; i < env->operationalBoundary.vertex_count; ++i)
     {
-        uint32_t next = (i + 1u) % env->boundary.vertex_count;
-        if (cstar_dist_point_segment(s, env->boundary.vertices[i], env->boundary.vertices[next]) <= range)
+        uint32_t next = (i + 1u) % env->operationalBoundary.vertex_count;
+        if (cstar_dist_point_segment(s, env->operationalBoundary.vertices[i], env->operationalBoundary.vertices[next]) <= range)
         {
             return true;
         }
@@ -204,7 +204,7 @@ bool cstar_is_frontier_sample(point_t s, float w, const input_environment_t *env
 
     for (uint32_t o = 0; o < env->obstacle_count; ++o)
     {
-        const polygon_t *obstacle = &env->obstacles[o];
+        const polygon_t *obstacle = &env->operationalObstacles[o];
         if (obstacle->vertices == NULL || obstacle->vertex_count < 3u)
         {
             continue;

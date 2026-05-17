@@ -106,10 +106,71 @@ typedef struct
 } cstar_lap_t;
 
 // -------------------------------------------------------------------------
+// Coverage Path Planning Output Structures
+// -------------------------------------------------------------------------
+
+/**
+ * A single waypoint in a path segment.
+ * Corresponds to { "id": <int>, "point": { "x": <float>, "y": <float> } }
+ */
+typedef struct
+{
+    int id;
+    point_t point;
+} cstar_path_point_t;
+
+/**
+ * A path segment (e.g., coverage line, transit line).
+ * Represents one path unit with a type and ordered waypoints.
+ * Corresponds to { "id": <int>, "type": "<string>", "path": [...] }
+ */
+typedef struct
+{
+    int id;
+    char *type; // "coverage", "coverageTransit", "retreatTransit", etc. (owned by struct)
+    cstar_path_point_t *path;
+    int path_count;
+} cstar_segment_t;
+
+/**
+ * A collection of segments grouped by type/category.
+ * Used to organize coverage, coverage_transit, retreat_transit, etc.
+ */
+typedef struct
+{
+    cstar_segment_t *segments;
+    int segment_count;
+    int segment_capacity;
+} cstar_path_collection_t;
+
+/**
+ * Complete C* coverage path planning result.
+ * Contains all segment arrays, debug information, and algorithm state.
+ */
+typedef struct
+{
+    // Segments array: all segments in order of generation
+    cstar_segment_t *all_segments;
+    int segment_count;
+    int segment_capacity;
+
+    // Categorized segment collections for wire output
+    cstar_path_collection_t coverage;
+    cstar_path_collection_t coverage_transit;
+    cstar_path_collection_t retreat_transit;
+    cstar_path_collection_t hole_coverage;
+    cstar_path_collection_t hole_transit;
+
+    // Optional: debug information
+    // (Will be handled separately; set to NULL for now)
+    cJSON *debug_layers;
+} cstar_coverage_path_result_t;
+
+// -------------------------------------------------------------------------
 // API (implemented in metadata/ and compute/)
 // -------------------------------------------------------------------------
 
 char *cstar_build_metadata_json(void);
-char *cstar_run_compute(const char *input_environment_json);
+cstar_coverage_path_result_t *cstar_run_compute(cstar_environment_t *environment);
 
 #endif // CSTAR_INTERNAL_H

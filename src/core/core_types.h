@@ -53,7 +53,36 @@ typedef struct
 typedef struct
 {
     uint32_t id;
+
     float path_width;
+    float path_overlap;
+    float coverage_grid_cell_size;
+    float bounce_offset;
+    float starting_angle;
+    float target_coverage;
+    float target_distance;
+
+    uint32_t max_iterations;
+    bool track_memory_usage;
+    bool headland;
+
+    point_t start_point;
+    point_t end_point;
+
+    polygon_t boundary;
+    polygon_t *obstacles;
+    uint32_t obstacle_count;
+
+    polygon_t realworld_boundary;
+    polygon_t *realworld_obstacles;
+    uint32_t realworld_obstacle_count;
+} input_environment_t;
+
+typedef struct
+{
+    uint32_t id;
+    float path_width;
+    float sensor_range;
     bool track_memory_usage;
     bool headland;
 

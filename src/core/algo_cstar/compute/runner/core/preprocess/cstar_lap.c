@@ -14,20 +14,20 @@ static cstar_lap_t cstar_lap_make(int id, float x)
     return lap;
 }
 
-void cstar_lap_boundary_bbox(const input_environment_t *env,
+void cstar_lap_boundary_bbox(const cstar_environment_t *env,
                              float *min_x,
                              float *max_x,
                              float *min_y,
                              float *max_y)
 {
-    *min_x = env->boundary.vertices[0].x;
-    *max_x = env->boundary.vertices[0].x;
-    *min_y = env->boundary.vertices[0].y;
-    *max_y = env->boundary.vertices[0].y;
+    *min_x = env->operationalBoundary.vertices[0].x;
+    *max_x = env->operationalBoundary.vertices[0].x;
+    *min_y = env->operationalBoundary.vertices[0].y;
+    *max_y = env->operationalBoundary.vertices[0].y;
 
-    for (uint32_t i = 1; i < env->boundary.vertex_count; ++i)
+    for (uint32_t i = 1; i < env->operationalBoundary.vertex_count; ++i)
     {
-        point_t v = env->boundary.vertices[i];
+        point_t v = env->operationalBoundary.vertices[i];
         if (v.x < *min_x)
             *min_x = v.x;
         if (v.x > *max_x)
@@ -42,9 +42,9 @@ void cstar_lap_boundary_bbox(const input_environment_t *env,
 void cstar_lap_generate_full_width(cstar_sampling_front_t *front,
                                    point_t anchor_pos,
                                    float w,
-                                   const input_environment_t *env)
+                                   const cstar_environment_t *env)
 {
-    if (front == NULL || env == NULL || env->boundary.vertices == NULL || env->boundary.vertex_count < 3u)
+    if (front == NULL || env == NULL || env->operationalBoundary.vertices == NULL || env->operationalBoundary.vertex_count < 3u)
     {
         return;
     }

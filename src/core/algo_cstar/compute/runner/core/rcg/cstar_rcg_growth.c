@@ -51,7 +51,7 @@ static float cstar_rcg_growth_dist(point_t a, point_t b)
 void cstar_rcg_expand(cstar_rcg_t *rcg,
                       const cstar_sampling_front_t *front,
                       float w,
-                      const input_environment_t *env)
+                      const cstar_environment_t *env)
 {
     if (rcg == NULL || front == NULL || front->laps == NULL)
     {
@@ -116,7 +116,7 @@ void cstar_rcg_prune(cstar_rcg_t *rcg,
                      const int *boundary_node_ids,
                      int boundary_count,
                      float w,
-                     const input_environment_t *env)
+                     const cstar_environment_t *env)
 {
     (void)rcg;
     (void)boundary_node_ids;
@@ -126,7 +126,7 @@ void cstar_rcg_prune(cstar_rcg_t *rcg,
 }
 
 bool cstar_node_is_essential(const cstar_rcg_t *rcg, int node_id,
-                             float w, const input_environment_t *env)
+                             float w, const cstar_environment_t *env)
 {
     if (rcg == NULL || node_id < 0 || node_id >= rcg->node_count)
     {
@@ -148,7 +148,7 @@ bool cstar_node_is_essential(const cstar_rcg_t *rcg, int node_id,
 }
 
 bool cstar_edge_is_essential(const cstar_rcg_t *rcg, int node_a, int node_b,
-                             float w, const input_environment_t *env)
+                             float w, const cstar_environment_t *env)
 {
     if (rcg == NULL)
     {

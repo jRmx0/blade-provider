@@ -1,12 +1,14 @@
 #ifndef CSTAR_LAP_H
 #define CSTAR_LAP_H
 
-#include "../cstar_sampling.h"
+#include "../sampling/cstar_sampling.h"
+#include "../../../../internal.h"
+#include "../../../../../../../dependencies/cvector/cvector.h"
 
 /**
  * Computes the axis-aligned bounding box of the environment boundary.
  */
-void cstar_lap_boundary_bbox(const input_environment_t *env,
+void cstar_lap_boundary_bbox(const cstar_environment_t *env,
                              float *min_x,
                              float *max_x,
                              float *min_y,
@@ -22,6 +24,6 @@ void cstar_lap_boundary_bbox(const input_environment_t *env,
 void cstar_lap_generate_full_width(cstar_sampling_front_t *front,
                                    point_t anchor_pos,
                                    float w,
-                                   const input_environment_t *env);
+                                   const cstar_environment_t *env);
 
 #endif // CSTAR_LAP_H

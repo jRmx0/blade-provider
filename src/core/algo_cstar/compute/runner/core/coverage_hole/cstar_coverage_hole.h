@@ -1,8 +1,8 @@
 #ifndef CSTAR_COVERAGE_HOLE_H
 #define CSTAR_COVERAGE_HOLE_H
 
-#include "../../../internal.h"
-#include "../../../../../../dependencies/cvector/cvector.h"
+#include "../../../../internal.h"
+#include "../../../../../../../dependencies/cvector/cvector.h"
 
 // -------------------------------------------------------------------------
 // Detection
@@ -28,7 +28,7 @@ cvector_vector_type(cvector_vector_type(int))
                                 int current_node_id,
                                 int goal_node_id,
                                 float w,
-                                const input_environment_t *env);
+                                const cstar_environment_t *env);
 
 // -------------------------------------------------------------------------
 // TSP trajectory  (Algorithm 3)
@@ -51,7 +51,7 @@ cvector_vector_type(int)
                                  const int *hole_nodes,
                                  int hole_count,
                                  float w,
-                                 const input_environment_t *env);
+                                 const cstar_environment_t *env);
 
 // -------------------------------------------------------------------------
 // TSP solvers

@@ -231,7 +231,7 @@ int cstar_rcg_add_node(cstar_rcg_t *rcg, point_t pos, int lap_id, bool is_end_no
 }
 
 bool cstar_rcg_add_edge(cstar_rcg_t *rcg, int node_a, int node_b,
-                        const input_environment_t *env)
+                        const cstar_environment_t *env)
 {
     if (rcg == NULL || node_a < 0 || node_b < 0 ||
         node_a >= rcg->node_count || node_b >= rcg->node_count ||
@@ -344,7 +344,7 @@ void cstar_rcg_merge_lap_edge(cstar_rcg_t *rcg, int node_id)
 }
 
 bool cstar_rcg_edge_is_collision_free(point_t a, point_t b,
-                                      const input_environment_t *env)
+                                      const cstar_environment_t *env)
 {
     if (env == NULL)
     {
@@ -353,7 +353,7 @@ bool cstar_rcg_edge_is_collision_free(point_t a, point_t b,
 
     for (uint32_t i = 0; i < env->obstacle_count; ++i)
     {
-        const polygon_t *obstacle = &env->obstacles[i];
+        const polygon_t *obstacle = &env->operationalObstacles[i];
         if (obstacle->vertices == NULL || obstacle->vertex_count < 3u)
         {
             continue;

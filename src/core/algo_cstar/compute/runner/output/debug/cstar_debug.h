@@ -3,8 +3,8 @@
 
 #include "../../../../internal.h"
 #include "../../../../../../../dependencies/cJSON/cJSON.h"
-#include "../../core/cstar_rcg.h"
-#include "../../core/cstar_sampling.h"
+#include "../../core/rcg/cstar_rcg.h"
+#include "../../core/sampling/cstar_sampling.h"
 
 typedef struct
 {
@@ -31,10 +31,10 @@ bool cstar_debug_export_rcg_edges(cstar_debug_t *debug_state,
 
 bool cstar_debug_export_laps(cstar_debug_t *debug_state,
                              const cstar_sampling_front_t *front,
-                             const input_environment_t *env);
+                             const cstar_environment_t *env);
 
 bool cstar_debug_export_sampling_front_polygon(cstar_debug_t *debug_state,
-                                               const input_environment_t *env);
+                                               const cstar_environment_t *env);
 
 bool cstar_debug_attach_layers(cstar_debug_t *debug_state, cJSON *root);
 

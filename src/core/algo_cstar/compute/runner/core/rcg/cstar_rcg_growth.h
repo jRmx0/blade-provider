@@ -1,8 +1,8 @@
 #ifndef CSTAR_RCG_GROWTH_H
 #define CSTAR_RCG_GROWTH_H
 
-#include "../../../internal.h"
-#include "cstar_sampling.h"
+#include "../../../../internal.h"
+#include "../sampling/cstar_sampling.h"
 
 // -------------------------------------------------------------------------
 // Expansion
@@ -20,7 +20,7 @@
 void cstar_rcg_expand(cstar_rcg_t *rcg,
                       const cstar_sampling_front_t *front,
                       float w,
-                      const input_environment_t *env);
+                      const cstar_environment_t *env);
 
 // -------------------------------------------------------------------------
 // Pruning
@@ -39,7 +39,7 @@ void cstar_rcg_prune(cstar_rcg_t *rcg,
                      const int *boundary_node_ids,
                      int boundary_count,
                      float w,
-                     const input_environment_t *env);
+                     const cstar_environment_t *env);
 
 // -------------------------------------------------------------------------
 // Essentialness predicates
@@ -53,13 +53,13 @@ void cstar_rcg_prune(cstar_rcg_t *rcg,
  *      connection is the sole or closest-to-obstacle link for that end node.
  */
 bool cstar_node_is_essential(const cstar_rcg_t *rcg, int node_id,
-                             float w, const input_environment_t *env);
+                             float w, const cstar_environment_t *env);
 
 /**
  * Returns true if the edge (node_a, node_b) is essential per Definition III.9.
  * Both nodes must already be essential for an edge to qualify.
  */
 bool cstar_edge_is_essential(const cstar_rcg_t *rcg, int node_a, int node_b,
-                             float w, const input_environment_t *env);
+                             float w, const cstar_environment_t *env);
 
 #endif // CSTAR_RCG_GROWTH_H
