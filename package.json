@@ -5,6 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "bun --hot src/api/index.ts",
+    "dev-alt": "PORT=9000 bun --hot src/api/index.ts",
     "start": "bun run src/api/index.ts",
     "typecheck": "bunx tsc --noEmit",
     "test:allocator": "bun scripts/test-allocator.ts"
