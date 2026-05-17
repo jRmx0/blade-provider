@@ -23,6 +23,34 @@ void cstar_rcg_prune_to_end_nodes(cstar_rcg_t *rcg)
         // Also keep node marked as start point node
         if (rcg->nodes[i].is_start_point)
             keep = 1;
+        // Rule: non-end node N is essential if it is the sole cross-lap bridge
+        // to an end node on an adjacent lap:
+        //   - N connects to end node M on the right, and M has no other left neighbor
+        //   - N connects to end node M on the left, and M has no other right neighbor
+        if (!keep)
+        {
+            const cstar_node_t *n = &rcg->nodes[i];
+            for (int k = 0; k < n->neighbors_right_count && !keep; ++k)
+            {
+                int m_id = n->neighbors_right[k];
+                if (m_id >= 0 && m_id < rcg->node_count)
+                {
+                    const cstar_node_t *m = &rcg->nodes[m_id];
+                    if (m->is_end_node && m->neighbors_left_count == 1)
+                        keep = 1;
+                }
+            }
+            for (int k = 0; k < n->neighbors_left_count && !keep; ++k)
+            {
+                int m_id = n->neighbors_left[k];
+                if (m_id >= 0 && m_id < rcg->node_count)
+                {
+                    const cstar_node_t *m = &rcg->nodes[m_id];
+                    if (m->is_end_node && m->neighbors_right_count == 1)
+                        keep = 1;
+                }
+            }
+        }
         if (keep)
         {
             keep_node[i] = 1;
