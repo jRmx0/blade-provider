@@ -18,6 +18,31 @@
 #include "../core_types.h"
 
 // -------------------------------------------------------------------------
+// C* Environment Type (algo_cstar specific)
+// -------------------------------------------------------------------------
+
+/**
+ * Environment structure for C* coverage path planning algorithm.
+ * Built from input_environment_t but contains operational geometry
+ * (shrunken boundary, expanded obstacles) ready for algorithm processing.
+ */
+typedef struct
+{
+    uint32_t id;
+    float path_width;
+    float sensor_range;
+    bool track_memory_usage;
+    bool headland;
+
+    point_t start_point;
+    point_t end_point;
+
+    polygon_t operationalBoundary;   // Shrunken real boundary
+    polygon_t *operationalObstacles; // Expanded real obstacles
+    uint32_t obstacle_count;
+} cstar_environment_t;
+
+// -------------------------------------------------------------------------
 // Constants
 // -------------------------------------------------------------------------
 
