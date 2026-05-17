@@ -30,6 +30,7 @@ void cstar_rcg_prune_to_end_nodes(cstar_rcg_t *rcg)
         if (!keep)
         {
             const cstar_node_t *n = &rcg->nodes[i];
+            // Existing rules: sole bridge to end node
             for (int k = 0; k < n->neighbors_right_count && !keep; ++k)
             {
                 int m_id = n->neighbors_right[k];
@@ -48,6 +49,84 @@ void cstar_rcg_prune_to_end_nodes(cstar_rcg_t *rcg)
                     const cstar_node_t *m = &rcg->nodes[m_id];
                     if (m->is_end_node && m->neighbors_right_count == 1)
                         keep = 1;
+                }
+            }
+
+            // New rule: n is a neighbor of end node nx on an adjacent lap,
+            // nx has other neighbors on n's lap (all non-end nodes),
+            // and edge (n, nx) is closest to obstacle/boundary among those neighbors.
+            // Check both directions (n is left or right neighbor of nx)
+            for (int dir = 0; dir < 2 && !keep; ++dir)
+            {
+                int count = (dir == 0) ? n->neighbors_right_count : n->neighbors_left_count;
+                int *adj = (dir == 0) ? n->neighbors_right : n->neighbors_left;
+                for (int k = 0; k < count && !keep; ++k)
+                {
+                    int nx_id = adj[k];
+                    if (nx_id < 0 || nx_id >= rcg->node_count)
+                        continue;
+                    const cstar_node_t *nx = &rcg->nodes[nx_id];
+                    if (!nx->is_end_node)
+                        continue;
+
+                    int n_lap = n->lap_id;
+                    int neighbor_count = (dir == 0) ? nx->neighbors_left_count : nx->neighbors_right_count;
+                    int *neighbor_ids = (dir == 0) ? nx->neighbors_left : nx->neighbors_right;
+                    int found_n = 0;
+                    int all_non_end = 1;
+                    float min_dist = -1.0f;
+                    int min_idx = -1;
+                    for (int m = 0; m < neighbor_count; ++m)
+                    {
+                        int nb_id = neighbor_ids[m];
+                        if (nb_id < 0 || nb_id >= rcg->node_count)
+                            continue;
+                        const cstar_node_t *nb = &rcg->nodes[nb_id];
+                        if (nb->lap_id != n_lap)
+                            continue;
+                        if (nb_id == i)
+                            found_n = 1;
+                        if (nb->is_end_node)
+                            all_non_end = 0;
+                        float min_obst_dist = -1.0f;
+                        for (uint32_t o = 0; o < rcg->node_count; ++o)
+                        {
+                            if (o == nx_id)
+                                continue;
+                            const cstar_node_t *ob = &rcg->nodes[o];
+                            if (!ob->is_end_node)
+                                continue;
+                            float dx = nx->pos.x - ob->pos.x;
+                            float dy = nx->pos.y - ob->pos.y;
+                            float d = dx * dx + dy * dy;
+                            if (min_obst_dist < 0 || d < min_obst_dist)
+                                min_obst_dist = d;
+                        }
+                        if (min_obst_dist < 0)
+                            min_obst_dist = 0.0f;
+                        float edge_dist = (nb->pos.x - nx->pos.x) * (nb->pos.x - nx->pos.x) + (nb->pos.y - nx->pos.y) * (nb->pos.y - nx->pos.y);
+                        float min_edge_dist = 0.0f;
+                        if (min_idx != -1)
+                        {
+                            float min_nb_x = rcg->nodes[neighbor_ids[min_idx]].pos.x;
+                            float min_nb_y = rcg->nodes[neighbor_ids[min_idx]].pos.y;
+                            min_edge_dist = (min_nb_x - nx->pos.x) * (min_nb_x - nx->pos.x) + (min_nb_y - nx->pos.y) * (min_nb_y - nx->pos.y);
+                        }
+                        int closer = 0;
+                        if (min_idx == -1 || min_obst_dist < min_dist)
+                            closer = 1;
+                        else if (min_obst_dist == min_dist && edge_dist < min_edge_dist)
+                            closer = 1;
+                        if (closer)
+                        {
+                            min_dist = min_obst_dist;
+                            min_idx = m;
+                        }
+                    }
+                    if (found_n && all_non_end && min_idx != -1 && neighbor_ids[min_idx] == i)
+                    {
+                        keep = 1;
+                    }
                 }
             }
         }
