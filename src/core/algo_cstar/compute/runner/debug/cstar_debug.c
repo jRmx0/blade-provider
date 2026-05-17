@@ -422,15 +422,16 @@ bool cstar_debug_export_laps(cstar_debug_t *debug_state,
     float min_x = 0.0f, max_x = 0.0f, min_y = 0.0f, max_y = 0.0f;
     cstar_lap_boundary_bbox(env, &min_x, &max_x, &min_y, &max_y);
 
-    if (front->laps == NULL)
+    if (front->env == NULL || front->env->laps == NULL)
     {
         return true;
     }
 
-    int lap_count = (int)cvector_size(front->laps);
+    const cstar_lap_t *laps = (const cstar_lap_t *)front->env->laps;
+    int lap_count = (int)cvector_size(laps);
     for (int i = 0; i < lap_count; ++i)
     {
-        float x = front->laps[i].x;
+        float x = laps[i].x;
         point_t path[2] = {
             {x, min_y},
             {x, max_y}};

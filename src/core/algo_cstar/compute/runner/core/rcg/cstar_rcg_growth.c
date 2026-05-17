@@ -53,17 +53,18 @@ void cstar_rcg_expand(cstar_rcg_t *rcg,
                       float w,
                       const cstar_environment_t *env)
 {
-    if (rcg == NULL || front == NULL || front->laps == NULL)
+    if (rcg == NULL || front == NULL || front->env == NULL || front->env->laps == NULL)
     {
         return;
     }
 
-    int lap_count = (int)cvector_size(front->laps);
+    const cstar_lap_t *laps = (const cstar_lap_t *)front->env->laps;
+    int lap_count = (int)cvector_size(laps);
     float cross_limit = sqrtf(2.0f) * ((w > CSTAR_EPSILON) ? w : 1.0f);
 
     for (int lap_index = 0; lap_index < lap_count; ++lap_index)
     {
-        const cstar_lap_t *lap = &front->laps[lap_index];
+        const cstar_lap_t *lap = &laps[lap_index];
         if (lap->node_ids == NULL)
         {
             continue;
@@ -86,8 +87,8 @@ void cstar_rcg_expand(cstar_rcg_t *rcg,
 
     for (int lap_index = 0; lap_index + 1 < lap_count; ++lap_index)
     {
-        const cstar_lap_t *left_lap = &front->laps[lap_index];
-        const cstar_lap_t *right_lap = &front->laps[lap_index + 1];
+        const cstar_lap_t *left_lap = &laps[lap_index];
+        const cstar_lap_t *right_lap = &laps[lap_index + 1];
         if (left_lap->node_ids == NULL || right_lap->node_ids == NULL)
         {
             continue;

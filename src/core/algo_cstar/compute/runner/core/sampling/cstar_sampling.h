@@ -10,11 +10,12 @@
 
 /**
  * The obstacle-free, unsampled portion of the area discovered in iteration i.
- * Holds the set of laps prepared for frontier sample generation.
+ * References the pre-generated laps from the environment (stored in env->laps).
+ * The laps are generated once during preprocessing and owned by the environment.
  */
 typedef struct
 {
-    cvector_vector_type(cstar_lap_t) laps;
+    const cstar_environment_t *env; // Reference to environment containing pre-generated laps
 } cstar_sampling_front_t;
 
 // -------------------------------------------------------------------------
@@ -22,15 +23,13 @@ typedef struct
 // -------------------------------------------------------------------------
 
 /**
- * Builds the sampling front for the area newly discovered while the robot
- * travelled from prev_pos to curr_pos.
+ * Creates a sampling front that wraps the environment's pre-generated laps.
  *
- * w       - sampling resolution / lap spacing (metres)
- * lap_dir - unit vector parallel to the laps (back-and-forth axis direction)
+ * Assumes that cstar_preprocess_environment_laps() has already been called
+ * to populate env->laps. This function is a simple wrapper that references
+ * the pre-computed laps from the environment.
  *
- * Lap geometry is delegated to the preprocessing lap-generation module; this
- * function owns the sampling-front container that frontier samples are later
- * placed onto.
+ * Returns a sampling front with a reference to the environment.
  */
 cstar_sampling_front_t cstar_create_sampling_front(point_t prev_pos,
                                                    point_t curr_pos,

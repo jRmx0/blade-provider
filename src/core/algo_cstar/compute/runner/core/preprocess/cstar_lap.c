@@ -14,46 +14,33 @@ static cstar_lap_t cstar_lap_make(int id, float x)
     return lap;
 }
 
-void cstar_lap_boundary_bbox(const cstar_environment_t *env,
-                             float *min_x,
-                             float *max_x,
-                             float *min_y,
-                             float *max_y)
-{
-    *min_x = env->operationalBoundary.vertices[0].x;
-    *max_x = env->operationalBoundary.vertices[0].x;
-    *min_y = env->operationalBoundary.vertices[0].y;
-    *max_y = env->operationalBoundary.vertices[0].y;
+// -------------------------------------------------------------------------
+// Environment Preprocessing (One-Time Initialization)
+// -------------------------------------------------------------------------
 
-    for (uint32_t i = 1; i < env->operationalBoundary.vertex_count; ++i)
-    {
-        point_t v = env->operationalBoundary.vertices[i];
-        if (v.x < *min_x)
-            *min_x = v.x;
-        if (v.x > *max_x)
-            *max_x = v.x;
-        if (v.y < *min_y)
-            *min_y = v.y;
-        if (v.y > *max_y)
-            *max_y = v.y;
-    }
-}
-
-void cstar_lap_generate_full_width(cstar_sampling_front_t *front,
-                                   point_t anchor_pos,
-                                   float w,
-                                   const cstar_environment_t *env)
+bool cstar_preprocess_environment_laps(cstar_environment_t *env, float path_width)
 {
-    if (front == NULL || env == NULL || env->operationalBoundary.vertices == NULL || env->operationalBoundary.vertex_count < 3u)
+    if (env == NULL || env->operationalBoundary.vertices == NULL || env->operationalBoundary.vertex_count < 3u)
     {
-        return;
+        return false;
     }
 
+    // Idempotency check: laps already generated
+    if (env->laps != NULL)
+    {
+        return false;
+    }
+
+    // Compute boundary bounding box
     float min_x = 0.0f, max_x = 0.0f, min_y = 0.0f, max_y = 0.0f;
     cstar_lap_boundary_bbox(env, &min_x, &max_x, &min_y, &max_y);
 
-    float step = (w > CSTAR_EPSILON) ? w : 1.0f;
-    float anchor_x = anchor_pos.x;
+    // Initialize laps vector
+    cstar_lap_t *laps = NULL;
+
+    // Generate lap positions
+    float step = (path_width > CSTAR_EPSILON) ? path_width : 1.0f;
+    float anchor_x = env->start_point.x;
     if (anchor_x < min_x)
         anchor_x = min_x;
     if (anchor_x > max_x)
@@ -83,11 +70,42 @@ void cstar_lap_generate_full_width(cstar_sampling_front_t *front,
             x = max_x;
         }
 
-        cvector_push_back(front->laps, cstar_lap_make(lap_id++, x));
+        cvector_push_back(laps, cstar_lap_make(lap_id++, x));
     }
 
-    if (front->laps == NULL || cvector_size(front->laps) == 0)
+    // Ensure at least one lap exists
+    if (laps == NULL || cvector_size(laps) == 0)
     {
-        cvector_push_back(front->laps, cstar_lap_make(0, anchor_x));
+        cvector_push_back(laps, cstar_lap_make(0, anchor_x));
     }
+
+    // Store laps in environment
+    env->laps = (void *)laps;
+    return true;
+}
+
+void cstar_environment_laps_cleanup(cstar_environment_t *env)
+{
+    if (env == NULL || env->laps == NULL)
+    {
+        return;
+    }
+
+    // Cast void* back to cvector of laps
+    cstar_lap_t *laps_vector = (cstar_lap_t *)env->laps;
+    int lap_count = cvector_size(laps_vector);
+
+    // Free each lap's node_ids
+    for (int i = 0; i < lap_count; ++i)
+    {
+        if (laps_vector[i].node_ids != NULL)
+        {
+            cvector_free(laps_vector[i].node_ids);
+            laps_vector[i].node_ids = NULL;
+        }
+    }
+
+    // Free the laps vector itself
+    cvector_free(laps_vector);
+    env->laps = NULL;
 }

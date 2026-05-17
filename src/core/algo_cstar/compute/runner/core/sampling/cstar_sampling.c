@@ -24,7 +24,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include "cstar_sampling.h"
-#include "../preprocess/cstar_lap.h"
+#include "../geometry/cstar_geometry.h"
 
 #define CSTAR_EPSILON 1e-6f
 
@@ -105,17 +105,20 @@ cstar_sampling_front_t cstar_create_sampling_front(point_t prev_pos,
                                                    const cstar_environment_t *env)
 {
     (void)prev_pos;
+    (void)curr_pos;
     (void)rd;
+    (void)w;
     (void)lap_dir;
 
     cstar_sampling_front_t front = {0};
 
-    if (env == NULL || env->operationalBoundary.vertices == NULL || env->operationalBoundary.vertex_count < 3u)
+    if (env == NULL || env->laps == NULL)
     {
         return front;
     }
 
-    cstar_lap_generate_full_width(&front, curr_pos, w, env);
+    // Wrap environment - laps were pre-generated during preprocessing
+    front.env = env;
 
     return front;
 }
@@ -126,7 +129,7 @@ int cstar_generate_frontier_samples(cstar_sampling_front_t *front,
                                     int delta,
                                     const cstar_environment_t *env)
 {
-    if (front == NULL || rcg == NULL || env == NULL || front->laps == NULL)
+    if (front == NULL || rcg == NULL || env == NULL || front->env == NULL || front->env->laps == NULL)
     {
         return 0;
     }
@@ -137,10 +140,13 @@ int cstar_generate_frontier_samples(cstar_sampling_front_t *front,
     float step = (delta > 0 ? (float)delta : 1.0f) * ((w > CSTAR_EPSILON) ? w : 1.0f);
     int total_added = 0;
 
-    int lap_count = (int)cvector_size(front->laps);
+    // Access laps from environment
+    cstar_lap_t *laps = (cstar_lap_t *)front->env->laps;
+    int lap_count = (int)cvector_size(laps);
+
     for (int i = 0; i < lap_count; ++i)
     {
-        cstar_lap_t *lap = &front->laps[i];
+        cstar_lap_t *lap = &laps[i];
         int first_id = CSTAR_NO_NEIGHBOR;
         int last_id = CSTAR_NO_NEIGHBOR;
 
@@ -225,20 +231,12 @@ bool cstar_is_frontier_sample(point_t s, float w, const cstar_environment_t *env
 
 void cstar_sampling_front_free(cstar_sampling_front_t *front)
 {
-    if (front == NULL || front->laps == NULL)
+    if (front == NULL)
     {
         return;
     }
 
-    int lap_count = (int)cvector_size(front->laps);
-    for (int i = 0; i < lap_count; ++i)
-    {
-        cvector_free(front->laps[i].node_ids);
-        front->laps[i].node_ids = NULL;
-        front->laps[i].node_count = 0;
-        front->laps[i].node_capacity = 0;
-    }
-
-    cvector_free(front->laps);
-    front->laps = NULL;
+    // Laps are now owned by the environment, not the sampling front
+    // Just clear the reference
+    front->env = NULL;
 }

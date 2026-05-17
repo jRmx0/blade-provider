@@ -40,6 +40,9 @@ typedef struct
     polygon_t operationalBoundary;   // Shrunken real boundary
     polygon_t *operationalObstacles; // Expanded real obstacles
     uint32_t obstacle_count;
+
+    // Pre-generated laps for coverage (one-time preprocessing)
+    void *laps; // cvector_vector_type(cstar_lap_t) - using void* to avoid circular dependency
 } cstar_environment_t;
 
 // -------------------------------------------------------------------------

@@ -3,27 +3,42 @@
 
 #include "../sampling/cstar_sampling.h"
 #include "../../../../cstar.h"
+#include "../geometry/cstar_geometry.h"
 #include "../../../../../../../dependencies/cvector/cvector.h"
 
-/**
- * Computes the axis-aligned bounding box of the environment boundary.
- */
-void cstar_lap_boundary_bbox(const cstar_environment_t *env,
-                             float *min_x,
-                             float *max_x,
-                             float *min_y,
-                             float *max_y);
+// -------------------------------------------------------------------------
+// Environment Preprocessing (One-Time Initialization)
+// -------------------------------------------------------------------------
 
 /**
- * Populates the sampling front with a vertical lap lattice anchored at
- * anchor_pos.x and spanning the full horizontal extent of the environment.
+ * Generates and stores vertical lap lattice in the environment structure.
  *
- * Laps are emitted in strictly increasing x order so lap IDs preserve the
- * left-to-right semantics used by the RCG.
+ * This is a one-time preprocessing step that must be called before
+ * coverage path planning. Laps are anchored at env->start_point and
+ * span the full horizontal extent of the environment.
+ *
+ * Parameters:
+ *   env        - Environment to preprocess (must be initialized with valid boundary)
+ *   path_width - Lap spacing distance (same as algorithm's path_width parameter)
+ *
+ * Returns:
+ *   true  - Laps successfully generated and stored in env->laps
+ *   false - Laps already exist in env->laps (idempotency check failed) or allocation error
+ *
+ * After successful call, env->laps is populated with a cvector of cstar_lap_t.
+ * These laps are owned by the environment and must be freed with cstar_environment_laps_cleanup().
  */
-void cstar_lap_generate_full_width(cstar_sampling_front_t *front,
-                                   point_t anchor_pos,
-                                   float w,
-                                   const cstar_environment_t *env);
+bool cstar_preprocess_environment_laps(cstar_environment_t *env, float path_width);
+
+/**
+ * Frees all lap-related memory stored in the environment.
+ *
+ * Deallocates:
+ *   - Each lap's node_ids vector
+ *   - The laps vector itself (env->laps)
+ *
+ * After this call, env->laps will be NULL. Safe to call multiple times.
+ */
+void cstar_environment_laps_cleanup(cstar_environment_t *env);
 
 #endif // CSTAR_LAP_H

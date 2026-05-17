@@ -13,6 +13,7 @@
 #include "debug/cstar_debug.h"
 
 #include "core/rcg/cstar_rcg.c"
+#include "core/geometry/cstar_geometry.c"
 #include "core/preprocess/cstar_lap.c"
 #include "core/sampling/cstar_sampling.c"
 #include "core/rcg/cstar_rcg_growth.c"
@@ -60,6 +61,16 @@ cstar_coverage_path_result_t *cstar_coverage_path_planning_process(cstar_environ
     float rd = env->sensor_range;
     int delta = (int)env->frontier_spacing_multiplier;
 
+    // One-time preprocessing: generate and store laps in environment
+    if (!cstar_preprocess_environment_laps(env, w))
+    {
+        cstar_debug_dispose(&debug_state);
+        cstar_rcg_free(&rcg);
+        cstar_result_cleanup_partial(result);
+        cstar_environment_laps_cleanup(env);
+        return NULL;
+    }
+
     point_t lap_dir = {0.0f, 1.0f};
     sampling_front = cstar_create_sampling_front(env->start_point,
                                                  env->start_point,
@@ -103,6 +114,7 @@ cstar_coverage_path_result_t *cstar_coverage_path_planning_process(cstar_environ
                 cstar_sampling_front_free(&sampling_front);
                 cstar_rcg_free(&rcg);
                 cstar_result_cleanup_partial(result);
+                cstar_environment_laps_cleanup(env);
                 return NULL;
             }
         }
@@ -116,6 +128,7 @@ cstar_coverage_path_result_t *cstar_coverage_path_planning_process(cstar_environ
                 cstar_sampling_front_free(&sampling_front);
                 cstar_rcg_free(&rcg);
                 cstar_result_cleanup_partial(result);
+                cstar_environment_laps_cleanup(env);
                 return NULL;
             }
         }
@@ -132,11 +145,13 @@ cstar_coverage_path_result_t *cstar_coverage_path_planning_process(cstar_environ
         cstar_sampling_front_free(&sampling_front);
         cstar_rcg_free(&rcg);
         cstar_result_cleanup_partial(result);
+        cstar_environment_laps_cleanup(env);
         return NULL;
     }
 
     cstar_debug_dispose(&debug_state);
     cstar_sampling_front_free(&sampling_front);
     cstar_rcg_free(&rcg);
+    cstar_environment_laps_cleanup(env);
     return result;
 }
