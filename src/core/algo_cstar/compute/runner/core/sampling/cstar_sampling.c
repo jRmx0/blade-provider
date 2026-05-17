@@ -84,6 +84,54 @@ static bool cstar_sampling_point_on_boundary(point_t point, const polygon_t *pol
     return false;
 }
 
+static bool cstar_sampling_point_in_any_obstacle(point_t point, const cstar_environment_t *env)
+{
+    if (env == NULL || env->operationalObstacles == NULL || env->obstacle_count == 0u)
+    {
+        return false;
+    }
+
+    for (uint32_t obstacle_index = 0; obstacle_index < env->obstacle_count; ++obstacle_index)
+    {
+        const polygon_t *obstacle = &env->operationalObstacles[obstacle_index];
+        if (cstar_sampling_point_in_polygon(point, obstacle) ||
+            cstar_sampling_point_on_boundary(point, obstacle, CSTAR_EPSILON))
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+static bool cstar_sampling_point_on_any_boundary(point_t point, const cstar_environment_t *env, float tol)
+{
+    if (env == NULL)
+    {
+        return false;
+    }
+
+    if (cstar_sampling_point_on_boundary(point, &env->operationalBoundary, tol))
+    {
+        return true;
+    }
+
+    if (env->operationalObstacles == NULL || env->obstacle_count == 0u)
+    {
+        return false;
+    }
+
+    for (uint32_t obstacle_index = 0; obstacle_index < env->obstacle_count; ++obstacle_index)
+    {
+        if (cstar_sampling_point_on_boundary(point, &env->operationalObstacles[obstacle_index], tol))
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 static bool cstar_sampling_point_is_free(point_t point, const cstar_environment_t *env)
 {
     if (env == NULL)
@@ -97,7 +145,30 @@ static bool cstar_sampling_point_is_free(point_t point, const cstar_environment_
         return false;
     }
 
+    if (cstar_sampling_point_in_any_obstacle(point, env))
+    {
+        return false;
+    }
+
     return true;
+}
+
+static bool cstar_sampling_is_end_node_vertical(point_t sample, float w, const cstar_environment_t *env)
+{
+    if (env == NULL || w <= CSTAR_EPSILON)
+    {
+        return false;
+    }
+
+    point_t probe_up = {sample.x, sample.y + w};
+    point_t probe_down = {sample.x, sample.y - w};
+
+    bool up_hits_boundary = cstar_sampling_point_on_any_boundary(probe_up, env, CSTAR_EPSILON);
+    bool down_hits_boundary = cstar_sampling_point_on_any_boundary(probe_down, env, CSTAR_EPSILON);
+    bool up_blocked = !cstar_sampling_point_is_free(probe_up, env);
+    bool down_blocked = !cstar_sampling_point_is_free(probe_down, env);
+
+    return up_hits_boundary || down_hits_boundary || up_blocked || down_blocked;
 }
 
 static float cstar_sampling_dist_to_operational_boundary(point_t point, const cstar_environment_t *env)
@@ -185,7 +256,8 @@ int cstar_generate_frontier_samples(cstar_rcg_t *rcg,
             point_t start_sample = {env->start_point.x, env->start_point.y};
             if (cstar_sampling_point_is_free(start_sample, env))
             {
-                int start_node_id = cstar_rcg_add_node(rcg, start_sample, lap->id, false);
+                bool is_end_node = cstar_sampling_is_end_node_vertical(start_sample, w, env);
+                int start_node_id = cstar_rcg_add_node(rcg, start_sample, lap->id, is_end_node);
                 if (start_node_id != CSTAR_NO_NEIGHBOR)
                 {
                     cvector_push_back(lap->node_ids, start_node_id);
@@ -218,7 +290,8 @@ int cstar_generate_frontier_samples(cstar_rcg_t *rcg,
                 continue;
             }
 
-            int node_id = cstar_rcg_add_node(rcg, sample, lap->id, false);
+            bool is_end_node = cstar_sampling_is_end_node_vertical(sample, w, env);
+            int node_id = cstar_rcg_add_node(rcg, sample, lap->id, is_end_node);
             if (node_id == CSTAR_NO_NEIGHBOR)
             {
                 continue;
