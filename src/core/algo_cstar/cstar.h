@@ -78,9 +78,10 @@ typedef struct
     point_t pos;
     cstar_node_state_t state;
 
-    int lap_id;        // index of the lap this node belongs to
-    bool is_end_node;  // true if this node touches an obstacle or boundary
-    bool is_link_node; // true if created by the state-update step
+    int lap_id;          // index of the lap this node belongs to
+    bool is_end_node;    // true if this node touches an obstacle or boundary
+    bool is_link_node;   // true if created by the state-update step
+    bool is_start_point; // true if this node is the sampling node at env->start_point
 
     int neighbor_up;    // same lap, increasing-y direction
     int neighbor_down;  // same lap, decreasing-y direction

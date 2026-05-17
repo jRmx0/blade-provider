@@ -257,7 +257,7 @@ int cstar_generate_frontier_samples(cstar_rcg_t *rcg,
             if (cstar_sampling_point_is_free(start_sample, env))
             {
                 bool is_end_node = cstar_sampling_is_end_node_vertical(start_sample, w, env);
-                int start_node_id = cstar_rcg_add_node(rcg, start_sample, lap->id, is_end_node);
+                int start_node_id = cstar_rcg_add_node(rcg, start_sample, lap->id, is_end_node, true);
                 if (start_node_id != CSTAR_NO_NEIGHBOR)
                 {
                     cvector_push_back(lap->node_ids, start_node_id);
@@ -291,7 +291,7 @@ int cstar_generate_frontier_samples(cstar_rcg_t *rcg,
             }
 
             bool is_end_node = cstar_sampling_is_end_node_vertical(sample, w, env);
-            int node_id = cstar_rcg_add_node(rcg, sample, lap->id, is_end_node);
+            int node_id = cstar_rcg_add_node(rcg, sample, lap->id, is_end_node, false);
             if (node_id == CSTAR_NO_NEIGHBOR)
             {
                 continue;

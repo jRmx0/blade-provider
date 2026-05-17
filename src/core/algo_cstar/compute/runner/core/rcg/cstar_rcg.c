@@ -1,7 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
-#include <math.h>
 #include "cstar_rcg.h"
 #include "../../../../../../../dependencies/cvector/cvector.h"
 
@@ -56,7 +55,8 @@ void cstar_rcg_free(cstar_rcg_t *rcg)
 int cstar_rcg_add_node(cstar_rcg_t *rcg,
                        point_t pos,
                        int lap_id,
-                       bool is_end)
+                       bool is_end,
+                       bool is_start_point)
 {
     if (rcg == NULL)
     {
@@ -67,9 +67,11 @@ int cstar_rcg_add_node(cstar_rcg_t *rcg,
     new_node.id = rcg->node_count;
     new_node.pos = pos;
     new_node.state = CSTAR_NODE_OP;
+
     new_node.lap_id = lap_id;
     new_node.is_end_node = is_end;
     new_node.is_link_node = false;
+    new_node.is_start_point = is_start_point;
 
     new_node.neighbor_up = CSTAR_NO_NEIGHBOR;
     new_node.neighbor_down = CSTAR_NO_NEIGHBOR;

@@ -97,6 +97,9 @@ cstar_coverage_path_result_t *cstar_coverage_path_planning_process(cstar_environ
         return NULL;
     }
 
+    // RCG pruning: keep only end nodes and their edges
+    cstar_rcg_prune_to_end_nodes(&rcg);
+
     if (!cstar_debug_export_laps(&debug_state, env) ||
         !cstar_debug_export_rcg_nodes(&debug_state, &rcg) ||
         !cstar_debug_export_rcg_edges(&debug_state, &rcg) ||
