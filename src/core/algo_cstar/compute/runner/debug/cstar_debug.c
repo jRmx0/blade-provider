@@ -2,7 +2,7 @@
 #include <stdlib.h>
 
 #include "cstar_debug.h"
-#include "../../core/preprocess/cstar_lap.h"
+#include "../core/preprocess/cstar_lap.h"
 
 #define CSTAR_DEBUG_LAYER_COUNT 8
 

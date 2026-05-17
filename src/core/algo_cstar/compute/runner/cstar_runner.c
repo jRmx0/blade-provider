@@ -10,7 +10,7 @@
 #include "core/waypoint/cstar_waypoint.h"
 #include "core/dead_end/cstar_dead_end.h"
 #include "core/coverage_hole/cstar_coverage_hole.h"
-#include "output/debug/cstar_debug.h"
+#include "debug/cstar_debug.h"
 
 #include "core/rcg/cstar_rcg.c"
 #include "core/preprocess/cstar_lap.c"
@@ -19,7 +19,7 @@
 #include "core/waypoint/cstar_waypoint.c"
 #include "core/dead_end/cstar_dead_end.c"
 #include "core/coverage_hole/cstar_coverage_hole.c"
-#include "output/debug/cstar_debug.c"
+#include "debug/cstar_debug.c"
 
 // -------------------------------------------------------------------------
 // Helpers

@@ -1,9 +1,9 @@
 #ifndef CSTAR_DEBUG_H
 #define CSTAR_DEBUG_H
 
-#include "../../../../cstar.h"
-#include "../../core/rcg/cstar_rcg.h"
-#include "../../core/sampling/cstar_sampling.h"
+#include "../../../cstar.h"
+#include "../core/rcg/cstar_rcg.h"
+#include "../core/sampling/cstar_sampling.h"
 
 typedef struct
 {
