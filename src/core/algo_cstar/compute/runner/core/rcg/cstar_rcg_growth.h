@@ -1,63 +1,46 @@
 #ifndef CSTAR_RCG_GROWTH_H
 #define CSTAR_RCG_GROWTH_H
 
+#include <stdbool.h>
 #include "../../../../cstar.h"
 
 // -------------------------------------------------------------------------
-// Expansion
+// RCG Graph Expansion
 // -------------------------------------------------------------------------
 
 /**
- * Expands the RCG into the sampling front by:
- *   i.  Adding frontier samples as new nodes.
- *   ii. Connecting each new node to its adjacent same-lap nodes.
- *   iii.Connecting each new node to nodes within sqrt(2)*w on adjacent laps.
+ * Expands the RCG by connecting frontier-sampled nodes into a planar graph.
  *
- * Every candidate edge is checked for collision-freeness before being added.
- * Existing nodes are not moved or removed by this step.
- */
-void cstar_rcg_expand(cstar_rcg_t *rcg,
-                      float w,
-                      const cstar_environment_t *env);
-
-// -------------------------------------------------------------------------
-// Pruning
-// -------------------------------------------------------------------------
-
-/**
- * Prunes inessential nodes and edges from the expanded RCG to restore the
- * sparse-graph invariant (Definitions III.8 and III.9).
+ * Performs three stages of graph growth:
  *
- * boundary_node_ids - indices of previously-existing nodes that border the
- *                     sampling-front boundary ∂F_i; these are re-evaluated
- *                     because the expansion may have made them inessential.
- * boundary_count    - length of boundary_node_ids
+ * 1. **Same-lap vertical connectivity**: For each lap, connects adjacent nodes
+ *    (ordered along the lap's y-axis) by setting neighbor_up/neighbor_down
+ *    pointers.
+ *
+ * 2. **Cross-lap horizontal connectivity**: For each pair of adjacent laps,
+ *    connects nodes within Euclidean distance √2*w by setting
+ *    neighbor_left/neighbor_right pointers and adding edges.
+ *
+ * 3. **Validation**: Verifies graph connectivity (all nodes reachable from
+ *    node[0]) and planarity (edges ≤ 3*nodes - 6). Returns false if
+ *    validation fails.
+ *
+ * Edge costs are stored as Euclidean distance for waypoint selection.
+ *
+ * Parameters:
+ *   rcg - RCG with sampled nodes already added via cstar_rcg_add_node()
+ *   env - Environment with pre-generated laps and sampled node_ids per lap
+ *
+ * Returns:
+ *   true  - Graph successfully expanded and validated
+ *   false - Allocation error, validation failure, or invalid inputs
+ *
+ * Side effects:
+ *   - Modifies rcg->nodes (sets neighbor pointers)
+ *   - Populates rcg->edges with cross-lap connections
+ *   - No changes to env
  */
-void cstar_rcg_prune(cstar_rcg_t *rcg,
-                     const int *boundary_node_ids,
-                     int boundary_count,
-                     float w,
-                     const cstar_environment_t *env);
-
-// -------------------------------------------------------------------------
-// Essentialness predicates
-// -------------------------------------------------------------------------
-
-/**
- * Returns true if node_id is essential per Definition III.8:
- *   1. Adjacent to the unknown area, OR
- *   2. An end node of its lap, OR
- *   3. A non-end node connected to an end node of an adjacent lap, and the
- *      connection is the sole or closest-to-obstacle link for that end node.
- */
-bool cstar_node_is_essential(const cstar_rcg_t *rcg, int node_id,
-                             float w, const cstar_environment_t *env);
-
-/**
- * Returns true if the edge (node_a, node_b) is essential per Definition III.9.
- * Both nodes must already be essential for an edge to qualify.
- */
-bool cstar_edge_is_essential(const cstar_rcg_t *rcg, int node_a, int node_b,
-                             float w, const cstar_environment_t *env);
+bool cstar_rcg_expand_graph(cstar_rcg_t *rcg,
+                            const cstar_environment_t *env);
 
 #endif // CSTAR_RCG_GROWTH_H

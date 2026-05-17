@@ -85,8 +85,19 @@ cstar_coverage_path_result_t *cstar_coverage_path_planning_process(cstar_environ
         return NULL;
     }
 
+    // RCG graph expansion: connect frontier-sampled nodes into a planar graph
+    if (!cstar_rcg_expand_graph(&rcg, env))
+    {
+        cstar_debug_dispose(&debug_state);
+        cstar_rcg_free(&rcg);
+        cstar_result_cleanup_partial(result);
+        cstar_environment_laps_cleanup(env);
+        return NULL;
+    }
+
     if (!cstar_debug_export_laps(&debug_state, env) ||
         !cstar_debug_export_rcg_nodes(&debug_state, &rcg) ||
+        !cstar_debug_export_rcg_edges(&debug_state, &rcg) ||
         !cstar_debug_finalize_layers(&debug_state, &result->debug_layers))
     {
         cstar_debug_dispose(&debug_state);

@@ -1,59 +1,59 @@
 #ifndef CSTAR_RCG_H
 #define CSTAR_RCG_H
 
+#include <stdbool.h>
 #include "../../../../cstar.h"
 
+// -------------------------------------------------------------------------
+// RCG Core Memory Management
+// -------------------------------------------------------------------------
+
 /**
- * Initialises an empty RCG. Must be paired with cstar_rcg_free().
+ * Initializes an empty Rapidly Covering Graph.
+ *
+ * Sets all node and edge arrays to NULL/0. This must be called before
+ * any other RCG operations.
+ *
+ * Parameters:
+ *   rcg - RCG structure to initialize (must not be NULL)
  */
 void cstar_rcg_init(cstar_rcg_t *rcg);
 
 /**
- * Frees all memory owned by the RCG.
+ * Frees all memory allocated for the RCG.
+ *
+ * Deallocates node and edge arrays and resets the RCG structure to an
+ * empty state. Safe to call multiple times.
+ *
+ * Parameters:
+ *   rcg - RCG structure to free (must not be NULL)
  */
 void cstar_rcg_free(cstar_rcg_t *rcg);
 
-/**
- * Adds a node to the RCG. Returns the new node's index.
- */
-int cstar_rcg_add_node(cstar_rcg_t *rcg, point_t pos, int lap_id, bool is_end_node);
+// -------------------------------------------------------------------------
+// RCG Node Management
+// -------------------------------------------------------------------------
 
 /**
- * Adds a directed edge between node_a and node_b after verifying the segment
- * lies entirely in obstacle-free space.
- * Returns true if the edge was added, false if it would cross an obstacle.
+ * Adds a new node to the RCG and returns its node ID.
+ *
+ * Allocates a new node in the rcg->nodes array, initializes its position
+ * and lap association, and returns its ID. The node is initially unvisited
+ * (state = CSTAR_NODE_OP) with all neighbors set to CSTAR_NO_NEIGHBOR.
+ *
+ * Parameters:
+ *   rcg     - RCG structure (must not be NULL)
+ *   pos     - Node position in 2D space
+ *   lap_id  - Index of the lap this node belongs to
+ *   is_end  - Whether this node touches an obstacle or boundary
+ *
+ * Returns:
+ *   Node ID (0-based index into rcg->nodes) on success
+ *   CSTAR_NO_NEIGHBOR (-1) on allocation failure
  */
-bool cstar_rcg_add_edge(cstar_rcg_t *rcg, int node_a, int node_b,
-                        const cstar_environment_t *env);
-
-/**
- * Removes a node by index. Clears all neighbour references pointing to it.
- * Does not merge any edges; call cstar_rcg_merge_lap_edge() first if needed.
- */
-void cstar_rcg_remove_node(cstar_rcg_t *rcg, int node_id);
-
-/**
- * Removes the edge between node_a and node_b, if it exists.
- */
-void cstar_rcg_remove_edge(cstar_rcg_t *rcg, int node_a, int node_b);
-
-/**
- * Merges the two same-lap edges adjacent to node_id into a single edge
- * spanning its up- and down-neighbours. Used when pruning an inessential node
- * that sits in the middle of a lap.
- */
-void cstar_rcg_merge_lap_edge(cstar_rcg_t *rcg, int node_id);
-
-/**
- * Returns true if the straight segment from a to b lies entirely in
- * obstacle-free space (no polygon edge crossings, not inside any obstacle).
- */
-bool cstar_rcg_edge_is_collision_free(point_t a, point_t b,
-                                      const cstar_environment_t *env);
-
-/**
- * Marks node node_id as CSTAR_NODE_CL (visited).
- */
-void cstar_rcg_close_node(cstar_rcg_t *rcg, int node_id);
+int cstar_rcg_add_node(cstar_rcg_t *rcg,
+                       point_t pos,
+                       int lap_id,
+                       bool is_end);
 
 #endif // CSTAR_RCG_H
