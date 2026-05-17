@@ -195,27 +195,15 @@ char *cstar_serialize_result_json(const cstar_coverage_path_result_t *result)
         return cstar_serialize_error_json("allocation_failed", "Coverage path result is NULL.");
     }
 
-    // Build categorized arrays for quick lookup during segment addition
+    // Build segments array only (per API spec: CoveragePathPlan contains only segments + optional performance)
     cJSON *segments = cJSON_CreateArray();
-    cJSON *coverage = cJSON_CreateArray();
-    cJSON *coverage_transit = cJSON_CreateArray();
-    cJSON *retreat_transit = cJSON_CreateArray();
-    cJSON *hole_coverage = cJSON_CreateArray();
-    cJSON *hole_transit = cJSON_CreateArray();
 
-    if (segments == NULL || coverage == NULL || coverage_transit == NULL ||
-        retreat_transit == NULL || hole_coverage == NULL || hole_transit == NULL)
+    if (segments == NULL)
     {
-        cJSON_Delete(segments);
-        cJSON_Delete(coverage);
-        cJSON_Delete(coverage_transit);
-        cJSON_Delete(retreat_transit);
-        cJSON_Delete(hole_coverage);
-        cJSON_Delete(hole_transit);
-        return cstar_serialize_error_json("serialization_failed", "Failed to allocate segment arrays.");
+        return cstar_serialize_error_json("serialization_failed", "Failed to allocate segments array.");
     }
 
-    // Build all segments and add to appropriate arrays
+    // Build all segments
     for (int i = 0; i < result->segment_count; ++i)
     {
         const cstar_segment_t *seg = &result->all_segments[i];
@@ -229,11 +217,6 @@ char *cstar_serialize_result_json(const cstar_coverage_path_result_t *result)
             free(xs);
             free(ys);
             cJSON_Delete(segments);
-            cJSON_Delete(coverage);
-            cJSON_Delete(coverage_transit);
-            cJSON_Delete(retreat_transit);
-            cJSON_Delete(hole_coverage);
-            cJSON_Delete(hole_transit);
             return cstar_serialize_error_json("serialization_failed", "Failed to allocate coordinate arrays.");
         }
 
@@ -252,77 +235,22 @@ char *cstar_serialize_result_json(const cstar_coverage_path_result_t *result)
         if (json_seg == NULL)
         {
             cJSON_Delete(segments);
-            cJSON_Delete(coverage);
-            cJSON_Delete(coverage_transit);
-            cJSON_Delete(retreat_transit);
-            cJSON_Delete(hole_coverage);
-            cJSON_Delete(hole_transit);
             return cstar_serialize_error_json("serialization_failed", "Failed to build segment JSON.");
         }
 
-        // Add to main segments array
+        // Add to main segments array (no categorization)
         cJSON_AddItemToArray(segments, json_seg);
-
-        // Add copy to categorized array
-        cJSON *json_seg_copy = cJSON_Duplicate(json_seg, 1);
-        if (json_seg_copy == NULL)
-        {
-            cJSON_Delete(segments);
-            cJSON_Delete(coverage);
-            cJSON_Delete(coverage_transit);
-            cJSON_Delete(retreat_transit);
-            cJSON_Delete(hole_coverage);
-            cJSON_Delete(hole_transit);
-            return cstar_serialize_error_json("serialization_failed", "Failed to duplicate segment JSON.");
-        }
-
-        // Dispatch to appropriate category array
-        if (strcmp(seg->type, "coverage") == 0)
-        {
-            cJSON_AddItemToArray(coverage, json_seg_copy);
-        }
-        else if (strcmp(seg->type, "coverageTransit") == 0)
-        {
-            cJSON_AddItemToArray(coverage_transit, json_seg_copy);
-        }
-        else if (strcmp(seg->type, "retreatTransit") == 0)
-        {
-            cJSON_AddItemToArray(retreat_transit, json_seg_copy);
-        }
-        else if (strcmp(seg->type, "holeCoverage") == 0)
-        {
-            cJSON_AddItemToArray(hole_coverage, json_seg_copy);
-        }
-        else if (strcmp(seg->type, "holeTransit") == 0)
-        {
-            cJSON_AddItemToArray(hole_transit, json_seg_copy);
-        }
-        else
-        {
-            // Unknown type, still add to segments but skip categorization
-            cJSON_Delete(json_seg_copy);
-        }
     }
 
-    // Build coverage plan object
+    // Build coverage plan object with only segments (per API spec)
     cJSON *coverage_path_plan = cJSON_CreateObject();
     if (coverage_path_plan == NULL)
     {
         cJSON_Delete(segments);
-        cJSON_Delete(coverage);
-        cJSON_Delete(coverage_transit);
-        cJSON_Delete(retreat_transit);
-        cJSON_Delete(hole_coverage);
-        cJSON_Delete(hole_transit);
         return cstar_serialize_error_json("serialization_failed", "Failed to allocate coverage plan object.");
     }
 
     cJSON_AddItemToObject(coverage_path_plan, "segments", segments);
-    cJSON_AddItemToObject(coverage_path_plan, "coverage", coverage);
-    cJSON_AddItemToObject(coverage_path_plan, "coverageTransit", coverage_transit);
-    cJSON_AddItemToObject(coverage_path_plan, "retreatTransit", retreat_transit);
-    cJSON_AddItemToObject(coverage_path_plan, "holeCoverage", hole_coverage);
-    cJSON_AddItemToObject(coverage_path_plan, "holeTransit", hole_transit);
 
     cJSON *debug = cJSON_CreateObject();
     cJSON *layers = cstar_serialize_debug_layers_json(&result->debug_layers);
@@ -335,18 +263,18 @@ char *cstar_serialize_result_json(const cstar_coverage_path_result_t *result)
     }
 
     cJSON_AddItemToObject(debug, "layers", layers);
-    cJSON_AddItemToObject(coverage_path_plan, "debug", debug);
 
-    // Build root response
+    // Build root response with coveragePathPlan and debug as siblings (per API spec)
     cJSON *root = cJSON_CreateObject();
     if (root == NULL)
     {
         cJSON_Delete(coverage_path_plan);
+        cJSON_Delete(debug);
         return cstar_serialize_error_json("serialization_failed", "Failed to allocate root response object.");
     }
 
-    cJSON_AddStringToObject(root, "status", "ok");
     cJSON_AddItemToObject(root, "coveragePathPlan", coverage_path_plan);
+    cJSON_AddItemToObject(root, "debug", debug);
 
     // Convert cJSON object to unformatted JSON string
     char *json = cJSON_PrintUnformatted(root);
