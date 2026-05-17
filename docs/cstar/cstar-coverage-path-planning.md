@@ -25,6 +25,7 @@
       - [RCG Properties](#rcg-properties)
       - [State Encoding](#state-encoding)
     - [Sampling Front](#sampling-front)
+      - [Alternative: Known Operation Zones with Collision-Triggered Obstacles](#alternative-known-operation-zones-with-collision-triggered-obstacles)
     - [Frontier Samples \& Laps](#frontier-samples--laps)
       - [Lap Generation Rules](#lap-generation-rules)
       - [Sample Placement on Laps](#sample-placement-on-laps)
@@ -193,12 +194,62 @@ Sets at iteration $i$:
 
 ### Sampling Front
 
-**Definition:** The sampling front $\mathcal{F}_i \subseteq \mathcal{A}_{d,i}$ ($i \in \{0, \ldots, m-1\}$) is the **obstacle-free and unsampled** portion of the area $\mathcal{A}_{d,i}$ discovered in iteration $i$.
+**Definition (Paper):** The sampling front $\mathcal{F}_i \subseteq \mathcal{A}_{d,i}$ ($i \in \{0, \ldots, m-1\}$) is the **obstacle-free and unsampled** portion of the area $\mathcal{A}_{d,i}$ discovered in iteration $i$.
 
 - $\mathcal{A}_{d,i} = \bigcup_{t \in [t_{i-1}, t_i]} \mathcal{A}_d(\lambda(t))$ — total area discovered in iteration $i$
 - $\mathcal{A}'_d = \bigcup_i \mathcal{A}_{d,i}$ — total area discovered so far
 - $\mathcal{A}_u = \mathcal{A} \setminus \mathcal{A}'_d$ — still unknown area
 - $\mathcal{F}_i$ contains **only newly discovered and unsampled** area (previously sampled areas excluded)
+
+#### Alternative: Known Operation Zones with Collision-Triggered Obstacles
+
+For robots **without onboard range sensors** (lidar, ultrasonic, etc.), the original paper's sensor-based frontier sample detection is not viable. An alternative formulation applies when:
+
+1. **Operation zone is known**: $\mathcal{B}$ (operational boundary) is fully specified a priori
+2. **Obstacles are discovered reactively**: All obstacles exist within operationalObstacles[], but are only incorporated into sampling/RCG when collisions occur during waypoint navigation
+3. **Lap structure is fixed**: Laps are pre-generated once over the full operation zone and remain unchanged; only node placement on laps adapts to discovered obstacles
+4. **Clearance is pre-applied**: All obstacles in operationalObstacles[] are already expanded by robot radius
+
+**Redefined Sampling Front** $\mathcal{F}_i$ (Alternative):
+
+$$\mathcal{F}_i = \mathcal{B} \setminus \left( \bigcup_{j \in C_i} \mathcal{O}_j \cup \bigcup_{k \in V_i} \mathcal{W}_k \right)$$
+
+where:
+- $\mathcal{B}$ — operational boundary (known)
+- $C_i$ — set of **discovered/active** obstacles at iteration $i$ (initially empty; grows only on collision)
+- $\mathcal{O}_j$ — $j$-th obstacle in operationalObstacles[] (with clearance)
+- $V_i$ — set of **visited waypoints** (closed nodes) at iteration $i$
+- $\mathcal{W}_k$ — waypoint vicinity (e.g., disc of radius $r_c$ around waypoint $p_k$)
+
+**Collision Detection & Obstacle Activation**:
+
+During navigation from $p_{i-1}$ to $p_i$, if the straight-line path collides with any obstacle $\mathcal{O}_j$ in operationalObstacles[]:
+1. Obstacle $\mathcal{O}_j$ is added to the active set $C_i$
+2. Path traversal is **halted** (robot remains at $p_{i-1}$)
+3. Frontier samples are immediately **regenerated** on affected laps
+4. RCG is **incrementally updated**: invalid nodes/edges pruned, new nodes/edges added
+5. Goal selection re-run from current node; next waypoint selected accounting for newly-discovered obstacle
+
+**Frontier Sample Generation (Alternative)**:
+
+A point $s$ on lap $\ell$ is a frontier sample if:
+1. $s \in \mathcal{B}$ (inside operation zone)
+2. $s \notin \mathcal{O}_j$ for all $j \in C_i$ (outside all discovered obstacles)
+3. $s$ is at distance $\ge \delta w$ from previous sample on same lap (lap spacing)
+4. $s$ is **adjacent to obstacle boundary or operation zone boundary** OR **unvisited region** (greedy coverage; see frontier sample criteria below)
+
+No radius $w$ is used for adjacency; instead, samples are placed:
+- At ends of laps (where lap intersects discovered obstacles or boundary)
+- At intervals $\delta w$ along lap interior
+
+**RCG Update (Incremental)**:
+
+When obstacle $\mathcal{O}_j$ is activated:
+1. **Prune nodes** inside or overlapping $\mathcal{O}_j$ or its clearance
+2. **Prune edges** that cross newly-discovered obstacle boundary
+3. **Invalidate waypoints** on affected laps by re-sampling
+4. **Add new frontier samples** on affected laps, particularly at boundary intersections
+5. Maintain RCG connectivity: ensure graph remains connected after pruning
 
 ---
 
