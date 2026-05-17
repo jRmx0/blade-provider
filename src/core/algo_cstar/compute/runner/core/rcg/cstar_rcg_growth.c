@@ -49,16 +49,15 @@ static float cstar_rcg_growth_dist(point_t a, point_t b)
 }
 
 void cstar_rcg_expand(cstar_rcg_t *rcg,
-                      const cstar_sampling_front_t *front,
                       float w,
                       const cstar_environment_t *env)
 {
-    if (rcg == NULL || front == NULL || front->env == NULL || front->env->laps == NULL)
+    if (rcg == NULL || env == NULL || env->laps == NULL)
     {
         return;
     }
 
-    const cstar_lap_t *laps = (const cstar_lap_t *)front->env->laps;
+    const cstar_lap_t *laps = (const cstar_lap_t *)env->laps;
     int lap_count = (int)cvector_size(laps);
     float cross_limit = sqrtf(2.0f) * ((w > CSTAR_EPSILON) ? w : 1.0f);
 

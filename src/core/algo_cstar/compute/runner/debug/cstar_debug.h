@@ -3,7 +3,6 @@
 
 #include "../../../cstar.h"
 #include "../core/rcg/cstar_rcg.h"
-#include "../core/sampling/cstar_sampling.h"
 
 typedef struct
 {
@@ -11,7 +10,6 @@ typedef struct
     cstar_debug_point_list_t rcg_end_nodes;
     cstar_debug_segment_list_t rcg_edges;
     cstar_debug_segment_list_t lap_list;
-    cstar_debug_polygon_list_t sampling_front_list;
     cstar_debug_point_list_t frontier_sample_list;
     cstar_debug_point_list_t retreat_node_list;
     cstar_debug_polygon_list_t coverage_hole_list;
@@ -30,10 +28,6 @@ bool cstar_debug_export_rcg_edges(cstar_debug_t *debug_state,
                                   const cstar_rcg_t *rcg);
 
 bool cstar_debug_export_laps(cstar_debug_t *debug_state,
-                             const cstar_sampling_front_t *front,
                              const cstar_environment_t *env);
-
-bool cstar_debug_export_sampling_front_polygon(cstar_debug_t *debug_state,
-                                               const cstar_environment_t *env);
 
 #endif // CSTAR_DEBUG_H

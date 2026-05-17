@@ -206,9 +206,6 @@ char *cstar_build_metadata_json(void)
     /* id=13  Laps (Line) */
     CSTAR_LINE_LAYER(13, "lapList", "Laps", "106", "#94a3b8", "dashed", "false", "false")
 
-    /* id=14  Sampling front (Polygon) */
-    CSTAR_POLYGON_LAYER(14, "samplingFrontList", "Sampling Front", "104", "#5210e0", "#5210e041", "false")
-
     /* id=15  Frontier samples (Point) */
     CSTAR_POINT_LAYER(15, "frontierSampleList", "Frontier Samples", "112", "#86efac", "#166534", "3", "#86efac", "false")
 

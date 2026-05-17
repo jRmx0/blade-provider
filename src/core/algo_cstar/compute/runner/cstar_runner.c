@@ -40,7 +40,6 @@ cstar_coverage_path_result_t *cstar_coverage_path_planning_process(cstar_environ
 
     cstar_rcg_t rcg;
     cstar_rcg_init(&rcg);
-    cstar_sampling_front_t sampling_front = {0};
     cstar_debug_t debug_state = {0};
 
     cstar_coverage_path_result_t *result = cstar_result_create();
@@ -69,19 +68,11 @@ cstar_coverage_path_result_t *cstar_coverage_path_planning_process(cstar_environ
         return NULL;
     }
 
-    sampling_front = cstar_create_sampling_front(env->start_point,
-                                                 env->start_point,
-                                                 env->sensor_range,
-                                                 w,
-                                                 (point_t){0.0f, 1.0f},
-                                                 env);
-
     int delta = (env->frontier_spacing_multiplier > 0u)
                     ? (int)env->frontier_spacing_multiplier
                     : 1;
 
-    int generated_samples = cstar_generate_frontier_samples(&sampling_front,
-                                                            &rcg,
+    int generated_samples = cstar_generate_frontier_samples(&rcg,
                                                             w,
                                                             delta,
                                                             env);
@@ -94,8 +85,7 @@ cstar_coverage_path_result_t *cstar_coverage_path_planning_process(cstar_environ
         return NULL;
     }
 
-    if (!cstar_debug_export_sampling_front_polygon(&debug_state, env) ||
-        !cstar_debug_export_laps(&debug_state, &sampling_front, env) ||
+    if (!cstar_debug_export_laps(&debug_state, env) ||
         !cstar_debug_export_rcg_nodes(&debug_state, &rcg) ||
         !cstar_debug_finalize_layers(&debug_state, &result->debug_layers))
     {

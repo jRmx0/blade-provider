@@ -4,7 +4,7 @@
 #include "cstar_debug.h"
 #include "../core/preprocess/cstar_lap.h"
 
-#define CSTAR_DEBUG_LAYER_COUNT 8
+#define CSTAR_DEBUG_LAYER_COUNT 7
 
 static bool cstar_debug_point_list_reserve(cstar_debug_point_list_t *list, int required)
 {
@@ -282,7 +282,6 @@ void cstar_debug_dispose(cstar_debug_t *debug_state)
     cstar_debug_point_list_free(&debug_state->rcg_end_nodes);
     cstar_debug_segment_list_free(&debug_state->rcg_edges);
     cstar_debug_segment_list_free(&debug_state->lap_list);
-    cstar_debug_polygon_list_free(&debug_state->sampling_front_list);
     cstar_debug_point_list_free(&debug_state->frontier_sample_list);
     cstar_debug_point_list_free(&debug_state->retreat_node_list);
     cstar_debug_polygon_list_free(&debug_state->coverage_hole_list);
@@ -325,25 +324,20 @@ bool cstar_debug_finalize_layers(cstar_debug_t *debug_state,
     layers[3].list_type = CSTAR_DEBUG_LIST_SEGMENTS;
     cstar_debug_move_segment_list(&layers[3].list.segments, &debug_state->lap_list);
 
-    layers[4].id = 14;
-    layers[4].source = "samplingFrontList";
-    layers[4].list_type = CSTAR_DEBUG_LIST_POLYGONS;
-    cstar_debug_move_polygon_list(&layers[4].list.polygons, &debug_state->sampling_front_list);
+    layers[4].id = 15;
+    layers[4].source = "frontierSampleList";
+    layers[4].list_type = CSTAR_DEBUG_LIST_POINTS;
+    cstar_debug_move_point_list(&layers[4].list.points, &debug_state->frontier_sample_list);
 
-    layers[5].id = 15;
-    layers[5].source = "frontierSampleList";
+    layers[5].id = 16;
+    layers[5].source = "retreatNodeList";
     layers[5].list_type = CSTAR_DEBUG_LIST_POINTS;
-    cstar_debug_move_point_list(&layers[5].list.points, &debug_state->frontier_sample_list);
+    cstar_debug_move_point_list(&layers[5].list.points, &debug_state->retreat_node_list);
 
-    layers[6].id = 16;
-    layers[6].source = "retreatNodeList";
-    layers[6].list_type = CSTAR_DEBUG_LIST_POINTS;
-    cstar_debug_move_point_list(&layers[6].list.points, &debug_state->retreat_node_list);
-
-    layers[7].id = 17;
-    layers[7].source = "coverageHoleList";
-    layers[7].list_type = CSTAR_DEBUG_LIST_POLYGONS;
-    cstar_debug_move_polygon_list(&layers[7].list.polygons, &debug_state->coverage_hole_list);
+    layers[6].id = 17;
+    layers[6].source = "coverageHoleList";
+    layers[6].list_type = CSTAR_DEBUG_LIST_POLYGONS;
+    cstar_debug_move_polygon_list(&layers[6].list.polygons, &debug_state->coverage_hole_list);
 
     out_layers->layers = layers;
     out_layers->layer_count = CSTAR_DEBUG_LAYER_COUNT;
@@ -411,10 +405,9 @@ bool cstar_debug_export_rcg_edges(cstar_debug_t *debug_state,
 }
 
 bool cstar_debug_export_laps(cstar_debug_t *debug_state,
-                             const cstar_sampling_front_t *front,
                              const cstar_environment_t *env)
 {
-    if (debug_state == NULL || front == NULL || env == NULL)
+    if (debug_state == NULL || env == NULL)
     {
         return false;
     }
@@ -422,12 +415,12 @@ bool cstar_debug_export_laps(cstar_debug_t *debug_state,
     float min_x = 0.0f, max_x = 0.0f, min_y = 0.0f, max_y = 0.0f;
     cstar_lap_boundary_bbox(env, &min_x, &max_x, &min_y, &max_y);
 
-    if (front->env == NULL || front->env->laps == NULL)
+    if (env->laps == NULL)
     {
         return true;
     }
 
-    const cstar_lap_t *laps = (const cstar_lap_t *)front->env->laps;
+    const cstar_lap_t *laps = (const cstar_lap_t *)env->laps;
     int lap_count = (int)cvector_size(laps);
     for (int i = 0; i < lap_count; ++i)
     {
@@ -443,23 +436,4 @@ bool cstar_debug_export_laps(cstar_debug_t *debug_state,
     }
 
     return true;
-}
-
-bool cstar_debug_export_sampling_front_polygon(cstar_debug_t *debug_state,
-                                               const cstar_environment_t *env)
-{
-    if (debug_state == NULL || env == NULL)
-    {
-        return false;
-    }
-
-    if (env->operationalBoundary.vertices == NULL || env->operationalBoundary.vertex_count == 0)
-    {
-        return true;
-    }
-
-    return cstar_debug_append_polygon(&debug_state->sampling_front_list,
-                                      1,
-                                      env->operationalBoundary.vertices,
-                                      (int)env->operationalBoundary.vertex_count);
 }

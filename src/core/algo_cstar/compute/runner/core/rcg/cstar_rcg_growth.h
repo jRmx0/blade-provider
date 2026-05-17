@@ -18,7 +18,6 @@
  * Existing nodes are not moved or removed by this step.
  */
 void cstar_rcg_expand(cstar_rcg_t *rcg,
-                      const cstar_sampling_front_t *front,
                       float w,
                       const cstar_environment_t *env);
 

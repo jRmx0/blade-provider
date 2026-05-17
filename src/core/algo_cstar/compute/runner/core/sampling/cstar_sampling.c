@@ -100,24 +100,6 @@ static bool cstar_sampling_point_is_free(point_t point, const cstar_environment_
     return true;
 }
 
-cstar_sampling_front_t cstar_create_sampling_front(point_t prev_pos,
-                                                   point_t curr_pos,
-                                                   float rd,
-                                                   float w,
-                                                   point_t lap_dir,
-                                                   const cstar_environment_t *env)
-{
-    (void)prev_pos;
-    (void)curr_pos;
-    (void)rd;
-    (void)w;
-    (void)lap_dir;
-
-    cstar_sampling_front_t front = {0};
-    front.env = env;
-    return front;
-}
-
 bool cstar_is_frontier_sample(point_t s, float w, const cstar_environment_t *env)
 {
     if (env == NULL || env->operationalBoundary.vertices == NULL || env->operationalBoundary.vertex_count < 3u)
@@ -134,21 +116,17 @@ bool cstar_is_frontier_sample(point_t s, float w, const cstar_environment_t *env
     return cstar_sampling_point_on_boundary(s, &env->operationalBoundary, frontier_tol);
 }
 
-int cstar_generate_frontier_samples(cstar_sampling_front_t *front,
-                                    cstar_rcg_t *rcg,
+int cstar_generate_frontier_samples(cstar_rcg_t *rcg,
                                     float w,
                                     int delta,
                                     const cstar_environment_t *env)
 {
-    (void)env;
-
-    if (front == NULL || front->env == NULL || front->env->laps == NULL || rcg == NULL)
+    if (env == NULL || env->laps == NULL || rcg == NULL)
     {
         return 0;
     }
 
-    const cstar_environment_t *front_env = front->env;
-    cstar_lap_t *laps = (cstar_lap_t *)front_env->laps;
+    cstar_lap_t *laps = (cstar_lap_t *)env->laps;
     int lap_count = (int)cvector_size(laps);
     if (lap_count <= 0)
     {
@@ -156,7 +134,7 @@ int cstar_generate_frontier_samples(cstar_sampling_front_t *front,
     }
 
     float min_x = 0.0f, max_x = 0.0f, min_y = 0.0f, max_y = 0.0f;
-    cstar_lap_boundary_bbox(front_env, &min_x, &max_x, &min_y, &max_y);
+    cstar_lap_boundary_bbox(env, &min_x, &max_x, &min_y, &max_y);
 
     float step = ((delta > 0 ? (float)delta : 1.0f) * ((w > CSTAR_EPSILON) ? w : 1.0f));
     int total_added = 0;
@@ -177,12 +155,12 @@ int cstar_generate_frontier_samples(cstar_sampling_front_t *front,
         {
             point_t sample = {lap->x, y};
 
-            if (!cstar_sampling_point_is_free(sample, front_env))
+            if (!cstar_sampling_point_is_free(sample, env))
             {
                 continue;
             }
 
-            if (!cstar_is_frontier_sample(sample, w, front_env))
+            if (!cstar_is_frontier_sample(sample, w, env))
             {
                 continue;
             }
