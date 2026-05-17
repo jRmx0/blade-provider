@@ -327,28 +327,6 @@ bool cstar_validate_request_json(const char *request_json, cstar_check_result_t 
         return false;
     }
 
-    float sensor_range = 0.0f;
-    if (!cstar_expect_float_parameter(
-            parameters,
-            "Sensor Range",
-            &sensor_range,
-            result,
-            "missing_sensor_range",
-            "C* requires a Sensor Range parameter.",
-            "invalid_sensor_range",
-            "C* Sensor Range must be a number greater than 0."))
-    {
-        cJSON_Delete(root);
-        return false;
-    }
-
-    if (sensor_range <= 0.0f)
-    {
-        cJSON_Delete(root);
-        cstar_set_result(result, false, "invalid_sensor_range", "C* Sensor Range must be greater than 0.");
-        return false;
-    }
-
     uint32_t frontier_spacing_multiplier = 0u;
     if (!cstar_expect_uint_parameter(
             parameters,

@@ -26,7 +26,6 @@ static void cstar_parser_init_environment(cstar_environment_t *environment)
 
     environment->id = 0;
     environment->path_width = 0.0f;
-    environment->sensor_range = 0.0f;
     environment->frontier_spacing_multiplier = 0u;
     environment->track_memory_usage = false;
     environment->headland = false;
@@ -385,15 +384,6 @@ bool cstar_parse_request_json(const char *request_json, cstar_environment_t *env
     {
         cJSON_Delete(root);
         cstar_parser_set_result(result, false, "invalid_request", "C* parser failed to read required Path Width parameter.");
-        cstar_parser_free_environment(environment);
-        return false;
-    }
-
-    const cJSON *sensor_range_value = cJSON_GetObjectItemCaseSensitive(parameters, "Sensor Range");
-    if (!cstar_parser_parse_float_value(sensor_range_value, &environment->sensor_range))
-    {
-        cJSON_Delete(root);
-        cstar_parser_set_result(result, false, "invalid_request", "C* parser failed to read required Sensor Range parameter.");
         cstar_parser_free_environment(environment);
         return false;
     }

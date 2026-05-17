@@ -159,8 +159,7 @@ char *cstar_build_metadata_json(void)
     metadata_add_parameter(parameters, 3, "Coordinate System", METADATA_PARAM_TYPE_ENUM, coordsystem_values, 1, METADATA_COORDSYSTEM_CARTESIAN, METADATA_PARAM_SECTION_ENVIRONMENT, METADATA_APP_HANDLER_ENVIRONMENT_COORDSYSTEM, 0, 0.0, 0, 0.0, NULL);
 
     metadata_add_parameter(parameters, 4, "Path Width", METADATA_PARAM_TYPE_DECIMAL, NULL, 0, "20", METADATA_PARAM_SECTION_COVERAGE_PATH, METADATA_APP_HANDLER_NONE, 1, 0.0, 0, 0.0, NULL);
-    metadata_add_parameter(parameters, 5, "Sensor Range", METADATA_PARAM_TYPE_DECIMAL, NULL, 0, "300", METADATA_PARAM_SECTION_COVERAGE_PATH, METADATA_APP_HANDLER_NONE, 1, 0.0, 0, 0.0, NULL);
-    metadata_add_parameter(parameters, 6, "Frontier Spacing Multiplier", METADATA_PARAM_TYPE_INTEGER, NULL, 0, "1", METADATA_PARAM_SECTION_COVERAGE_PATH, METADATA_APP_HANDLER_NONE, 1, 1.0, 0, 0.0, NULL);
+    metadata_add_parameter(parameters, 5, "Frontier Spacing Multiplier", METADATA_PARAM_TYPE_INTEGER, NULL, 0, "1", METADATA_PARAM_SECTION_COVERAGE_PATH, METADATA_APP_HANDLER_NONE, 1, 1.0, 0, 0.0, NULL);
 
     /* ── Layers ─────────────────────────────────────────────────────────── */
 
