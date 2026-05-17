@@ -30,6 +30,7 @@ typedef struct
     uint32_t id;
     float path_width;
     float sensor_range;
+    uint32_t frontier_spacing_multiplier;
     bool track_memory_usage;
     bool headland;
 

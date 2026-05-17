@@ -27,6 +27,7 @@ static void cstar_parser_init_environment(cstar_environment_t *environment)
     environment->id = 0;
     environment->path_width = 0.0f;
     environment->sensor_range = 0.0f;
+    environment->frontier_spacing_multiplier = 0u;
     environment->track_memory_usage = false;
     environment->headland = false;
 
@@ -380,29 +381,28 @@ bool cstar_parse_request_json(const char *request_json, cstar_environment_t *env
     }
 
     const cJSON *path_width_value = cJSON_GetObjectItemCaseSensitive(parameters, "Path Width");
-    if (!cstar_parser_parse_float_value(path_width_value, &environment->path_width) || environment->path_width <= 0.0f)
+    if (!cstar_parser_parse_float_value(path_width_value, &environment->path_width))
     {
         cJSON_Delete(root);
-        cstar_parser_set_result(result, false, "invalid_path_width", "C* Path Width must be a number greater than 0.");
+        cstar_parser_set_result(result, false, "invalid_request", "C* parser failed to read required Path Width parameter.");
         cstar_parser_free_environment(environment);
         return false;
     }
 
     const cJSON *sensor_range_value = cJSON_GetObjectItemCaseSensitive(parameters, "Sensor Range");
-    if (!cstar_parser_parse_float_value(sensor_range_value, &environment->sensor_range) || environment->sensor_range <= 0.0f)
+    if (!cstar_parser_parse_float_value(sensor_range_value, &environment->sensor_range))
     {
         cJSON_Delete(root);
-        cstar_parser_set_result(result, false, "invalid_sensor_range", "C* Sensor Range must be a number greater than 0.");
+        cstar_parser_set_result(result, false, "invalid_request", "C* parser failed to read required Sensor Range parameter.");
         cstar_parser_free_environment(environment);
         return false;
     }
 
     const cJSON *frontier_spacing_value = cJSON_GetObjectItemCaseSensitive(parameters, "Frontier Spacing Multiplier");
-    uint32_t frontier_spacing_multiplier = 0u;
-    if (!cstar_parser_parse_int_value(frontier_spacing_value, &frontier_spacing_multiplier) || frontier_spacing_multiplier < 1u)
+    if (!cstar_parser_parse_int_value(frontier_spacing_value, &environment->frontier_spacing_multiplier))
     {
         cJSON_Delete(root);
-        cstar_parser_set_result(result, false, "invalid_frontier_spacing", "C* Frontier Spacing Multiplier must be a positive integer.");
+        cstar_parser_set_result(result, false, "invalid_request", "C* parser failed to read required Frontier Spacing Multiplier parameter.");
         cstar_parser_free_environment(environment);
         return false;
     }

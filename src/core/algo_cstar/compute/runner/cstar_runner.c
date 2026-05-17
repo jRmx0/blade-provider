@@ -275,9 +275,9 @@ cstar_coverage_path_result_t *cstar_coverage_path_planning_process(cstar_environ
         return NULL;
     }
 
-    float w = (env->path_width > 0.0f) ? env->path_width : 1.0f;
-    float rd = (env->sensor_range > 0.0f) ? env->sensor_range : w;
-    int delta = 1;
+    float w = env->path_width;
+    float rd = env->sensor_range;
+    int delta = (int)env->frontier_spacing_multiplier;
 
     point_t lap_dir = {0.0f, 1.0f};
     sampling_front = cstar_create_sampling_front(env->start_point,
