@@ -100,6 +100,33 @@ static bool cstar_sampling_point_is_free(point_t point, const cstar_environment_
     return true;
 }
 
+static float cstar_sampling_dist_to_operational_boundary(point_t point, const cstar_environment_t *env)
+{
+    if (env == NULL ||
+        env->operationalBoundary.vertices == NULL ||
+        env->operationalBoundary.vertex_count < 2u)
+    {
+        return INFINITY;
+    }
+
+    float min_dist = INFINITY;
+    const polygon_t *boundary = &env->operationalBoundary;
+
+    for (uint32_t i = 0; i < boundary->vertex_count; ++i)
+    {
+        uint32_t next = (i + 1u) % boundary->vertex_count;
+        float dist = cstar_sampling_dist_point_segment(point,
+                                                       boundary->vertices[i],
+                                                       boundary->vertices[next]);
+        if (dist < min_dist)
+        {
+            min_dist = dist;
+        }
+    }
+
+    return min_dist;
+}
+
 int cstar_generate_frontier_samples(cstar_rcg_t *rcg,
                                     float w,
                                     int delta,
@@ -180,6 +207,13 @@ int cstar_generate_frontier_samples(cstar_rcg_t *rcg,
             point_t sample = {lap->x, y};
 
             if (!cstar_sampling_point_is_free(sample, env))
+            {
+                continue;
+            }
+
+            float max_boundary_distance = w;
+            float boundary_distance = cstar_sampling_dist_to_operational_boundary(sample, env);
+            if (!(boundary_distance < max_boundary_distance))
             {
                 continue;
             }
