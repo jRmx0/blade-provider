@@ -40,11 +40,14 @@ int cstar_select_goal_node(const cstar_rcg_t *rcg, int current_node_id)
 
     const cstar_node_t *node = &rcg->nodes[current_node_id];
 
-    int left = node->neighbor_left;
-    if (left != CSTAR_NO_NEIGHBOR && left < rcg->node_count &&
-        rcg->nodes[left].state == CSTAR_NODE_OP)
+    for (int i = 0; i < node->neighbors_left_count; ++i)
     {
-        return left;
+        int left = node->neighbors_left[i];
+        if (left >= 0 && left < rcg->node_count &&
+            rcg->nodes[left].state == CSTAR_NODE_OP)
+        {
+            return left;
+        }
     }
 
     int up = node->neighbor_up;
@@ -61,11 +64,14 @@ int cstar_select_goal_node(const cstar_rcg_t *rcg, int current_node_id)
         return down;
     }
 
-    int right = node->neighbor_right;
-    if (right != CSTAR_NO_NEIGHBOR && right < rcg->node_count &&
-        rcg->nodes[right].state == CSTAR_NODE_OP)
+    for (int i = 0; i < node->neighbors_right_count; ++i)
     {
-        return right;
+        int right = node->neighbors_right[i];
+        if (right >= 0 && right < rcg->node_count &&
+            rcg->nodes[right].state == CSTAR_NODE_OP)
+        {
+            return right;
+        }
     }
 
     return CSTAR_NO_NEIGHBOR;
