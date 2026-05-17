@@ -96,13 +96,31 @@ static bool cstar_rcg_is_connected(const cstar_rcg_t *rcg)
         cstar_node_t *current = &rcg->nodes[current_id];
 
         // Explore all neighbors
-        int neighbors[] = {current->neighbor_up, current->neighbor_down,
-                           current->neighbor_left, current->neighbor_right};
-
-        for (int i = 0; i < 4; ++i)
+        int same_lap_neighbors[] = {current->neighbor_up, current->neighbor_down};
+        for (int i = 0; i < 2; ++i)
         {
-            int neighbor_id = neighbors[i];
+            int neighbor_id = same_lap_neighbors[i];
             if (neighbor_id != CSTAR_NO_NEIGHBOR && !visited[neighbor_id] && neighbor_id < rcg->node_count)
+            {
+                visited[neighbor_id] = true;
+                queue[queue_back++] = neighbor_id;
+                visited_count++;
+            }
+        }
+        for (int i = 0; i < current->neighbors_left_count; ++i)
+        {
+            int neighbor_id = current->neighbors_left[i];
+            if (neighbor_id >= 0 && neighbor_id < rcg->node_count && !visited[neighbor_id])
+            {
+                visited[neighbor_id] = true;
+                queue[queue_back++] = neighbor_id;
+                visited_count++;
+            }
+        }
+        for (int i = 0; i < current->neighbors_right_count; ++i)
+        {
+            int neighbor_id = current->neighbors_right[i];
+            if (neighbor_id >= 0 && neighbor_id < rcg->node_count && !visited[neighbor_id])
             {
                 visited[neighbor_id] = true;
                 queue[queue_back++] = neighbor_id;
@@ -249,6 +267,16 @@ bool cstar_rcg_expand_graph(cstar_rcg_t *rcg,
                 if (distance <= cross_lap_threshold + CSTAR_RCG_EPSILON)
                 {
                     cstar_rcg_add_edge(rcg, left_node_id, right_node_id, distance);
+
+                    // Re-fetch pointers: cstar_rcg_add_edge only grows rcg->edges,
+                    // but re-fetch nodes defensively in case of future refactors.
+                    left_node = &rcg->nodes[left_node_id];
+                    right_node = &rcg->nodes[right_node_id];
+
+                    if (left_node->neighbors_right_count < CSTAR_MAX_CROSS_LAP_NEIGHBORS)
+                        left_node->neighbors_right[left_node->neighbors_right_count++] = right_node_id;
+                    if (right_node->neighbors_left_count < CSTAR_MAX_CROSS_LAP_NEIGHBORS)
+                        right_node->neighbors_left[right_node->neighbors_left_count++] = left_node_id;
                 }
             }
         }

@@ -51,6 +51,9 @@ typedef struct
 /** Sentinel value for absent directional neighbors. */
 #define CSTAR_NO_NEIGHBOR -1
 
+/** Maximum number of cross-lap (left or right) neighbors per node. */
+#define CSTAR_MAX_CROSS_LAP_NEIGHBORS 8
+
 // -------------------------------------------------------------------------
 // RCG node
 // -------------------------------------------------------------------------
@@ -83,10 +86,13 @@ typedef struct
     bool is_link_node;   // true if created by the state-update step
     bool is_start_point; // true if this node is the sampling node at env->start_point
 
-    int neighbor_up;    // same lap, increasing-y direction
-    int neighbor_down;  // same lap, decreasing-y direction
-    int neighbor_left;  // left adjacent lap
-    int neighbor_right; // right adjacent lap
+    int neighbor_up;   // same lap, increasing-y direction
+    int neighbor_down; // same lap, decreasing-y direction
+
+    int neighbors_left[CSTAR_MAX_CROSS_LAP_NEIGHBORS]; // left adjacent lap (multiple)
+    int neighbors_left_count;
+    int neighbors_right[CSTAR_MAX_CROSS_LAP_NEIGHBORS]; // right adjacent lap (multiple)
+    int neighbors_right_count;
 } cstar_node_t;
 
 // -------------------------------------------------------------------------

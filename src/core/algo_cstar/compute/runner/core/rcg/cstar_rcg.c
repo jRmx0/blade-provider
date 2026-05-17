@@ -75,8 +75,8 @@ int cstar_rcg_add_node(cstar_rcg_t *rcg,
 
     new_node.neighbor_up = CSTAR_NO_NEIGHBOR;
     new_node.neighbor_down = CSTAR_NO_NEIGHBOR;
-    new_node.neighbor_left = CSTAR_NO_NEIGHBOR;
-    new_node.neighbor_right = CSTAR_NO_NEIGHBOR;
+    new_node.neighbors_left_count = 0;
+    new_node.neighbors_right_count = 0;
 
     cvector_push_back(rcg->nodes, new_node);
 
