@@ -69,15 +69,34 @@ cstar_coverage_path_result_t *cstar_coverage_path_planning_process(cstar_environ
         return NULL;
     }
 
-    /*
-     * Temporary stop point:
-     * preprocessing and lap generation are complete, and the remaining C*
-     * pipeline stages are intentionally disabled until they are implemented
-     * step by step.
-     */
-    sampling_front.env = env;
+    sampling_front = cstar_create_sampling_front(env->start_point,
+                                                 env->start_point,
+                                                 env->sensor_range,
+                                                 w,
+                                                 (point_t){0.0f, 1.0f},
+                                                 env);
 
-    if (!cstar_debug_export_laps(&debug_state, &sampling_front, env) ||
+    int delta = (env->frontier_spacing_multiplier > 0u)
+                    ? (int)env->frontier_spacing_multiplier
+                    : 1;
+
+    int generated_samples = cstar_generate_frontier_samples(&sampling_front,
+                                                            &rcg,
+                                                            w,
+                                                            delta,
+                                                            env);
+    if (generated_samples <= 0)
+    {
+        cstar_debug_dispose(&debug_state);
+        cstar_rcg_free(&rcg);
+        cstar_result_cleanup_partial(result);
+        cstar_environment_laps_cleanup(env);
+        return NULL;
+    }
+
+    if (!cstar_debug_export_sampling_front_polygon(&debug_state, env) ||
+        !cstar_debug_export_laps(&debug_state, &sampling_front, env) ||
+        !cstar_debug_export_rcg_nodes(&debug_state, &rcg) ||
         !cstar_debug_finalize_layers(&debug_state, &result->debug_layers))
     {
         cstar_debug_dispose(&debug_state);
