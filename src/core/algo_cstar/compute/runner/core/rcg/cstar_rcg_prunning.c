@@ -1,11 +1,153 @@
 
 #include "cstar_rcg_prunning.h"
+#include <math.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include "cstar_rcg.h"
 #include "../../../../../../../dependencies/cvector/cvector.h"
 
 // Prune the RCG, leaving only end nodes and edges between them.
+
+static int cstar_rcg_index_from_node_id_in_array(const cstar_node_t *nodes,
+                                                 int node_count,
+                                                 int node_id)
+{
+    if (nodes == NULL || node_id == CSTAR_NO_NEIGHBOR)
+    {
+        return CSTAR_NO_NEIGHBOR;
+    }
+
+    for (int i = 0; i < node_count; ++i)
+    {
+        if (nodes[i].id == node_id)
+        {
+            return i;
+        }
+    }
+
+    return CSTAR_NO_NEIGHBOR;
+}
+
+static void cstar_rcg_reset_node_links(cstar_node_t *node)
+{
+    if (node == NULL)
+    {
+        return;
+    }
+
+    node->neighbor_up = CSTAR_NO_NEIGHBOR;
+    node->neighbor_down = CSTAR_NO_NEIGHBOR;
+    node->neighbors_left_count = 0;
+    node->neighbors_right_count = 0;
+}
+
+static void cstar_rcg_rebuild_links_from_edges(cstar_node_t *nodes,
+                                               int node_count,
+                                               const cstar_edge_t *edges,
+                                               int edge_count)
+{
+    if (nodes == NULL)
+    {
+        return;
+    }
+
+    for (int i = 0; i < node_count; ++i)
+    {
+        cstar_rcg_reset_node_links(&nodes[i]);
+    }
+
+    for (int i = 0; i < edge_count; ++i)
+    {
+        const cstar_edge_t *edge = &edges[i];
+        int a_idx = cstar_rcg_index_from_node_id_in_array(nodes, node_count, edge->node_a);
+        int b_idx = cstar_rcg_index_from_node_id_in_array(nodes, node_count, edge->node_b);
+        if (a_idx == CSTAR_NO_NEIGHBOR || b_idx == CSTAR_NO_NEIGHBOR)
+        {
+            continue;
+        }
+
+        cstar_node_t *a = &nodes[a_idx];
+        cstar_node_t *b = &nodes[b_idx];
+
+        if (a->lap_id == b->lap_id)
+        {
+            if (a->pos.y <= b->pos.y)
+            {
+                a->neighbor_up = b->id;
+                b->neighbor_down = a->id;
+            }
+            else
+            {
+                b->neighbor_up = a->id;
+                a->neighbor_down = b->id;
+            }
+            continue;
+        }
+
+        cstar_node_t *left = a;
+        cstar_node_t *right = b;
+        if (left->lap_id > right->lap_id)
+        {
+            left = b;
+            right = a;
+        }
+
+        if (left->neighbors_right_count < CSTAR_MAX_CROSS_LAP_NEIGHBORS)
+        {
+            left->neighbors_right[left->neighbors_right_count++] = right->id;
+        }
+        if (right->neighbors_left_count < CSTAR_MAX_CROSS_LAP_NEIGHBORS)
+        {
+            right->neighbors_left[right->neighbors_left_count++] = left->id;
+        }
+    }
+}
+
+static bool cstar_rcg_edge_exists(const cstar_edge_t *edges,
+                                  int edge_count,
+                                  int node_a,
+                                  int node_b)
+{
+    if (edges == NULL)
+    {
+        return false;
+    }
+
+    for (int i = 0; i < edge_count; ++i)
+    {
+        const cstar_edge_t *edge = &edges[i];
+        if ((edge->node_a == node_a && edge->node_b == node_b) ||
+            (edge->node_a == node_b && edge->node_b == node_a))
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+static void cstar_rcg_add_unique_edge(cstar_edge_t **edges,
+                                      int node_a,
+                                      int node_b,
+                                      float cost)
+{
+    if (edges == NULL)
+    {
+        return;
+    }
+
+    int edge_count = (int)cvector_size(*edges);
+    if (cstar_rcg_edge_exists(*edges, edge_count, node_a, node_b))
+    {
+        return;
+    }
+
+    cstar_edge_t edge = {0};
+    edge.node_a = node_a;
+    edge.node_b = node_b;
+    edge.cost = cost;
+    cvector_push_back(*edges, edge);
+}
 
 void cstar_rcg_prune_to_end_nodes(cstar_rcg_t *rcg)
 {
@@ -156,44 +298,6 @@ void cstar_rcg_prune_to_end_nodes(cstar_rcg_t *rcg)
         }
     }
 
-    // Step 3: Remove adjacency references to pruned nodes (IDs are preserved).
-    for (int i = 0; i < idx; ++i)
-    {
-        cstar_node_t *node = &new_nodes[i];
-
-        int up_idx = cstar_rcg_index_from_node_id(rcg, node->neighbor_up);
-        if (up_idx == CSTAR_NO_NEIGHBOR || !keep_node[up_idx])
-            node->neighbor_up = CSTAR_NO_NEIGHBOR;
-
-        int down_idx = cstar_rcg_index_from_node_id(rcg, node->neighbor_down);
-        if (down_idx == CSTAR_NO_NEIGHBOR || !keep_node[down_idx])
-            node->neighbor_down = CSTAR_NO_NEIGHBOR;
-
-        int left_write = 0;
-        for (int k = 0; k < node->neighbors_left_count; ++k)
-        {
-            int neighbor_id = node->neighbors_left[k];
-            int neighbor_idx = cstar_rcg_index_from_node_id(rcg, neighbor_id);
-            if (neighbor_idx != CSTAR_NO_NEIGHBOR && keep_node[neighbor_idx])
-            {
-                node->neighbors_left[left_write++] = neighbor_id;
-            }
-        }
-        node->neighbors_left_count = left_write;
-
-        int right_write = 0;
-        for (int k = 0; k < node->neighbors_right_count; ++k)
-        {
-            int neighbor_id = node->neighbors_right[k];
-            int neighbor_idx = cstar_rcg_index_from_node_id(rcg, neighbor_id);
-            if (neighbor_idx != CSTAR_NO_NEIGHBOR && keep_node[neighbor_idx])
-            {
-                node->neighbors_right[right_write++] = neighbor_id;
-            }
-        }
-        node->neighbors_right_count = right_write;
-    }
-
     // Step 4: Remove edges not between two kept nodes
     cstar_edge_t *new_edges = NULL;
     for (int i = 0; i < rcg->edge_count; ++i)
@@ -205,6 +309,44 @@ void cstar_rcg_prune_to_end_nodes(cstar_rcg_t *rcg)
             cvector_push_back(new_edges, rcg->edges[i]);
         }
     }
+
+    // Same-lap chains may lose intermediate nodes during pruning. Reconnect the
+    // surviving neighbors so vertical lap edges continue through the pruned gap.
+    for (int i = 0; i < rcg->node_count; ++i)
+    {
+        if (!keep_node[i])
+        {
+            continue;
+        }
+
+        const cstar_node_t *node = &rcg->nodes[i];
+        int next_id = node->neighbor_up;
+
+        while (next_id != CSTAR_NO_NEIGHBOR)
+        {
+            int next_idx = cstar_rcg_index_from_node_id(rcg, next_id);
+            if (next_idx == CSTAR_NO_NEIGHBOR)
+            {
+                break;
+            }
+
+            if (keep_node[next_idx])
+            {
+                const cstar_node_t *next_node = &rcg->nodes[next_idx];
+                float dx = node->pos.x - next_node->pos.x;
+                float dy = node->pos.y - next_node->pos.y;
+                float cost = sqrtf(dx * dx + dy * dy);
+                cstar_rcg_add_unique_edge(&new_edges, node->id, next_node->id, cost);
+                break;
+            }
+
+            next_id = rcg->nodes[next_idx].neighbor_up;
+        }
+    }
+
+    // Step 3: Rebuild the surviving node adjacency directly from the
+    // surviving edge set so intact edges remain intact after compaction.
+    cstar_rcg_rebuild_links_from_edges(new_nodes, idx, new_edges, (int)cvector_size(new_edges));
 
     // Step 5: Replace old arrays
     cvector_free(rcg->nodes);
