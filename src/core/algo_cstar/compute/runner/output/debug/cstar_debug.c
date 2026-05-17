@@ -1,109 +1,273 @@
 #include <string.h>
+#include <stdlib.h>
+
 #include "cstar_debug.h"
-#include "../../../../../common/debug_serialize.h"
 #include "../../core/preprocess/cstar_lap.h"
 
-static void cstar_debug_add_point_entry(cJSON *arr, int id, point_t p, const char *label)
-{
-    cJSON *entry = cJSON_CreateObject();
-    cJSON *point = cJSON_CreateObject();
-    if (entry == NULL || point == NULL)
-    {
-        cJSON_Delete(entry);
-        cJSON_Delete(point);
-        return;
-    }
+#define CSTAR_DEBUG_LAYER_COUNT 8
 
-    cJSON_AddNumberToObject(entry, "id", id);
-    cJSON_AddNumberToObject(point, "x", p.x);
-    cJSON_AddNumberToObject(point, "y", p.y);
-    cJSON_AddItemToObject(entry, "point", point);
-    if (label != NULL)
-    {
-        cJSON_AddStringToObject(entry, "pointLabel", label);
-    }
-    cJSON_AddItemToArray(arr, entry);
-}
-
-static bool cstar_debug_add_layer(cJSON *layers_arr, int id, const char *source, const cJSON *list)
+static bool cstar_debug_point_list_reserve(cstar_debug_point_list_t *list, int required)
 {
-    if (layers_arr == NULL || source == NULL || list == NULL)
+    if (list == NULL)
     {
         return false;
     }
 
-    cJSON *layer = cJSON_CreateObject();
-    cJSON *list_copy = cJSON_Duplicate((cJSON *)list, 1);
-    if (layer == NULL || list_copy == NULL)
+    if (required <= list->capacity)
     {
-        cJSON_Delete(layer);
-        cJSON_Delete(list_copy);
+        return true;
+    }
+
+    int new_capacity = list->capacity == 0 ? 16 : list->capacity;
+    while (new_capacity < required)
+    {
+        new_capacity *= 2;
+    }
+
+    cstar_debug_point_entry_t *items =
+        (cstar_debug_point_entry_t *)realloc(list->items, (size_t)new_capacity * sizeof(cstar_debug_point_entry_t));
+    if (items == NULL)
+    {
         return false;
     }
 
-    cJSON_AddNumberToObject(layer, "id", id);
-    cJSON_AddStringToObject(layer, "source", source);
-    cJSON_AddItemToObject(layer, "list", list_copy);
-    cJSON_AddItemToArray(layers_arr, layer);
+    list->items = items;
+    list->capacity = new_capacity;
     return true;
 }
 
-bool cstar_debug_init(cstar_debug_t *debug_state, cJSON *root)
+static bool cstar_debug_segment_list_reserve(cstar_debug_segment_list_t *list, int required)
 {
-    if (debug_state == NULL || root == NULL)
+    if (list == NULL)
+    {
+        return false;
+    }
+
+    if (required <= list->capacity)
+    {
+        return true;
+    }
+
+    int new_capacity = list->capacity == 0 ? 16 : list->capacity;
+    while (new_capacity < required)
+    {
+        new_capacity *= 2;
+    }
+
+    cstar_debug_segment_entry_t *items =
+        (cstar_debug_segment_entry_t *)realloc(list->items, (size_t)new_capacity * sizeof(cstar_debug_segment_entry_t));
+    if (items == NULL)
+    {
+        return false;
+    }
+
+    list->items = items;
+    list->capacity = new_capacity;
+    return true;
+}
+
+static bool cstar_debug_polygon_list_reserve(cstar_debug_polygon_list_t *list, int required)
+{
+    if (list == NULL)
+    {
+        return false;
+    }
+
+    if (required <= list->capacity)
+    {
+        return true;
+    }
+
+    int new_capacity = list->capacity == 0 ? 8 : list->capacity;
+    while (new_capacity < required)
+    {
+        new_capacity *= 2;
+    }
+
+    cstar_debug_polygon_entry_t *items =
+        (cstar_debug_polygon_entry_t *)realloc(list->items, (size_t)new_capacity * sizeof(cstar_debug_polygon_entry_t));
+    if (items == NULL)
+    {
+        return false;
+    }
+
+    list->items = items;
+    list->capacity = new_capacity;
+    return true;
+}
+
+static bool cstar_debug_append_point(cstar_debug_point_list_t *list, int id, point_t point)
+{
+    if (!cstar_debug_point_list_reserve(list, list->count + 1))
+    {
+        return false;
+    }
+
+    cstar_debug_point_entry_t *entry = &list->items[list->count];
+    entry->id = id;
+    entry->point = point;
+    list->count++;
+    return true;
+}
+
+static bool cstar_debug_append_segment(cstar_debug_segment_list_t *list,
+                                       int id,
+                                       const char *type,
+                                       const point_t *path,
+                                       int path_count)
+{
+    if (list == NULL || type == NULL || path == NULL || path_count <= 0)
+    {
+        return false;
+    }
+
+    if (!cstar_debug_segment_list_reserve(list, list->count + 1))
+    {
+        return false;
+    }
+
+    point_t *path_copy = (point_t *)malloc((size_t)path_count * sizeof(point_t));
+    if (path_copy == NULL)
+    {
+        return false;
+    }
+
+    for (int i = 0; i < path_count; ++i)
+    {
+        path_copy[i] = path[i];
+    }
+
+    cstar_debug_segment_entry_t *entry = &list->items[list->count];
+    entry->id = id;
+    entry->type = type;
+    entry->path = path_copy;
+    entry->path_count = path_count;
+    list->count++;
+    return true;
+}
+
+static bool cstar_debug_append_polygon(cstar_debug_polygon_list_t *list,
+                                       int id,
+                                       const point_t *vertices,
+                                       int vertex_count)
+{
+    if (list == NULL || vertices == NULL || vertex_count <= 0)
+    {
+        return false;
+    }
+
+    if (!cstar_debug_polygon_list_reserve(list, list->count + 1))
+    {
+        return false;
+    }
+
+    point_t *vertices_copy = (point_t *)malloc((size_t)vertex_count * sizeof(point_t));
+    if (vertices_copy == NULL)
+    {
+        return false;
+    }
+
+    for (int i = 0; i < vertex_count; ++i)
+    {
+        vertices_copy[i] = vertices[i];
+    }
+
+    cstar_debug_polygon_entry_t *entry = &list->items[list->count];
+    entry->id = id;
+    entry->vertices = vertices_copy;
+    entry->vertex_count = vertex_count;
+    list->count++;
+    return true;
+}
+
+static void cstar_debug_point_list_free(cstar_debug_point_list_t *list)
+{
+    if (list == NULL)
+    {
+        return;
+    }
+
+    free(list->items);
+    list->items = NULL;
+    list->count = 0;
+    list->capacity = 0;
+}
+
+static void cstar_debug_segment_list_free(cstar_debug_segment_list_t *list)
+{
+    if (list == NULL)
+    {
+        return;
+    }
+
+    for (int i = 0; i < list->count; ++i)
+    {
+        free(list->items[i].path);
+        list->items[i].path = NULL;
+        list->items[i].path_count = 0;
+    }
+
+    free(list->items);
+    list->items = NULL;
+    list->count = 0;
+    list->capacity = 0;
+}
+
+static void cstar_debug_polygon_list_free(cstar_debug_polygon_list_t *list)
+{
+    if (list == NULL)
+    {
+        return;
+    }
+
+    for (int i = 0; i < list->count; ++i)
+    {
+        free(list->items[i].vertices);
+        list->items[i].vertices = NULL;
+        list->items[i].vertex_count = 0;
+    }
+
+    free(list->items);
+    list->items = NULL;
+    list->count = 0;
+    list->capacity = 0;
+}
+
+static void cstar_debug_move_point_list(cstar_debug_point_list_t *dst,
+                                        cstar_debug_point_list_t *src)
+{
+    *dst = *src;
+    src->items = NULL;
+    src->count = 0;
+    src->capacity = 0;
+}
+
+static void cstar_debug_move_segment_list(cstar_debug_segment_list_t *dst,
+                                          cstar_debug_segment_list_t *src)
+{
+    *dst = *src;
+    src->items = NULL;
+    src->count = 0;
+    src->capacity = 0;
+}
+
+static void cstar_debug_move_polygon_list(cstar_debug_polygon_list_t *dst,
+                                          cstar_debug_polygon_list_t *src)
+{
+    *dst = *src;
+    src->items = NULL;
+    src->count = 0;
+    src->capacity = 0;
+}
+
+bool cstar_debug_init(cstar_debug_t *debug_state)
+{
+    if (debug_state == NULL)
     {
         return false;
     }
 
     memset(debug_state, 0, sizeof(*debug_state));
-
-    cJSON *rcg_link_nodes = cJSON_CreateArray();
-    cJSON *rcg_end_nodes = cJSON_CreateArray();
-    cJSON *rcg_edges = cJSON_CreateArray();
-    cJSON *lap_list = cJSON_CreateArray();
-    cJSON *sampling_front_list = cJSON_CreateArray();
-    cJSON *frontier_sample_list = cJSON_CreateArray();
-    cJSON *retreat_node_list = cJSON_CreateArray();
-    cJSON *coverage_hole_list = cJSON_CreateArray();
-    cJSON *debug = cJSON_CreateObject();
-    cJSON *layers = cJSON_CreateArray();
-
-    if (rcg_link_nodes == NULL || rcg_end_nodes == NULL || rcg_edges == NULL ||
-        lap_list == NULL || sampling_front_list == NULL || frontier_sample_list == NULL ||
-        retreat_node_list == NULL || coverage_hole_list == NULL || debug == NULL || layers == NULL)
-    {
-        cJSON_Delete(rcg_link_nodes);
-        cJSON_Delete(rcg_end_nodes);
-        cJSON_Delete(rcg_edges);
-        cJSON_Delete(lap_list);
-        cJSON_Delete(sampling_front_list);
-        cJSON_Delete(frontier_sample_list);
-        cJSON_Delete(retreat_node_list);
-        cJSON_Delete(coverage_hole_list);
-        cJSON_Delete(debug);
-        cJSON_Delete(layers);
-        return false;
-    }
-
-    cJSON_AddItemToObject(root, "rcgLinkNodeList", rcg_link_nodes);
-    cJSON_AddItemToObject(root, "rcgEndNodeList", rcg_end_nodes);
-    cJSON_AddItemToObject(root, "rcgEdgeList", rcg_edges);
-    cJSON_AddItemToObject(root, "lapList", lap_list);
-    cJSON_AddItemToObject(root, "samplingFrontList", sampling_front_list);
-    cJSON_AddItemToObject(root, "frontierSampleList", frontier_sample_list);
-    cJSON_AddItemToObject(root, "retreatNodeList", retreat_node_list);
-    cJSON_AddItemToObject(root, "coverageHoleList", coverage_hole_list);
-
-    debug_state->rcg_link_nodes = rcg_link_nodes;
-    debug_state->rcg_end_nodes = rcg_end_nodes;
-    debug_state->rcg_edges = rcg_edges;
-    debug_state->lap_list = lap_list;
-    debug_state->sampling_front_list = sampling_front_list;
-    debug_state->frontier_sample_list = frontier_sample_list;
-    debug_state->retreat_node_list = retreat_node_list;
-    debug_state->coverage_hole_list = coverage_hole_list;
-    debug_state->debug = debug;
-    debug_state->layers = layers;
     return true;
 }
 
@@ -114,9 +278,77 @@ void cstar_debug_dispose(cstar_debug_t *debug_state)
         return;
     }
 
-    cJSON_Delete(debug_state->debug);
-    cJSON_Delete(debug_state->layers);
+    cstar_debug_point_list_free(&debug_state->rcg_link_nodes);
+    cstar_debug_point_list_free(&debug_state->rcg_end_nodes);
+    cstar_debug_segment_list_free(&debug_state->rcg_edges);
+    cstar_debug_segment_list_free(&debug_state->lap_list);
+    cstar_debug_polygon_list_free(&debug_state->sampling_front_list);
+    cstar_debug_point_list_free(&debug_state->frontier_sample_list);
+    cstar_debug_point_list_free(&debug_state->retreat_node_list);
+    cstar_debug_polygon_list_free(&debug_state->coverage_hole_list);
+
     memset(debug_state, 0, sizeof(*debug_state));
+}
+
+bool cstar_debug_finalize_layers(cstar_debug_t *debug_state,
+                                 cstar_debug_layers_t *out_layers)
+{
+    if (debug_state == NULL || out_layers == NULL)
+    {
+        return false;
+    }
+
+    cstar_debug_layer_t *layers =
+        (cstar_debug_layer_t *)calloc((size_t)CSTAR_DEBUG_LAYER_COUNT, sizeof(cstar_debug_layer_t));
+    if (layers == NULL)
+    {
+        return false;
+    }
+
+    layers[0].id = 10;
+    layers[0].source = "rcgLinkNodeList";
+    layers[0].list_type = CSTAR_DEBUG_LIST_POINTS;
+    cstar_debug_move_point_list(&layers[0].list.points, &debug_state->rcg_link_nodes);
+
+    layers[1].id = 11;
+    layers[1].source = "rcgEndNodeList";
+    layers[1].list_type = CSTAR_DEBUG_LIST_POINTS;
+    cstar_debug_move_point_list(&layers[1].list.points, &debug_state->rcg_end_nodes);
+
+    layers[2].id = 12;
+    layers[2].source = "rcgEdgeList";
+    layers[2].list_type = CSTAR_DEBUG_LIST_SEGMENTS;
+    cstar_debug_move_segment_list(&layers[2].list.segments, &debug_state->rcg_edges);
+
+    layers[3].id = 13;
+    layers[3].source = "lapList";
+    layers[3].list_type = CSTAR_DEBUG_LIST_SEGMENTS;
+    cstar_debug_move_segment_list(&layers[3].list.segments, &debug_state->lap_list);
+
+    layers[4].id = 14;
+    layers[4].source = "samplingFrontList";
+    layers[4].list_type = CSTAR_DEBUG_LIST_POLYGONS;
+    cstar_debug_move_polygon_list(&layers[4].list.polygons, &debug_state->sampling_front_list);
+
+    layers[5].id = 15;
+    layers[5].source = "frontierSampleList";
+    layers[5].list_type = CSTAR_DEBUG_LIST_POINTS;
+    cstar_debug_move_point_list(&layers[5].list.points, &debug_state->frontier_sample_list);
+
+    layers[6].id = 16;
+    layers[6].source = "retreatNodeList";
+    layers[6].list_type = CSTAR_DEBUG_LIST_POINTS;
+    cstar_debug_move_point_list(&layers[6].list.points, &debug_state->retreat_node_list);
+
+    layers[7].id = 17;
+    layers[7].source = "coverageHoleList";
+    layers[7].list_type = CSTAR_DEBUG_LIST_POLYGONS;
+    cstar_debug_move_polygon_list(&layers[7].list.polygons, &debug_state->coverage_hole_list);
+
+    out_layers->layers = layers;
+    out_layers->layer_count = CSTAR_DEBUG_LAYER_COUNT;
+    out_layers->layer_capacity = CSTAR_DEBUG_LAYER_COUNT;
+    return true;
 }
 
 bool cstar_debug_export_rcg_nodes(cstar_debug_t *debug_state,
@@ -129,14 +361,25 @@ bool cstar_debug_export_rcg_nodes(cstar_debug_t *debug_state,
 
     for (int i = 0; i < rcg->node_count; ++i)
     {
-        cstar_debug_add_point_entry(debug_state->frontier_sample_list, i + 1, rcg->nodes[i].pos, NULL);
+        if (!cstar_debug_append_point(&debug_state->frontier_sample_list, i + 1, rcg->nodes[i].pos))
+        {
+            return false;
+        }
+
         if (rcg->nodes[i].is_end_node)
         {
-            cstar_debug_add_point_entry(debug_state->rcg_end_nodes, i + 1, rcg->nodes[i].pos, NULL);
+            if (!cstar_debug_append_point(&debug_state->rcg_end_nodes, i + 1, rcg->nodes[i].pos))
+            {
+                return false;
+            }
         }
+
         if (rcg->nodes[i].is_link_node)
         {
-            cstar_debug_add_point_entry(debug_state->rcg_link_nodes, i + 1, rcg->nodes[i].pos, NULL);
+            if (!cstar_debug_append_point(&debug_state->rcg_link_nodes, i + 1, rcg->nodes[i].pos))
+            {
+                return false;
+            }
         }
     }
 
@@ -154,16 +397,14 @@ bool cstar_debug_export_rcg_edges(cstar_debug_t *debug_state,
     for (int i = 0; i < rcg->edge_count; ++i)
     {
         const cstar_edge_t *edge = &rcg->edges[i];
-        point_t a = rcg->nodes[edge->node_a].pos;
-        point_t b = rcg->nodes[edge->node_b].pos;
-        float xs[2] = {a.x, b.x};
-        float ys[2] = {a.y, b.y};
-        cJSON *segment = debug_build_segment(i + 1, "rcgEdge", xs, ys, 2);
-        if (segment == NULL)
+        point_t path[2] = {
+            rcg->nodes[edge->node_a].pos,
+            rcg->nodes[edge->node_b].pos};
+
+        if (!cstar_debug_append_segment(&debug_state->rcg_edges, i + 1, "rcgEdge", path, 2))
         {
             return false;
         }
-        cJSON_AddItemToArray(debug_state->rcg_edges, segment);
     }
 
     return true;
@@ -190,14 +431,14 @@ bool cstar_debug_export_laps(cstar_debug_t *debug_state,
     for (int i = 0; i < lap_count; ++i)
     {
         float x = front->laps[i].x;
-        float xs[2] = {x, x};
-        float ys[2] = {min_y, max_y};
-        cJSON *segment = debug_build_segment(i + 1, "lap", xs, ys, 2);
-        if (segment == NULL)
+        point_t path[2] = {
+            {x, min_y},
+            {x, max_y}};
+
+        if (!cstar_debug_append_segment(&debug_state->lap_list, i + 1, "lap", path, 2))
         {
             return false;
         }
-        cJSON_AddItemToArray(debug_state->lap_list, segment);
     }
 
     return true;
@@ -211,59 +452,13 @@ bool cstar_debug_export_sampling_front_polygon(cstar_debug_t *debug_state,
         return false;
     }
 
-    cJSON *front_polygon = cJSON_CreateObject();
-    cJSON *front_vertices = cJSON_CreateArray();
-    if (front_polygon == NULL || front_vertices == NULL)
+    if (env->operationalBoundary.vertices == NULL || env->operationalBoundary.vertex_count == 0)
     {
-        cJSON_Delete(front_polygon);
-        cJSON_Delete(front_vertices);
-        return false;
+        return true;
     }
 
-    cJSON_AddNumberToObject(front_polygon, "id", 1);
-    cJSON_AddItemToObject(front_polygon, "vertices", front_vertices);
-    for (uint32_t i = 0; i < env->operationalBoundary.vertex_count; ++i)
-    {
-        cJSON *jv = cJSON_CreateObject();
-        if (jv == NULL)
-        {
-            cJSON_Delete(front_polygon);
-            return false;
-        }
-        cJSON_AddNumberToObject(jv, "x", env->operationalBoundary.vertices[i].x);
-        cJSON_AddNumberToObject(jv, "y", env->operationalBoundary.vertices[i].y);
-        cJSON_AddItemToArray(front_vertices, jv);
-    }
-
-    cJSON_AddItemToArray(debug_state->sampling_front_list, front_polygon);
-    return true;
-}
-
-bool cstar_debug_attach_layers(cstar_debug_t *debug_state, cJSON *root)
-{
-    if (debug_state == NULL || root == NULL || debug_state->debug == NULL || debug_state->layers == NULL)
-    {
-        return false;
-    }
-
-    bool debug_ok = true;
-    debug_ok = debug_ok && cstar_debug_add_layer(debug_state->layers, 10, "rcgLinkNodeList", debug_state->rcg_link_nodes);
-    debug_ok = debug_ok && cstar_debug_add_layer(debug_state->layers, 11, "rcgEndNodeList", debug_state->rcg_end_nodes);
-    debug_ok = debug_ok && cstar_debug_add_layer(debug_state->layers, 12, "rcgEdgeList", debug_state->rcg_edges);
-    debug_ok = debug_ok && cstar_debug_add_layer(debug_state->layers, 13, "lapList", debug_state->lap_list);
-    debug_ok = debug_ok && cstar_debug_add_layer(debug_state->layers, 14, "samplingFrontList", debug_state->sampling_front_list);
-    debug_ok = debug_ok && cstar_debug_add_layer(debug_state->layers, 15, "frontierSampleList", debug_state->frontier_sample_list);
-    debug_ok = debug_ok && cstar_debug_add_layer(debug_state->layers, 16, "retreatNodeList", debug_state->retreat_node_list);
-    debug_ok = debug_ok && cstar_debug_add_layer(debug_state->layers, 17, "coverageHoleList", debug_state->coverage_hole_list);
-
-    if (!debug_ok)
-    {
-        return false;
-    }
-
-    cJSON_AddItemToObject(debug_state->debug, "layers", debug_state->layers);
-    cJSON_AddItemToObject(root, "debug", debug_state->debug);
-    debug_state->layers = NULL;
-    debug_state->debug = NULL;
-    return true;
+    return cstar_debug_append_polygon(&debug_state->sampling_front_list,
+                                      1,
+                                      env->operationalBoundary.vertices,
+                                      (int)env->operationalBoundary.vertex_count);
 }

@@ -14,7 +14,6 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include "../../../dependencies/cJSON/cJSON.h"
 #include "../core_types.h"
 
 // -------------------------------------------------------------------------
@@ -168,6 +167,75 @@ typedef struct
     int segment_capacity;
 } cstar_path_collection_t;
 
+typedef enum
+{
+    CSTAR_DEBUG_LIST_POINTS = 0,
+    CSTAR_DEBUG_LIST_SEGMENTS = 1,
+    CSTAR_DEBUG_LIST_POLYGONS = 2,
+} cstar_debug_list_type_t;
+
+typedef struct
+{
+    int id;
+    point_t point;
+} cstar_debug_point_entry_t;
+
+typedef struct
+{
+    int id;
+    const char *type;
+    point_t *path;
+    int path_count;
+} cstar_debug_segment_entry_t;
+
+typedef struct
+{
+    int id;
+    point_t *vertices;
+    int vertex_count;
+} cstar_debug_polygon_entry_t;
+
+typedef struct
+{
+    cstar_debug_point_entry_t *items;
+    int count;
+    int capacity;
+} cstar_debug_point_list_t;
+
+typedef struct
+{
+    cstar_debug_segment_entry_t *items;
+    int count;
+    int capacity;
+} cstar_debug_segment_list_t;
+
+typedef struct
+{
+    cstar_debug_polygon_entry_t *items;
+    int count;
+    int capacity;
+} cstar_debug_polygon_list_t;
+
+typedef struct
+{
+    int id;
+    const char *source;
+    cstar_debug_list_type_t list_type;
+    union
+    {
+        cstar_debug_point_list_t points;
+        cstar_debug_segment_list_t segments;
+        cstar_debug_polygon_list_t polygons;
+    } list;
+} cstar_debug_layer_t;
+
+typedef struct
+{
+    cstar_debug_layer_t *layers;
+    int layer_count;
+    int layer_capacity;
+} cstar_debug_layers_t;
+
 /**
  * Complete C* coverage path planning result.
  * Contains all segment arrays, debug information, and algorithm state.
@@ -186,9 +254,8 @@ typedef struct
     cstar_path_collection_t hole_coverage;
     cstar_path_collection_t hole_transit;
 
-    // Optional: debug information
-    // (Will be handled separately; set to NULL for now)
-    cJSON *debug_layers;
+    // Optional debug information emitted by compute as typed structs.
+    cstar_debug_layers_t debug_layers;
 } cstar_coverage_path_result_t;
 
 // -------------------------------------------------------------------------

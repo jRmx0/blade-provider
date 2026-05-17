@@ -4,6 +4,175 @@
 #include <stdlib.h>
 #include <string.h>
 
+static cJSON *cstar_serialize_debug_point_entry_json(const cstar_debug_point_entry_t *entry)
+{
+    if (entry == NULL)
+    {
+        return NULL;
+    }
+
+    cJSON *json_entry = cJSON_CreateObject();
+    cJSON *json_point = cJSON_CreateObject();
+    if (json_entry == NULL || json_point == NULL)
+    {
+        cJSON_Delete(json_entry);
+        cJSON_Delete(json_point);
+        return NULL;
+    }
+
+    cJSON_AddNumberToObject(json_entry, "id", entry->id);
+    cJSON_AddNumberToObject(json_point, "x", entry->point.x);
+    cJSON_AddNumberToObject(json_point, "y", entry->point.y);
+    cJSON_AddItemToObject(json_entry, "point", json_point);
+    return json_entry;
+}
+
+static cJSON *cstar_serialize_debug_segment_entry_json(const cstar_debug_segment_entry_t *entry)
+{
+    if (entry == NULL)
+    {
+        return NULL;
+    }
+
+    cJSON *json_entry = cJSON_CreateObject();
+    cJSON *json_path = cJSON_CreateArray();
+    if (json_entry == NULL || json_path == NULL)
+    {
+        cJSON_Delete(json_entry);
+        cJSON_Delete(json_path);
+        return NULL;
+    }
+
+    cJSON_AddNumberToObject(json_entry, "id", entry->id);
+    cJSON_AddStringToObject(json_entry, "type", entry->type != NULL ? entry->type : "segment");
+    cJSON_AddItemToObject(json_entry, "path", json_path);
+
+    for (int i = 0; i < entry->path_count; ++i)
+    {
+        cJSON *json_waypoint = cJSON_CreateObject();
+        cJSON *json_point = cJSON_CreateObject();
+        if (json_waypoint == NULL || json_point == NULL)
+        {
+            cJSON_Delete(json_waypoint);
+            cJSON_Delete(json_point);
+            continue;
+        }
+
+        cJSON_AddNumberToObject(json_waypoint, "id", i);
+        cJSON_AddNumberToObject(json_point, "x", entry->path[i].x);
+        cJSON_AddNumberToObject(json_point, "y", entry->path[i].y);
+        cJSON_AddItemToObject(json_waypoint, "point", json_point);
+        cJSON_AddItemToArray(json_path, json_waypoint);
+    }
+
+    return json_entry;
+}
+
+static cJSON *cstar_serialize_debug_polygon_entry_json(const cstar_debug_polygon_entry_t *entry)
+{
+    if (entry == NULL)
+    {
+        return NULL;
+    }
+
+    cJSON *json_entry = cJSON_CreateObject();
+    cJSON *json_vertices = cJSON_CreateArray();
+    if (json_entry == NULL || json_vertices == NULL)
+    {
+        cJSON_Delete(json_entry);
+        cJSON_Delete(json_vertices);
+        return NULL;
+    }
+
+    cJSON_AddNumberToObject(json_entry, "id", entry->id);
+    cJSON_AddItemToObject(json_entry, "vertices", json_vertices);
+
+    for (int i = 0; i < entry->vertex_count; ++i)
+    {
+        cJSON *json_vertex = cJSON_CreateObject();
+        if (json_vertex == NULL)
+        {
+            continue;
+        }
+
+        cJSON_AddNumberToObject(json_vertex, "x", entry->vertices[i].x);
+        cJSON_AddNumberToObject(json_vertex, "y", entry->vertices[i].y);
+        cJSON_AddItemToArray(json_vertices, json_vertex);
+    }
+
+    return json_entry;
+}
+
+static cJSON *cstar_serialize_debug_layers_json(const cstar_debug_layers_t *debug_layers)
+{
+    cJSON *json_layers = cJSON_CreateArray();
+    if (json_layers == NULL)
+    {
+        return NULL;
+    }
+
+    if (debug_layers == NULL || debug_layers->layers == NULL)
+    {
+        return json_layers;
+    }
+
+    for (int i = 0; i < debug_layers->layer_count; ++i)
+    {
+        const cstar_debug_layer_t *layer = &debug_layers->layers[i];
+        cJSON *json_layer = cJSON_CreateObject();
+        cJSON *json_list = cJSON_CreateArray();
+        if (json_layer == NULL || json_list == NULL)
+        {
+            cJSON_Delete(json_layer);
+            cJSON_Delete(json_list);
+            cJSON_Delete(json_layers);
+            return NULL;
+        }
+
+        cJSON_AddNumberToObject(json_layer, "id", layer->id);
+        cJSON_AddStringToObject(json_layer, "source", layer->source != NULL ? layer->source : "unknown");
+        cJSON_AddItemToObject(json_layer, "list", json_list);
+
+        if (layer->list_type == CSTAR_DEBUG_LIST_POINTS)
+        {
+            for (int j = 0; j < layer->list.points.count; ++j)
+            {
+                cJSON *json_entry = cstar_serialize_debug_point_entry_json(&layer->list.points.items[j]);
+                if (json_entry != NULL)
+                {
+                    cJSON_AddItemToArray(json_list, json_entry);
+                }
+            }
+        }
+        else if (layer->list_type == CSTAR_DEBUG_LIST_SEGMENTS)
+        {
+            for (int j = 0; j < layer->list.segments.count; ++j)
+            {
+                cJSON *json_entry = cstar_serialize_debug_segment_entry_json(&layer->list.segments.items[j]);
+                if (json_entry != NULL)
+                {
+                    cJSON_AddItemToArray(json_list, json_entry);
+                }
+            }
+        }
+        else if (layer->list_type == CSTAR_DEBUG_LIST_POLYGONS)
+        {
+            for (int j = 0; j < layer->list.polygons.count; ++j)
+            {
+                cJSON *json_entry = cstar_serialize_debug_polygon_entry_json(&layer->list.polygons.items[j]);
+                if (json_entry != NULL)
+                {
+                    cJSON_AddItemToArray(json_list, json_entry);
+                }
+            }
+        }
+
+        cJSON_AddItemToArray(json_layers, json_layer);
+    }
+
+    return json_layers;
+}
+
 char *cstar_serialize_error_json(const char *code, const char *message)
 {
     cJSON *response = cJSON_CreateObject();
@@ -155,6 +324,19 @@ char *cstar_serialize_result_json(const cstar_coverage_path_result_t *result)
     cJSON_AddItemToObject(coverage_path_plan, "holeCoverage", hole_coverage);
     cJSON_AddItemToObject(coverage_path_plan, "holeTransit", hole_transit);
 
+    cJSON *debug = cJSON_CreateObject();
+    cJSON *layers = cstar_serialize_debug_layers_json(&result->debug_layers);
+    if (debug == NULL || layers == NULL)
+    {
+        cJSON_Delete(debug);
+        cJSON_Delete(layers);
+        cJSON_Delete(coverage_path_plan);
+        return cstar_serialize_error_json("serialization_failed", "Failed to allocate debug output.");
+    }
+
+    cJSON_AddItemToObject(debug, "layers", layers);
+    cJSON_AddItemToObject(coverage_path_plan, "debug", debug);
+
     // Build root response
     cJSON *root = cJSON_CreateObject();
     if (root == NULL)
@@ -202,9 +384,51 @@ void cstar_result_free(cstar_coverage_path_result_t *result)
         free(result->all_segments);
     }
 
-    if (result->debug_layers != NULL)
+    if (result->debug_layers.layers != NULL)
     {
-        cJSON_Delete(result->debug_layers);
+        for (int i = 0; i < result->debug_layers.layer_count; ++i)
+        {
+            cstar_debug_layer_t *layer = &result->debug_layers.layers[i];
+
+            if (layer->list_type == CSTAR_DEBUG_LIST_SEGMENTS)
+            {
+                for (int j = 0; j < layer->list.segments.count; ++j)
+                {
+                    free(layer->list.segments.items[j].path);
+                    layer->list.segments.items[j].path = NULL;
+                }
+
+                free(layer->list.segments.items);
+                layer->list.segments.items = NULL;
+                layer->list.segments.count = 0;
+                layer->list.segments.capacity = 0;
+            }
+            else if (layer->list_type == CSTAR_DEBUG_LIST_POLYGONS)
+            {
+                for (int j = 0; j < layer->list.polygons.count; ++j)
+                {
+                    free(layer->list.polygons.items[j].vertices);
+                    layer->list.polygons.items[j].vertices = NULL;
+                }
+
+                free(layer->list.polygons.items);
+                layer->list.polygons.items = NULL;
+                layer->list.polygons.count = 0;
+                layer->list.polygons.capacity = 0;
+            }
+            else
+            {
+                free(layer->list.points.items);
+                layer->list.points.items = NULL;
+                layer->list.points.count = 0;
+                layer->list.points.capacity = 0;
+            }
+        }
+
+        free(result->debug_layers.layers);
+        result->debug_layers.layers = NULL;
+        result->debug_layers.layer_count = 0;
+        result->debug_layers.layer_capacity = 0;
     }
 
     // Note: collection structs just reference segments from all_segments,

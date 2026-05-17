@@ -74,7 +74,9 @@ static cstar_coverage_path_result_t *cstar_result_create(void)
     result->hole_transit.segment_count = 0;
     result->hole_transit.segment_capacity = 0;
 
-    result->debug_layers = NULL;
+    result->debug_layers.layers = NULL;
+    result->debug_layers.layer_count = 0;
+    result->debug_layers.layer_capacity = 0;
 
     return result;
 }
@@ -136,6 +138,72 @@ static bool cstar_result_add_segment(cstar_coverage_path_result_t *result,
     result->segment_count++;
 
     return true;
+}
+
+static void cstar_result_cleanup_partial(cstar_coverage_path_result_t *result)
+{
+    if (result == NULL)
+    {
+        return;
+    }
+
+    if (result->all_segments != NULL)
+    {
+        for (int i = 0; i < result->segment_count; ++i)
+        {
+            cstar_segment_t *seg = &result->all_segments[i];
+            free(seg->type);
+            seg->type = NULL;
+            free(seg->path);
+            seg->path = NULL;
+            seg->path_count = 0;
+        }
+
+        free(result->all_segments);
+        result->all_segments = NULL;
+        result->segment_count = 0;
+        result->segment_capacity = 0;
+    }
+
+    if (result->debug_layers.layers != NULL)
+    {
+        for (int i = 0; i < result->debug_layers.layer_count; ++i)
+        {
+            cstar_debug_layer_t *layer = &result->debug_layers.layers[i];
+
+            if (layer->list_type == CSTAR_DEBUG_LIST_SEGMENTS)
+            {
+                for (int j = 0; j < layer->list.segments.count; ++j)
+                {
+                    free(layer->list.segments.items[j].path);
+                    layer->list.segments.items[j].path = NULL;
+                    layer->list.segments.items[j].path_count = 0;
+                }
+                free(layer->list.segments.items);
+            }
+            else if (layer->list_type == CSTAR_DEBUG_LIST_POLYGONS)
+            {
+                for (int j = 0; j < layer->list.polygons.count; ++j)
+                {
+                    free(layer->list.polygons.items[j].vertices);
+                    layer->list.polygons.items[j].vertices = NULL;
+                    layer->list.polygons.items[j].vertex_count = 0;
+                }
+                free(layer->list.polygons.items);
+            }
+            else
+            {
+                free(layer->list.points.items);
+            }
+        }
+
+        free(result->debug_layers.layers);
+        result->debug_layers.layers = NULL;
+        result->debug_layers.layer_count = 0;
+        result->debug_layers.layer_capacity = 0;
+    }
+
+    free(result);
 }
 
 // -------------------------------------------------------------------------
@@ -200,13 +268,10 @@ cstar_coverage_path_result_t *cstar_coverage_path_planning_process(cstar_environ
         return NULL;
     }
 
-    // Initialize debug state with a temporary JSON object (will be extracted after computation)
-    cJSON *debug_root = cJSON_CreateObject();
-    if (debug_root == NULL || !cstar_debug_init(&debug_state, debug_root))
+    if (!cstar_debug_init(&debug_state))
     {
-        cJSON_Delete(debug_root);
         cstar_rcg_free(&rcg);
-        // TODO: implement cstar_result_free in cstar_serializer.h
+        cstar_result_cleanup_partial(result);
         return NULL;
     }
 
@@ -254,10 +319,9 @@ cstar_coverage_path_result_t *cstar_coverage_path_planning_process(cstar_environ
             if (!cstar_add_start_transit(result, &segment_id, env->start_point, current))
             {
                 cstar_debug_dispose(&debug_state);
-                cJSON_Delete(debug_root);
                 cstar_sampling_front_free(&sampling_front);
                 cstar_rcg_free(&rcg);
-                // TODO: implement cstar_result_free
+                cstar_result_cleanup_partial(result);
                 return NULL;
             }
         }
@@ -268,10 +332,9 @@ cstar_coverage_path_result_t *cstar_coverage_path_planning_process(cstar_environ
             if (!cstar_add_initial_coverage(result, &segment_id, current, goal))
             {
                 cstar_debug_dispose(&debug_state);
-                cJSON_Delete(debug_root);
                 cstar_sampling_front_free(&sampling_front);
                 cstar_rcg_free(&rcg);
-                // TODO: implement cstar_result_free
+                cstar_result_cleanup_partial(result);
                 return NULL;
             }
         }
@@ -281,26 +344,17 @@ cstar_coverage_path_result_t *cstar_coverage_path_planning_process(cstar_environ
                     cstar_debug_export_rcg_edges(&debug_state, &rcg) &&
                     cstar_debug_export_laps(&debug_state, &sampling_front, env) &&
                     cstar_debug_export_sampling_front_polygon(&debug_state, env) &&
-                    cstar_debug_attach_layers(&debug_state, debug_root);
+                    cstar_debug_finalize_layers(&debug_state, &result->debug_layers);
     if (!debug_ok)
     {
         cstar_debug_dispose(&debug_state);
-        cJSON_Delete(debug_root);
         cstar_sampling_front_free(&sampling_front);
         cstar_rcg_free(&rcg);
-        // TODO: implement cstar_result_free
+        cstar_result_cleanup_partial(result);
         return NULL;
     }
 
-    // Extract debug layers from root before cleanup
-    cJSON *debug_layers = cJSON_GetObjectItemCaseSensitive(debug_root, "debug");
-    if (debug_layers != NULL)
-    {
-        result->debug_layers = cJSON_Duplicate(debug_layers, 1);
-    }
-
     cstar_debug_dispose(&debug_state);
-    cJSON_Delete(debug_root);
     cstar_sampling_front_free(&sampling_front);
     cstar_rcg_free(&rcg);
     return result;

@@ -1,4 +1,3 @@
-#include "../../../../dependencies/cJSON/cJSON.h"
 #include "../cstar.h"
 #include "runner/cstar_runner.h"
 
