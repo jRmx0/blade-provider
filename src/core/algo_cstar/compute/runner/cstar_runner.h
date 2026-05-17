@@ -3,7 +3,7 @@
 #ifndef CSTAR_RUNNER_H
 #define CSTAR_RUNNER_H
 
-#include "../../internal.h"
+#include "../../cstar.h"
 
 /**
  * Runs the C* computation pipeline on a pre-validated, pre-parsed environment.

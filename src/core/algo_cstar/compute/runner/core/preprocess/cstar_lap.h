@@ -2,7 +2,7 @@
 #define CSTAR_LAP_H
 
 #include "../sampling/cstar_sampling.h"
-#include "../../../../internal.h"
+#include "../../../../cstar.h"
 #include "../../../../../../../dependencies/cvector/cvector.h"
 
 /**

@@ -3,7 +3,7 @@
 #ifndef CSTAR_CHECK_H
 #define CSTAR_CHECK_H
 
-#include "../internal.h"
+#include "../cstar.h"
 
 typedef struct
 {

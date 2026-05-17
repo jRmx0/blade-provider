@@ -1,7 +1,7 @@
 #ifndef CSTAR_DEAD_END_H
 #define CSTAR_DEAD_END_H
 
-#include "../../../../internal.h"
+#include "../../../../cstar.h"
 #include "../../../../../../../dependencies/cvector/cvector.h"
 
 // -------------------------------------------------------------------------

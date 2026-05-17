@@ -1,7 +1,7 @@
 #ifndef CSTAR_RCG_GROWTH_H
 #define CSTAR_RCG_GROWTH_H
 
-#include "../../../../internal.h"
+#include "../../../../cstar.h"
 #include "../sampling/cstar_sampling.h"
 
 // -------------------------------------------------------------------------

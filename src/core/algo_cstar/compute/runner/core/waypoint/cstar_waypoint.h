@@ -1,7 +1,7 @@
 #ifndef CSTAR_WAYPOINT_H
 #define CSTAR_WAYPOINT_H
 
-#include "../../../../internal.h"
+#include "../../../../cstar.h"
 
 // -------------------------------------------------------------------------
 // Goal node selection  (Algorithm 1)

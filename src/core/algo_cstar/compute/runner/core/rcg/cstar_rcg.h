@@ -1,7 +1,7 @@
 #ifndef CSTAR_RCG_H
 #define CSTAR_RCG_H
 
-#include "../../../../internal.h"
+#include "../../../../cstar.h"
 
 /**
  * Initialises an empty RCG. Must be paired with cstar_rcg_free().

@@ -3,7 +3,7 @@
 #ifndef CSTAR_PARSER_H
 #define CSTAR_PARSER_H
 
-#include "../internal.h"
+#include "../cstar.h"
 #include "../check/cstar_check.h"
 
 bool cstar_parse_request_json(const char *request_json, cstar_environment_t *environment, cstar_check_result_t *result);

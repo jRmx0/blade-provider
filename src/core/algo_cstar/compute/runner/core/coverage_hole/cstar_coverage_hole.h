@@ -1,7 +1,7 @@
 #ifndef CSTAR_COVERAGE_HOLE_H
 #define CSTAR_COVERAGE_HOLE_H
 
-#include "../../../../internal.h"
+#include "../../../../cstar.h"
 #include "../../../../../../../dependencies/cvector/cvector.h"
 
 // -------------------------------------------------------------------------

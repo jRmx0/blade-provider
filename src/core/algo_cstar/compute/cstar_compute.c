@@ -1,5 +1,5 @@
 #include "../../../../dependencies/cJSON/cJSON.h"
-#include "../internal.h"
+#include "../cstar.h"
 #include "runner/cstar_runner.h"
 
 #include "runner/cstar_runner.c"

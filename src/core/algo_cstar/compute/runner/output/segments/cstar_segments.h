@@ -1,7 +1,7 @@
 #ifndef CSTAR_SEGMENTS_H
 #define CSTAR_SEGMENTS_H
 
-#include "../../../../internal.h"
+#include "../../../../cstar.h"
 #include "../../../../../../../dependencies/cJSON/cJSON.h"
 
 bool cstar_segments_append(cJSON *segments_arr,

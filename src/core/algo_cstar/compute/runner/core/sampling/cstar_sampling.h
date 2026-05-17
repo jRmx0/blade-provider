@@ -1,7 +1,7 @@
 #ifndef CSTAR_SAMPLING_H
 #define CSTAR_SAMPLING_H
 
-#include "../../../../internal.h"
+#include "../../../../cstar.h"
 #include "../../../../../../../dependencies/cvector/cvector.h"
 
 // -------------------------------------------------------------------------

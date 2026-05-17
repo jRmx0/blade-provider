@@ -1,7 +1,7 @@
 #ifndef CSTAR_DEBUG_H
 #define CSTAR_DEBUG_H
 
-#include "../../../../internal.h"
+#include "../../../../cstar.h"
 #include "../../../../../../../dependencies/cJSON/cJSON.h"
 #include "../../core/rcg/cstar_rcg.h"
 #include "../../core/sampling/cstar_sampling.h"
