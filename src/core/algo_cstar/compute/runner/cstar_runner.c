@@ -108,8 +108,7 @@ cstar_coverage_path_result_t *cstar_coverage_path_planning_process(cstar_environ
     cstar_rcg_rebuild_links_from_edges(rcg.nodes, rcg.node_count, rcg.edges, rcg.edge_count);
 
     if (!cstar_debug_export_laps(&debug_state, env) ||
-        !cstar_debug_export_rcg_nodes(&debug_state, &rcg) ||
-        !cstar_debug_export_rcg_edges(&debug_state, &rcg))
+        !cstar_debug_export_rcg_nodes(&debug_state, &rcg))
     {
         cstar_debug_dispose(&debug_state);
         cstar_rcg_free(&rcg);
@@ -288,11 +287,13 @@ cstar_coverage_path_result_t *cstar_coverage_path_planning_process(cstar_environ
                 cstar_generate_obstacle_adjacent_samples(&rcg, hit_obstacle_idx,
                                                          w, delta, env);
 
-                /* Prune new nodes to end-nodes-only, generate vertical lap
-                   edges for the affected laps, then sync neighbor pointers.
+                /* Prune new nodes to end-nodes-only, rebuild cross-lap edges
+                   (dedup-safe variant of cstar_rcg_expand_graph), generate
+                   vertical lap edges, then sync neighbor pointers.
                    Mirrors the sequence applied to the initial RCG before the
                    loop. Idempotent for pre-existing essential nodes. */
                 cstar_rcg_prune_non_essential_nodes(&rcg);
+                cstar_rcg_expand_graph_unique(&rcg, env);
                 cstar_rcg_generate_vertical_lap_edges(&rcg, env);
                 cstar_rcg_rebuild_links_from_edges(rcg.nodes, rcg.node_count,
                                                    rcg.edges, rcg.edge_count);
@@ -330,9 +331,11 @@ cstar_coverage_path_result_t *cstar_coverage_path_planning_process(cstar_environ
     cstar_debug_accumulate_retreat_nodes(&debug_state, retreat_nodes, &rcg);
     cvector_free(retreat_nodes);
 
-    // Export link nodes created during traversal, finalize debug layers, then
-    // dispose. Non-fatal: coverage segments in result are the primary output.
+    // Export link nodes created during traversal and the final RCG edge set
+    // (after all mid-loop modifications), finalize debug layers, then dispose.
+    // Non-fatal: coverage segments in result are the primary output.
     cstar_debug_export_link_nodes(&debug_state, &rcg);
+    cstar_debug_export_rcg_edges(&debug_state, &rcg);
     cstar_debug_finalize_layers(&debug_state, &result->debug_layers);
     cstar_debug_dispose(&debug_state);
 

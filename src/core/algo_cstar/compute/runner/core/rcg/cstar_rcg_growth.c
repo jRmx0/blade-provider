@@ -269,6 +269,54 @@ static void cstar_rcg_add_unique_edge(cstar_edge_t **edges,
     cvector_push_back(*edges, edge);
 }
 
+bool cstar_rcg_expand_graph_unique(cstar_rcg_t *rcg,
+                                   const cstar_environment_t *env)
+{
+    if (rcg == NULL || env == NULL || env->laps == NULL)
+        return false;
+
+    cstar_lap_t *laps = (cstar_lap_t *)env->laps;
+    int lap_count = (int)cvector_size(laps);
+    if (lap_count <= 0 || rcg->node_count <= 0)
+        return true;
+
+    float cross_lap_threshold = sqrtf(2.0f) * env->path_width;
+
+    for (int lap_idx = 0; lap_idx < lap_count - 1; ++lap_idx)
+    {
+        cstar_lap_t *lap_left = &laps[lap_idx];
+        cstar_lap_t *lap_right = &laps[lap_idx + 1];
+
+        if (lap_left->node_ids == NULL || lap_right->node_ids == NULL)
+            continue;
+
+        for (int i = 0; i < lap_left->node_count; ++i)
+        {
+            int left_id = lap_left->node_ids[i];
+            int left_idx = cstar_rcg_index_from_node_id(rcg, left_id);
+            if (left_idx == CSTAR_NO_NEIGHBOR)
+                continue;
+
+            for (int j = 0; j < lap_right->node_count; ++j)
+            {
+                int right_id = lap_right->node_ids[j];
+                int right_idx = cstar_rcg_index_from_node_id(rcg, right_id);
+                if (right_idx == CSTAR_NO_NEIGHBOR)
+                    continue;
+
+                float dist = cstar_rcg_node_distance(&rcg->nodes[left_idx],
+                                                     &rcg->nodes[right_idx]);
+                if (dist <= cross_lap_threshold + CSTAR_RCG_EPSILON)
+                    cstar_rcg_add_unique_edge(&rcg->edges, left_id, right_id, dist);
+            }
+        }
+    }
+
+    rcg->edge_count = (int)cvector_size(rcg->edges);
+    rcg->edge_capacity = (int)cvector_capacity(rcg->edges);
+    return true;
+}
+
 void cstar_rcg_generate_vertical_lap_edges(cstar_rcg_t *rcg, const cstar_environment_t *env)
 {
     if (!rcg || !env || !env->laps)
