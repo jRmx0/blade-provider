@@ -102,7 +102,7 @@ static void cstar_rcg_rebuild_links_from_edges(cstar_node_t *nodes,
     }
 }
 
-void cstar_rcg_prune_to_end_nodes(cstar_rcg_t *rcg)
+void cstar_rcg_prune_non_essential_nodes(cstar_rcg_t *rcg)
 {
     if (!rcg || !rcg->nodes)
         return;

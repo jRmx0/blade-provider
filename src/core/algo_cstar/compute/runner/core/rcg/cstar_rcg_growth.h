@@ -50,7 +50,7 @@ bool cstar_rcg_expand_graph(cstar_rcg_t *rcg,
 /**
  * Generates vertical edges within each lap for the pruned RCG.
  *
- * Called after cstar_rcg_prune_to_end_nodes(). For each lap, connects
+ * Called after cstar_rcg_prune_non_essential_nodes(). For each lap, connects
  * surviving end nodes top-to-bottom with one downward edge per node.
  * Also connects the start point to its nearest neighbour. Validates
  * connectivity and planarity after all edges are added.
