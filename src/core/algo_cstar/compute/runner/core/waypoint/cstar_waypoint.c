@@ -252,6 +252,82 @@ int cstar_update_node_state(cstar_rcg_t *rcg,
             // that bypasses the logically-split chain.
             cstar_rcg_remove_edge(rcg, current_node_id, nbr_id);
 
+            // Wire cross-lap neighbors for the new link node.
+            // Scan all current RCG nodes: connect every Open node on an
+            // adjacent lap (lap_id ± 1) within √2·w to the link node.
+            // cstar_rcg_add_edge only grows rcg->edges — node pointers stay
+            // valid for the entire scan.
+            {
+                float cross_threshold = sqrtf(2.0f) * w;
+
+                // Re-fetch link_mut: a second cstar_rcg_add_node earlier in
+                // this d-loop iteration may have reallocated rcg->nodes.
+                link_mut = cstar_rcg_get_node_by_id_mut(rcg, link_id);
+                if (link_mut != NULL)
+                {
+                    int link_lap = link_mut->lap_id;
+
+                    for (int ni = 0; ni < rcg->node_count; ++ni)
+                    {
+                        cstar_node_t *cand = &rcg->nodes[ni];
+
+                        if (cand->id == link_id)
+                        {
+                            continue; // self
+                        }
+                        if (cand->state != CSTAR_NODE_OP)
+                        {
+                            continue; // already visited
+                        }
+                        if (cand->is_start_point)
+                        {
+                            continue; // never expose start as cross-lap target
+                        }
+
+                        int lap_diff = cand->lap_id - link_lap;
+                        if (lap_diff != -1 && lap_diff != 1)
+                        {
+                            continue; // not on an adjacent lap
+                        }
+
+                        float cdx = cand->pos.x - link_mut->pos.x;
+                        float cdy = cand->pos.y - link_mut->pos.y;
+                        float cdist = sqrtf(cdx * cdx + cdy * cdy);
+                        if (cdist > cross_threshold + 1e-6f)
+                        {
+                            continue; // out of range
+                        }
+
+                        if (lap_diff == -1)
+                        {
+                            // candidate is on the left lap
+                            if (link_mut->neighbors_left_count < CSTAR_MAX_CROSS_LAP_NEIGHBORS)
+                            {
+                                link_mut->neighbors_left[link_mut->neighbors_left_count++] = cand->id;
+                            }
+                            if (cand->neighbors_right_count < CSTAR_MAX_CROSS_LAP_NEIGHBORS)
+                            {
+                                cand->neighbors_right[cand->neighbors_right_count++] = link_id;
+                            }
+                        }
+                        else
+                        {
+                            // candidate is on the right lap
+                            if (link_mut->neighbors_right_count < CSTAR_MAX_CROSS_LAP_NEIGHBORS)
+                            {
+                                link_mut->neighbors_right[link_mut->neighbors_right_count++] = cand->id;
+                            }
+                            if (cand->neighbors_left_count < CSTAR_MAX_CROSS_LAP_NEIGHBORS)
+                            {
+                                cand->neighbors_left[cand->neighbors_left_count++] = link_id;
+                            }
+                        }
+
+                        cstar_rcg_add_edge(rcg, link_id, cand->id, cdist);
+                    }
+                }
+            }
+
             link_nodes_created++;
         }
     }
