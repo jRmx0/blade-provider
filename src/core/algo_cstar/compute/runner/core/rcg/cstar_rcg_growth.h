@@ -9,34 +9,26 @@
 // -------------------------------------------------------------------------
 
 /**
- * Expands the RCG by connecting frontier-sampled nodes into a planar graph.
+ * Expands the RCG by connecting frontier-sampled nodes across adjacent laps.
  *
- * Performs three stages of graph growth:
+ * For each pair of adjacent laps, connects all node pairs within Euclidean
+ * distance √2*w by setting neighbor_left/neighbor_right pointers and adding
+ * edges to rcg->edges.
  *
- * 1. **Same-lap vertical connectivity**: For each lap, connects adjacent nodes
- *    (ordered along the lap's y-axis) by setting neighbor_up/neighbor_down
- *    pointers.
- *
- * 2. **Cross-lap horizontal connectivity**: For each pair of adjacent laps,
- *    connects nodes within Euclidean distance √2*w by setting
- *    neighbor_left/neighbor_right pointers and adding edges.
- *
- * 3. **Validation**: Verifies graph connectivity (all nodes reachable from
- *    node[0]) and planarity (edges ≤ 3*nodes - 6). Returns false if
- *    validation fails.
- *
- * Edge costs are stored as Euclidean distance for waypoint selection.
+ * Same-lap (vertical) edges are handled separately by
+ * cstar_rcg_generate_vertical_lap_edges(). Connectivity and planarity
+ * validation is also deferred to that function.
  *
  * Parameters:
  *   rcg - RCG with sampled nodes already added via cstar_rcg_add_node()
  *   env - Environment with pre-generated laps and sampled node_ids per lap
  *
  * Returns:
- *   true  - Graph successfully expanded and validated
- *   false - Allocation error, validation failure, or invalid inputs
+ *   true  - Cross-lap edges successfully added
+ *   false - Invalid inputs
  *
  * Side effects:
- *   - Modifies rcg->nodes (sets neighbor pointers)
+ *   - Modifies rcg->nodes (sets neighbors_left/right arrays)
  *   - Populates rcg->edges with cross-lap connections
  *   - No changes to env
  */

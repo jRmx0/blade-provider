@@ -80,10 +80,8 @@ bool cstar_rcg_expand_graph(cstar_rcg_t *rcg,
     float w = env->path_width;
     float cross_lap_threshold = sqrtf(2.0f) * w;
 
-    // (Vertical lap edge creation removed)
-
     // -----------------------------------------------------------------------
-    // Stage 2: Cross-lap horizontal connectivity
+    // Cross-lap horizontal connectivity
     // -----------------------------------------------------------------------
     // Connect all nodes within √2*w distance across adjacent laps.
     // (Rule ii: all nodes within distance √2w on each adjacent lap)

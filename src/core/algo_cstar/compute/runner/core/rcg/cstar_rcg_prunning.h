@@ -26,10 +26,8 @@ void cstar_rcg_prune_non_essential_nodes(cstar_rcg_t *rcg);
  * pointers.
  *
  * Call after cstar_rcg_prune_non_essential_nodes() to rebuild a fully consistent
- * graph from the surviving node set.  Replaces the asymmetric
- * cstar_rcg_expand_graph_unique + cstar_rcg_generate_vertical_lap_edges +
- * cstar_rcg_rebuild_links_from_edges triplet used at both the initial setup
- * and post-obstacle sites.
+ * graph from the surviving node set.  Used at both the initial setup site and
+ * the post-obstacle site.
  *
  * @param rcg Pointer to the pruned RCG graph.
  * @param env Environment with pre-generated laps.
