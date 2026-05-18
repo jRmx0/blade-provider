@@ -302,6 +302,13 @@ cstar_coverage_path_result_t *cstar_coverage_path_planning_process(cstar_environ
                 cstar_debug_export_rcg_nodes_from_id(&debug_state, &rcg,
                                                      new_node_id_threshold);
 
+                /* Close current_node_id and insert link nodes as if the robot
+                   completed the move to goal_id.  The departure from
+                   current_node_id is real (the robot moved toward entry_pt),
+                   so the same can_close rule and left-lap link-node logic
+                   apply here exactly as in the normal post-move update. */
+                cstar_update_node_state(&rcg, current_node_id, goal_id, w);
+
                 /* Resume coverage from the nearest Open RCG node to entry_pt.
                    The robot completed a full CCW circumnavigation and is back at
                    entry_pt; we must advance current_node_id so the loop restarts

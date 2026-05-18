@@ -500,6 +500,70 @@ int cstar_generate_obstacle_adjacent_samples(cstar_rcg_t *rcg,
         if (lap->x < obs_min_x - margin || lap->x > obs_max_x + margin)
             continue;
 
+        /* Snapshot the lap's current node count before any additions. */
+        int existing_lap_node_count = lap->node_count;
+
+        /* Determine whether the section of this lap that overlaps the
+           obstacle's y-range was already fully traversed.
+           A lap can contain multiple disconnected sections separated by
+           earlier obstacles, so we examine only the section whose end-nodes
+           bracket the new sample y-range — not the entire lap.
+
+           Pass 1: find the nearest end-node (top, bottom, or both) whose y
+           is <= sample_y_lo (lower fence) and the nearest one whose y is
+           >= sample_y_hi (upper fence).  These two end-nodes delimit the
+           section that the new obstacle-adjacent nodes will land in.
+
+           Pass 2: check whether every existing node within [section_lo,
+           section_hi] is Closed; nodes outside that range belong to a
+           different section and are ignored. */
+        float sample_y_lo = anchor_y + (float)first_sample_index * step;
+        float sample_y_hi = anchor_y + (float)last_sample_index * step;
+
+        float section_lo = -INFINITY; /* greatest end-node y <= sample_y_lo */
+        float section_hi = INFINITY;  /* smallest end-node y >= sample_y_hi */
+
+        for (int ni = 0; ni < existing_lap_node_count; ++ni)
+        {
+            int nid = lap->node_ids[ni];
+            int nidx = cstar_rcg_index_from_node_id(rcg, nid);
+            if (nidx == CSTAR_NO_NEIGHBOR)
+                continue;
+            const cstar_node_t *nd = &rcg->nodes[nidx];
+            bool is_end = nd->is_top_end_node ||
+                          nd->is_bottom_end_node ||
+                          nd->is_top_and_bottom_end_node;
+            if (!is_end)
+                continue;
+            float ny = nd->pos.y;
+            if (ny <= sample_y_lo && ny > section_lo)
+                section_lo = ny;
+            if (ny >= sample_y_hi && ny < section_hi)
+                section_hi = ny;
+        }
+
+        int section_node_count = 0;
+        bool lap_fully_covered = true;
+        for (int ni = 0; ni < existing_lap_node_count; ++ni)
+        {
+            int nid = lap->node_ids[ni];
+            int nidx = cstar_rcg_index_from_node_id(rcg, nid);
+            if (nidx == CSTAR_NO_NEIGHBOR)
+                continue;
+            const cstar_node_t *nd = &rcg->nodes[nidx];
+            float ny = nd->pos.y;
+            if (ny < section_lo || ny > section_hi)
+                continue; /* different section */
+            section_node_count++;
+            if (nd->state != CSTAR_NODE_CL)
+            {
+                lap_fully_covered = false;
+                break;
+            }
+        }
+        if (section_node_count == 0)
+            lap_fully_covered = false;
+
         for (int si = first_sample_index; si <= last_sample_index; ++si)
         {
             float y = anchor_y + ((float)si * step);
@@ -553,6 +617,16 @@ int cstar_generate_obstacle_adjacent_samples(cstar_rcg_t *rcg,
                                              is_top, is_bottom, is_both, false);
             if (node_id == CSTAR_NO_NEIGHBOR)
                 continue;
+
+            /* Pre-close if the lap was already fully traversed: every
+               pre-existing same-lap node was Closed before this pass,
+               meaning the robot swept through this y-position already. */
+            if (lap_fully_covered)
+            {
+                cstar_node_t *new_node = cstar_rcg_get_node_by_id_mut(rcg, node_id);
+                if (new_node != NULL)
+                    new_node->state = CSTAR_NODE_CL;
+            }
 
             cvector_push_back(lap->node_ids, node_id);
             lap->node_count = (int)cvector_size(lap->node_ids);
