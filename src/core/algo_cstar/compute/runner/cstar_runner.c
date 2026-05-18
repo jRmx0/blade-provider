@@ -178,6 +178,7 @@ cstar_coverage_path_result_t *cstar_coverage_path_planning_process(cstar_environ
 
         // Keep the retreat node set current at the robot's position.
         cstar_retreat_update(&retreat_nodes, &rcg, cur->pos, w);
+        cstar_debug_accumulate_retreat_nodes(&debug_state, retreat_nodes, &rcg);
 
         // Select next goal: left → up → down → right priority.
         int goal_id = cstar_select_goal_node(&rcg, current_node_id);

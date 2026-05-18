@@ -41,4 +41,17 @@ bool cstar_debug_export_rcg_edges(cstar_debug_t *debug_state,
 bool cstar_debug_export_laps(cstar_debug_t *debug_state,
                              const cstar_environment_t *env);
 
+/**
+ * Accumulates retreat nodes into the retreatNodeList debug layer (id=16).
+ *
+ * Call this after each cstar_retreat_update() call in the main coverage loop.
+ * Deduplicates by node ID so nodes that persist across multiple iterations
+ * appear only once. Produces a union of all nodes ever in the retreat set.
+ *
+ * retreat_nodes holds node IDs (int); positions are resolved via the RCG.
+ */
+bool cstar_debug_accumulate_retreat_nodes(cstar_debug_t *debug_state,
+                                          cvector_vector_type(int) retreat_nodes,
+                                          const cstar_rcg_t *rcg);
+
 #endif // CSTAR_DEBUG_H

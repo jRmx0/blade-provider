@@ -472,3 +472,48 @@ bool cstar_debug_export_laps(cstar_debug_t *debug_state,
 
     return true;
 }
+
+bool cstar_debug_accumulate_retreat_nodes(cstar_debug_t *debug_state,
+                                          cvector_vector_type(int) retreat_nodes,
+                                          const cstar_rcg_t *rcg)
+{
+    if (debug_state == NULL || rcg == NULL || retreat_nodes == NULL)
+    {
+        return true; // Nothing to accumulate — not an error.
+    }
+
+    int retreat_count = (int)cvector_size(retreat_nodes);
+    for (int i = 0; i < retreat_count; ++i)
+    {
+        int node_id = retreat_nodes[i];
+        int debug_id = node_id + 1;
+
+        // Deduplicate: skip if this node is already in the accumulated list.
+        bool already_present = false;
+        for (int j = 0; j < debug_state->retreat_node_list.count; ++j)
+        {
+            if (debug_state->retreat_node_list.items[j].id == debug_id)
+            {
+                already_present = true;
+                break;
+            }
+        }
+        if (already_present)
+        {
+            continue;
+        }
+
+        const cstar_node_t *node = cstar_rcg_get_node_by_id(rcg, node_id);
+        if (node == NULL)
+        {
+            continue;
+        }
+
+        if (!cstar_debug_append_point(&debug_state->retreat_node_list, debug_id, node->pos))
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
