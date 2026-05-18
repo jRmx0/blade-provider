@@ -241,135 +241,20 @@ cstar_coverage_path_result_t *cstar_coverage_path_planning_process(cstar_environ
         }
         point_t to_pos = goal_node->pos;
 
-        bool holes_processed = false;
-        int last_tsp_node_id = current_node_id;
+        // ── Coverage hole detection disabled ─────────────────────────────────────
 
-        // ── Coverage hole detection & TSP trajectory (Section III.E, Algorithm 3) ──
+        // Emit segment: current → goal. The very first move from the start
+        // node is a coverageTransit (positioning to first coverage line);
+        // all subsequent moves are true coverage segments.
+        const char *seg_type = first_coverage_move_done ? "coverage" : "coverageTransit";
+        point_t seg_path[2] = {from_pos, to_pos};
+        if (!cstar_result_add_segment(result, segment_id, seg_type,
+                                      seg_path, 2))
         {
-            /* Lookahead: detect holes that would form when the robot DEPARTS goal_id.
-             * Temporarily close current_node_id to simulate the robot having moved,
-             * then ask what goal_id would select next. */
-            cstar_node_t *cur_mut = cstar_rcg_get_node_by_id_mut(&rcg, current_node_id);
-            cstar_node_state_t saved_state = (cur_mut != NULL) ? cur_mut->state : CSTAR_NODE_CL;
-            if (cur_mut != NULL)
-                cur_mut->state = CSTAR_NODE_CL;
-
-            int next_goal_id = cstar_select_goal_node(&rcg, goal_id);
-
-            if (cur_mut != NULL)
-                cur_mut->state = saved_state;
-
-            cvector_vector_type(cvector_vector_type(int)) holes = NULL;
-            if (next_goal_id != CSTAR_NO_NEIGHBOR)
-            {
-                holes = cstar_detect_coverage_holes(&rcg, goal_id, next_goal_id, w, env);
-            }
-            if (holes != NULL)
-            {
-                int hole_count_outer = (int)cvector_size(holes);
-                for (int hi = 0; hi < hole_count_outer; hi++)
-                {
-                    cvector_vector_type(int) hole_nodes = holes[hi];
-                    int hole_node_count = (int)cvector_size(hole_nodes);
-
-                    /* Record hole nodes in debug layer 17 (before TSP, regardless of success) */
-                    cstar_debug_accumulate_coverage_holes(&debug_state,
-                                                          hole_nodes, hole_node_count, &rcg);
-
-                    /* Compute TSP trajectory through hole nodes */
-                    cvector_vector_type(int) tsp_tour =
-                        cstar_compute_tsp_trajectory(&rcg,
-                                                     current_node_id, goal_id,
-                                                     hole_nodes, hole_node_count, w, env);
-
-                    if (tsp_tour != NULL)
-                    {
-                        int tour_size = (int)cvector_size(tsp_tour);
-                        for (int ti = 0; ti < tour_size - 1; ti++)
-                        {
-                            const cstar_node_t *tf =
-                                cstar_rcg_get_node_by_id(&rcg, tsp_tour[ti]);
-                            const cstar_node_t *tt =
-                                cstar_rcg_get_node_by_id(&rcg, tsp_tour[ti + 1]);
-                            if (tf == NULL || tt == NULL)
-                                continue;
-
-                            point_t hole_path[2] = {tf->pos, tt->pos};
-                            /* First and last segments are entry/exit (holeTransit);
-                             * interior segments are holeCoverage. */
-                            const char *hole_type =
-                                (ti == 0 || ti == tour_size - 2)
-                                    ? "holeTransit"
-                                    : "holeCoverage";
-
-                            if (!cstar_result_add_segment(result, segment_id,
-                                                          hole_type, hole_path, 2))
-                                break;
-                            segment_id++;
-
-                            /* Mark each visited TSP node as Closed (skip goal:
-                             * it will be handled by cstar_update_node_state) */
-                            if (tsp_tour[ti + 1] != goal_id)
-                            {
-                                cstar_node_t *tt_mut =
-                                    cstar_rcg_get_node_by_id_mut(&rcg, tsp_tour[ti + 1]);
-                                if (tt_mut != NULL)
-                                    tt_mut->state = CSTAR_NODE_CL;
-                            }
-                        }
-                        /* Track where the robot ends up after this hole's TSP */
-                        if (tour_size > 0)
-                        {
-                            last_tsp_node_id = tsp_tour[tour_size - 1];
-                            holes_processed = true;
-                        }
-                        cvector_free(tsp_tour);
-                    }
-
-                    cvector_free(hole_nodes);
-                }
-                cvector_free(holes);
-            }
+            break;
         }
-        // ─────────────────────────────────────────────────────────────────────────
-
-        if (holes_processed)
-        {
-            /* Holes were covered: robot ends at last_tsp_node_id, NOT at goal.
-             * Add a connecting holeTransit to goal so the next iteration starts
-             * correctly — skip the normal coverage/coverageTransit segment. */
-            if (last_tsp_node_id != goal_id)
-            {
-                const cstar_node_t *tsp_end =
-                    cstar_rcg_get_node_by_id(&rcg, last_tsp_node_id);
-                if (tsp_end != NULL)
-                {
-                    point_t connect_path[2] = {tsp_end->pos, to_pos};
-                    if (!cstar_result_add_segment(result, segment_id,
-                                                  "holeTransit", connect_path, 2))
-                    {
-                        break;
-                    }
-                    segment_id++;
-                }
-            }
-            first_coverage_move_done = true;
-        }
-        else
-        {
-            // Emit segment: current → goal. The very first move from the start
-            // node is a coverageTransit (positioning to first coverage line);
-            // all subsequent moves are true coverage segments.
-            const char *seg_type = first_coverage_move_done ? "coverage" : "coverageTransit";
-            point_t seg_path[2] = {from_pos, to_pos};
-            if (!cstar_result_add_segment(result, segment_id, seg_type,
-                                          seg_path, 2))
-            {
-                break;
-            }
-            segment_id++;
-            first_coverage_move_done = true;
-        }
+        segment_id++;
+        first_coverage_move_done = true;
 
         // Close current node; insert link nodes on left-lap transitions.
         cstar_update_node_state(&rcg, current_node_id, goal_id, w);
