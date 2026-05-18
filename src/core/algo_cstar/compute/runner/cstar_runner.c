@@ -246,8 +246,24 @@ cstar_coverage_path_result_t *cstar_coverage_path_planning_process(cstar_environ
 
         // ── Coverage hole detection & TSP trajectory (Section III.E, Algorithm 3) ──
         {
-            cvector_vector_type(cvector_vector_type(int)) holes =
-                cstar_detect_coverage_holes(&rcg, current_node_id, goal_id, w, env);
+            /* Lookahead: detect holes that would form when the robot DEPARTS goal_id.
+             * Temporarily close current_node_id to simulate the robot having moved,
+             * then ask what goal_id would select next. */
+            cstar_node_t *cur_mut = cstar_rcg_get_node_by_id_mut(&rcg, current_node_id);
+            cstar_node_state_t saved_state = (cur_mut != NULL) ? cur_mut->state : CSTAR_NODE_CL;
+            if (cur_mut != NULL)
+                cur_mut->state = CSTAR_NODE_CL;
+
+            int next_goal_id = cstar_select_goal_node(&rcg, goal_id);
+
+            if (cur_mut != NULL)
+                cur_mut->state = saved_state;
+
+            cvector_vector_type(cvector_vector_type(int)) holes = NULL;
+            if (next_goal_id != CSTAR_NO_NEIGHBOR)
+            {
+                holes = cstar_detect_coverage_holes(&rcg, goal_id, next_goal_id, w, env);
+            }
             if (holes != NULL)
             {
                 int hole_count_outer = (int)cvector_size(holes);
