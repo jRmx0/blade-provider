@@ -100,6 +100,11 @@ cstar_coverage_path_result_t *cstar_coverage_path_planning_process(cstar_environ
     // RCG pruning: keep only end nodes and their edges
     cstar_rcg_prune_non_essential_nodes(&rcg);
     cstar_rcg_generate_vertical_lap_edges(&rcg, env);
+    // Sync node neighbor fields (neighbor_up/down/left/right) with the new
+    // vertical edges added above. cstar_rcg_generate_vertical_lap_edges adds
+    // edges to rcg->edges but does not update the in-node pointers, so
+    // cstar_select_goal_node would see stale CSTAR_NO_NEIGHBOR links.
+    cstar_rcg_rebuild_links_from_edges(rcg.nodes, rcg.node_count, rcg.edges, rcg.edge_count);
 
     if (!cstar_debug_export_laps(&debug_state, env) ||
         !cstar_debug_export_rcg_nodes(&debug_state, &rcg) ||
@@ -114,6 +119,128 @@ cstar_coverage_path_result_t *cstar_coverage_path_planning_process(cstar_environ
     }
 
     cstar_debug_dispose(&debug_state);
+
+    // -------------------------------------------------------------------------
+    // Coverage path planning loop  (Section III.B, Algorithms 1–2 + IV)
+    // -------------------------------------------------------------------------
+
+    // Locate the start node placed at env->start_point during sampling.
+    int start_node_id = CSTAR_NO_NEIGHBOR;
+    for (int i = 0; i < rcg.node_count; ++i)
+    {
+        if (rcg.nodes[i].is_start_point)
+        {
+            start_node_id = rcg.nodes[i].id;
+            break;
+        }
+    }
+
+    if (start_node_id == CSTAR_NO_NEIGHBOR)
+    {
+        cstar_rcg_free(&rcg);
+        cstar_environment_laps_cleanup(env);
+        cstar_result_cleanup_partial(result);
+        return NULL;
+    }
+
+    int segment_id = 0;
+
+    // Emit an initial transit segment when start_point does not coincide
+    // exactly with the start RCG node (floating-point guard; usually skipped).
+    const cstar_node_t *start_node = cstar_rcg_get_node_by_id(&rcg, start_node_id);
+    if (start_node != NULL &&
+        !cstar_points_equal(env->start_point, start_node->pos))
+    {
+        if (!cstar_add_start_transit(result, &segment_id,
+                                     env->start_point, start_node->pos))
+        {
+            cstar_rcg_free(&rcg);
+            cstar_environment_laps_cleanup(env);
+            cstar_result_cleanup_partial(result);
+            return NULL;
+        }
+    }
+
+    int current_node_id = start_node_id;
+    cvector_vector_type(int) retreat_nodes = NULL;
+
+    for (;;)
+    {
+        // Re-fetch every iteration: cstar_update_node_state may reallocate nodes.
+        const cstar_node_t *cur = cstar_rcg_get_node_by_id(&rcg, current_node_id);
+        if (cur == NULL)
+        {
+            break;
+        }
+
+        // Keep the retreat node set current at the robot's position.
+        cstar_retreat_update(&retreat_nodes, &rcg, cur->pos, w);
+
+        // Select next goal: left → up → down → right priority.
+        int goal_id = cstar_select_goal_node(&rcg, current_node_id);
+
+        if (goal_id == CSTAR_NO_NEIGHBOR)
+        {
+            // Dead-end: navigate to nearest retreat node via A*.
+            cvector_vector_type(point_t) escape_path = NULL;
+            int retreat_id = cstar_escape_dead_end(&rcg,
+                                                   current_node_id,
+                                                   retreat_nodes,
+                                                   &escape_path);
+            if (retreat_id == CSTAR_NO_NEIGHBOR)
+            {
+                // Retreat set empty — every reachable node is Closed.
+                // Coverage is complete.
+                if (escape_path != NULL)
+                {
+                    cvector_free(escape_path);
+                }
+                break;
+            }
+
+            // Emit the A* escape path as a retreatTransit segment.
+            if (escape_path != NULL)
+            {
+                int path_len = (int)cvector_size(escape_path);
+                if (path_len > 0)
+                {
+                    cstar_result_add_segment(result, segment_id,
+                                             "retreatTransit",
+                                             escape_path, path_len);
+                    segment_id++;
+                }
+                cvector_free(escape_path);
+            }
+
+            current_node_id = retreat_id;
+            continue;
+        }
+
+        // Capture positions before state update may reallocate rcg->nodes.
+        point_t from_pos = cur->pos;
+        const cstar_node_t *goal_node = cstar_rcg_get_node_by_id(&rcg, goal_id);
+        if (goal_node == NULL)
+        {
+            break;
+        }
+        point_t to_pos = goal_node->pos;
+
+        // Emit coverage segment: current → goal.
+        point_t seg_path[2] = {from_pos, to_pos};
+        if (!cstar_result_add_segment(result, segment_id, "coverage",
+                                      seg_path, 2))
+        {
+            break;
+        }
+        segment_id++;
+
+        // Close current node; insert link nodes on left-lap transitions.
+        cstar_update_node_state(&rcg, current_node_id, goal_id, w);
+
+        current_node_id = goal_id;
+    }
+
+    cvector_free(retreat_nodes);
     cstar_rcg_free(&rcg);
     cstar_environment_laps_cleanup(env);
     return result;
