@@ -246,7 +246,8 @@ cstar_coverage_path_result_t *cstar_coverage_path_planning_process(cstar_environ
         // On collision:
         //   1. Emit approach segment (from_pos → entry_pt).
         //   2. Emit full CCW circumnavigation back to entry_pt.
-        //   3. Regenerate lap-based frontier samples from entry_pt.
+        //   3. Add new lap-based frontier samples on obstacle-adjacent laps.
+        //   4. Prune new samples, generate vertical lap edges, rebuild links.
         {
             point_t entry_pt;
             int hit_obstacle_idx = -1;
@@ -286,8 +287,20 @@ cstar_coverage_path_result_t *cstar_coverage_path_planning_process(cstar_environ
                 int nodes_before = rcg.node_count;
                 cstar_generate_obstacle_adjacent_samples(&rcg, hit_obstacle_idx,
                                                          w, delta, env);
+
+                /* Prune new nodes to end-nodes-only, generate vertical lap
+                   edges for the affected laps, then sync neighbor pointers.
+                   Mirrors the sequence applied to the initial RCG before the
+                   loop. Idempotent for pre-existing essential nodes. */
+                cstar_rcg_prune_non_essential_nodes(&rcg);
+                cstar_rcg_generate_vertical_lap_edges(&rcg, env);
+                cstar_rcg_rebuild_links_from_edges(rcg.nodes, rcg.node_count,
+                                                   rcg.edges, rcg.edge_count);
+
                 /* Append only the newly-added nodes to the debug layer so
-                   pre-existing nodes are not duplicated. */
+                   pre-existing nodes are not duplicated. nodes_before remains
+                   a valid split: pruning compacts in order, so K pre-existing
+                   essential nodes stay at indices 0..K-1. */
                 cstar_debug_export_rcg_nodes_from_index(&debug_state, &rcg,
                                                         nodes_before);
                 break;
