@@ -327,7 +327,18 @@ void cstar_rcg_generate_vertical_lap_edges(cstar_rcg_t *rcg, const cstar_environ
         // Build surviving[] from lap->node_ids, excluding start point nodes.
         // lap->node_ids is ordered bottom-to-top (ascending y); iterate in reverse
         // to process top-to-bottom and emit only downward edges (no duplicates).
-        int *surviving = (int *)malloc((size_t)lap->node_count * sizeof(int));
+        //
+        // Link nodes (is_link_node=true) are NOT tracked in lap->node_ids — they
+        // are inserted into the RCG directly by cstar_update_node_state during
+        // traversal.  They must also be included here so that edges are emitted
+        // connecting them to the rest of the lap chain (including any new
+        // obstacle-adjacent nodes added after their creation).
+        int link_node_count = 0;
+        for (int i = 0; i < rcg->node_count; ++i)
+            if (rcg->nodes[i].is_link_node && rcg->nodes[i].lap_id == lap->id)
+                link_node_count++;
+
+        int *surviving = (int *)malloc((size_t)(lap->node_count + link_node_count) * sizeof(int));
         if (!surviving)
             continue;
 
@@ -342,6 +353,15 @@ void cstar_rcg_generate_vertical_lap_edges(cstar_rcg_t *rcg, const cstar_environ
             if (node->is_start_point)
                 continue;
             surviving[surviving_count++] = node_id;
+        }
+
+        // Append link nodes for this lap.
+        for (int i = 0; i < rcg->node_count; ++i)
+        {
+            const cstar_node_t *node = &rcg->nodes[i];
+            if (!node->is_link_node || node->lap_id != lap->id)
+                continue;
+            surviving[surviving_count++] = node->id;
         }
 
         // Sort surviving[] by ascending y so that obstacle-adjacent nodes
