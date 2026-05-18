@@ -22,6 +22,7 @@
 #include "core/waypoint/cstar_waypoint.c"
 #include "core/dead_end/cstar_dead_end.c"
 #include "core/coverage_hole/cstar_coverage_hole.c"
+#include "core/obstacle/cstar_obstacle_detect.c"
 #include "debug/cstar_debug.c"
 
 #include "utils/cstar_runner_math.c"
@@ -241,7 +242,57 @@ cstar_coverage_path_result_t *cstar_coverage_path_planning_process(cstar_environ
         }
         point_t to_pos = goal_node->pos;
 
-        // ── Coverage hole detection disabled ─────────────────────────────────────
+        // ── Runtime obstacle collision detection ──────────────────────────────────
+        // On collision:
+        //   1. Emit approach segment (from_pos → entry_pt).
+        //   2. Emit full CCW circumnavigation back to entry_pt.
+        //   3. Regenerate lap-based frontier samples from entry_pt.
+        {
+            point_t entry_pt;
+            int hit_obstacle_idx = -1;
+            if (cstar_path_has_collision(from_pos, to_pos, w, env,
+                                         &entry_pt, &hit_obstacle_idx))
+            {
+                const char *seg_type = first_coverage_move_done
+                                           ? "coverage"
+                                           : "coverageTransit";
+
+                /* Segment 1: last RCG node → collision point. */
+                point_t approach[2] = {from_pos, entry_pt};
+                cstar_result_add_segment(result, segment_id, seg_type,
+                                         approach, 2);
+                segment_id++;
+                first_coverage_move_done = true;
+
+                /* Segment 2: full CCW circumnavigation, closing back to entry_pt. */
+                cvector_vector_type(point_t) boundary_pts =
+                    cstar_obstacle_circumnavigate(entry_pt, hit_obstacle_idx,
+                                                  w, env);
+                if (boundary_pts != NULL)
+                {
+                    int bp_count = (int)cvector_size(boundary_pts);
+                    if (bp_count > 0)
+                    {
+                        cstar_result_add_segment(result, segment_id, "coverage",
+                                                 boundary_pts, bp_count);
+                        segment_id++;
+                    }
+                    cvector_free(boundary_pts);
+                }
+
+                /* Add new lap-based frontier samples on laps adjacent to the
+                   obstacle — same logic as initial sampling but without
+                   clearing the existing RCG or its node states. */
+                int nodes_before = rcg.node_count;
+                cstar_generate_obstacle_adjacent_samples(&rcg, hit_obstacle_idx,
+                                                         w, delta, env);
+                /* Append only the newly-added nodes to the debug layer so
+                   pre-existing nodes are not duplicated. */
+                cstar_debug_export_rcg_nodes_from_index(&debug_state, &rcg,
+                                                        nodes_before);
+                break;
+            }
+        }
 
         // Emit segment: current → goal. The very first move from the start
         // node is a coverageTransit (positioning to first coverage line);

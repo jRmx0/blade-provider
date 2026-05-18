@@ -25,6 +25,15 @@ bool cstar_debug_export_rcg_nodes(cstar_debug_t *debug_state,
                                   const cstar_rcg_t *rcg);
 
 /**
+ * Same as cstar_debug_export_rcg_nodes but only exports nodes whose array
+ * index is >= from_index. Use after mid-loop RCG insertions to append only
+ * the newly-added nodes without duplicating pre-existing ones.
+ */
+bool cstar_debug_export_rcg_nodes_from_index(cstar_debug_t *debug_state,
+                                             const cstar_rcg_t *rcg,
+                                             int from_index);
+
+/**
  * Appends all link nodes (is_link_node == true) created during the coverage
  * loop to the rcg_link_nodes debug list.
  *
