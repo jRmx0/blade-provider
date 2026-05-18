@@ -31,6 +31,7 @@
 
 #include "cstar_waypoint.h"
 #include "../rcg/cstar_rcg.h"
+#include <stdlib.h>
 
 int cstar_select_goal_node(const cstar_rcg_t *rcg, int current_node_id)
 {
@@ -45,16 +46,24 @@ int cstar_select_goal_node(const cstar_rcg_t *rcg, int current_node_id)
         return CSTAR_NO_NEIGHBOR;
     }
 
+    // Priority 1: left lap — collect all Open candidates, pick one at random.
+    int left_candidates[CSTAR_MAX_CROSS_LAP_NEIGHBORS];
+    int left_count = 0;
     for (int i = 0; i < node->neighbors_left_count; ++i)
     {
         int left_id = node->neighbors_left[i];
         const cstar_node_t *left = cstar_rcg_get_node_by_id(rcg, left_id);
         if (left != NULL && left->state == CSTAR_NODE_OP)
         {
-            return left_id;
+            left_candidates[left_count++] = left_id;
         }
     }
+    if (left_count > 0)
+    {
+        return left_candidates[rand() % left_count];
+    }
 
+    // Priority 2: up (single slot — no randomness needed).
     int up_id = node->neighbor_up;
     const cstar_node_t *up = cstar_rcg_get_node_by_id(rcg, up_id);
     if (up_id != CSTAR_NO_NEIGHBOR && up != NULL && up->state == CSTAR_NODE_OP)
@@ -62,6 +71,7 @@ int cstar_select_goal_node(const cstar_rcg_t *rcg, int current_node_id)
         return up_id;
     }
 
+    // Priority 3: down (single slot — no randomness needed).
     int down_id = node->neighbor_down;
     const cstar_node_t *down = cstar_rcg_get_node_by_id(rcg, down_id);
     if (down_id != CSTAR_NO_NEIGHBOR && down != NULL && down->state == CSTAR_NODE_OP)
@@ -69,14 +79,21 @@ int cstar_select_goal_node(const cstar_rcg_t *rcg, int current_node_id)
         return down_id;
     }
 
+    // Priority 4: right lap — collect all Open candidates, pick one at random.
+    int right_candidates[CSTAR_MAX_CROSS_LAP_NEIGHBORS];
+    int right_count = 0;
     for (int i = 0; i < node->neighbors_right_count; ++i)
     {
         int right_id = node->neighbors_right[i];
         const cstar_node_t *right = cstar_rcg_get_node_by_id(rcg, right_id);
         if (right != NULL && right->state == CSTAR_NODE_OP)
         {
-            return right_id;
+            right_candidates[right_count++] = right_id;
         }
+    }
+    if (right_count > 0)
+    {
+        return right_candidates[rand() % right_count];
     }
 
     return CSTAR_NO_NEIGHBOR;
