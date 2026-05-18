@@ -184,8 +184,8 @@ cstar_coverage_path_result_t *cstar_coverage_path_planning_process(cstar_environ
 
         if (goal_id == CSTAR_NO_NEIGHBOR)
         {
-            // Close the dead-end node so it is not included in the retreat
-            // set snapshot. No goal was reached, so cstar_update_node_state
+            // Close the dead-end node so it is excluded from the retreat set
+            // before escape. No goal was reached so cstar_update_node_state
             // was never called — close the node directly here instead.
             cstar_node_t *dead_end_node = cstar_rcg_get_node_by_id_mut(&rcg, current_node_id);
             if (dead_end_node != NULL)
@@ -193,10 +193,43 @@ cstar_coverage_path_result_t *cstar_coverage_path_planning_process(cstar_environ
                 dead_end_node->state = CSTAR_NODE_CL;
             }
 
-            // Refresh the retreat set: removes the now-closed dead-end node
-            // and reflects the final Open neighbours around this position.
+            // Refresh: removes the now-closed dead-end node and reflects the
+            // final Open neighbours around this position.
             cstar_retreat_update(&retreat_nodes, &rcg, cur->pos, w);
-            break;
+
+            // Navigate to nearest retreat node via A*.
+            cvector_vector_type(point_t) escape_path = NULL;
+            int retreat_id = cstar_escape_dead_end(&rcg,
+                                                   current_node_id,
+                                                   retreat_nodes,
+                                                   &escape_path);
+            if (retreat_id == CSTAR_NO_NEIGHBOR)
+            {
+                // Retreat set empty — every reachable node is Closed.
+                // Coverage is complete.
+                if (escape_path != NULL)
+                {
+                    cvector_free(escape_path);
+                }
+                break;
+            }
+
+            // Emit the A* escape path as a retreatTransit segment.
+            if (escape_path != NULL)
+            {
+                int path_len = (int)cvector_size(escape_path);
+                if (path_len > 0)
+                {
+                    cstar_result_add_segment(result, segment_id,
+                                             "retreatTransit",
+                                             escape_path, path_len);
+                    segment_id++;
+                }
+                cvector_free(escape_path);
+            }
+
+            current_node_id = retreat_id;
+            continue;
         }
 
         // Capture positions before state update may reallocate rcg->nodes.
