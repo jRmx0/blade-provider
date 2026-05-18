@@ -301,7 +301,50 @@ cstar_coverage_path_result_t *cstar_coverage_path_planning_process(cstar_environ
                    the array. */
                 cstar_debug_export_rcg_nodes_from_id(&debug_state, &rcg,
                                                      new_node_id_threshold);
-                break;
+
+                /* Resume coverage from the nearest Open RCG node to entry_pt.
+                   The robot completed a full CCW circumnavigation and is back at
+                   entry_pt; we must advance current_node_id so the loop restarts
+                   from the correct physical position rather than replaying the
+                   collision endlessly. */
+                {
+                    int resume_id = CSTAR_NO_NEIGHBOR;
+                    float resume_dist = INFINITY;
+                    for (int k = 0; k < rcg.node_count; ++k)
+                    {
+                        const cstar_node_t *rn = &rcg.nodes[k];
+                        if (rn->state == CSTAR_NODE_CL ||
+                            rn->is_start_point ||
+                            rn->is_link_node)
+                            continue;
+                        float ddx = rn->pos.x - entry_pt.x;
+                        float ddy = rn->pos.y - entry_pt.y;
+                        float d = sqrtf(ddx * ddx + ddy * ddy);
+                        if (d < resume_dist)
+                        {
+                            resume_dist = d;
+                            resume_id = rn->id;
+                        }
+                    }
+
+                    if (resume_id == CSTAR_NO_NEIGHBOR)
+                        break; /* all nodes closed; coverage complete */
+
+                    /* Emit transit: circumnavigation close point → resume node.
+                       Bridges the physical gap between entry_pt and the nearest
+                       planning node so the output path is continuous. */
+                    const cstar_node_t *rnode = cstar_rcg_get_node_by_id(&rcg, resume_id);
+                    if (rnode != NULL && !cstar_points_equal(entry_pt, rnode->pos))
+                    {
+                        point_t transit[2] = {entry_pt, rnode->pos};
+                        cstar_result_add_segment(result, segment_id,
+                                                 "coverage", transit, 2);
+                        segment_id++;
+                    }
+
+                    current_node_id = resume_id;
+                }
+                continue; /* restart coverage loop from resume node */
             }
         }
 

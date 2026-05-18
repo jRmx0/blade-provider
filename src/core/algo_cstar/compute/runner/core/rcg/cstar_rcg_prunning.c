@@ -134,6 +134,11 @@ void cstar_rcg_prune_non_essential_nodes(cstar_rcg_t *rcg)
         // Also keep node marked as start point node
         if (rcg->nodes[i].is_start_point)
             keep = 1;
+        // Keep link nodes inserted during traversal (left-lap transitions).
+        // They are part of the robot's physical path and are needed for A*
+        // dead-end escape after the mid-loop pruning pass.
+        if (rcg->nodes[i].is_link_node)
+            keep = 1;
         // Rule: non-end node N is essential if it is the sole cross-lap bridge
         // to an end node on an adjacent lap:
         //   - N connects to end node M on the right, and M has no other left neighbor
