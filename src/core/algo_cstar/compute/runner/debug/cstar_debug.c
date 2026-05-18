@@ -416,6 +416,42 @@ bool cstar_debug_export_rcg_nodes_from_index(cstar_debug_t *debug_state,
     return true;
 }
 
+bool cstar_debug_export_rcg_nodes_from_id(cstar_debug_t *debug_state,
+                                          const cstar_rcg_t *rcg,
+                                          int min_node_id)
+{
+    if (debug_state == NULL || rcg == NULL || min_node_id < 0)
+        return false;
+
+    for (int i = 0; i < rcg->node_count; ++i)
+    {
+        if (rcg->nodes[i].id < min_node_id)
+            continue;
+
+        int node_debug_id = rcg->nodes[i].id + 1;
+
+        if (!cstar_debug_append_point(&debug_state->frontier_sample_list,
+                                      node_debug_id, rcg->nodes[i].pos))
+            return false;
+
+        if (rcg->nodes[i].is_top_end_node || rcg->nodes[i].is_bottom_end_node)
+        {
+            if (!cstar_debug_append_point(&debug_state->rcg_end_nodes,
+                                          node_debug_id, rcg->nodes[i].pos))
+                return false;
+        }
+
+        if (rcg->nodes[i].is_link_node)
+        {
+            if (!cstar_debug_append_point(&debug_state->rcg_link_nodes,
+                                          node_debug_id, rcg->nodes[i].pos))
+                return false;
+        }
+    }
+
+    return true;
+}
+
 bool cstar_debug_export_rcg_edges(cstar_debug_t *debug_state,
                                   const cstar_rcg_t *rcg)
 {

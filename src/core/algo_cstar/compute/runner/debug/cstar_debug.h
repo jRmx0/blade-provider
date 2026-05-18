@@ -34,6 +34,19 @@ bool cstar_debug_export_rcg_nodes_from_index(cstar_debug_t *debug_state,
                                              int from_index);
 
 /**
+ * Same as cstar_debug_export_rcg_nodes_from_index but filters by node ID
+ * instead of array index. Exports only nodes whose id >= min_node_id.
+ *
+ * Preferred over _from_index for mid-loop insertions because the compact
+ * array index of new nodes shifts when previously-essential nodes (e.g. link
+ * nodes) are pruned by the second pruning pass. Node IDs are monotonically
+ * increasing and stable across pruning compaction.
+ */
+bool cstar_debug_export_rcg_nodes_from_id(cstar_debug_t *debug_state,
+                                          const cstar_rcg_t *rcg,
+                                          int min_node_id);
+
+/**
  * Appends all link nodes (is_link_node == true) created during the coverage
  * loop to the rcg_link_nodes debug list.
  *

@@ -280,10 +280,13 @@ cstar_coverage_path_result_t *cstar_coverage_path_planning_process(cstar_environ
                     cvector_free(boundary_pts);
                 }
 
-                /* Add new lap-based frontier samples on laps adjacent to the
-                   obstacle — same logic as initial sampling but without
-                   clearing the existing RCG or its node states. */
-                int nodes_before = rcg.node_count;
+                /* Capture the next-to-be-assigned node ID before sampling.
+                   New obstacle-adjacent nodes will receive IDs >= this value.
+                   Using the ID boundary (not the array index) is stable across
+                   the second pruning pass: link nodes added during the coverage
+                   loop may be pruned there, shifting the compact indices of new
+                   nodes below nodes_before — the ID boundary is unaffected. */
+                int new_node_id_threshold = rcg.next_node_id;
                 cstar_generate_obstacle_adjacent_samples(&rcg, hit_obstacle_idx,
                                                          w, delta, env);
 
@@ -298,12 +301,12 @@ cstar_coverage_path_result_t *cstar_coverage_path_planning_process(cstar_environ
                 cstar_rcg_rebuild_links_from_edges(rcg.nodes, rcg.node_count,
                                                    rcg.edges, rcg.edge_count);
 
-                /* Append only the newly-added nodes to the debug layer so
-                   pre-existing nodes are not duplicated. nodes_before remains
-                   a valid split: pruning compacts in order, so K pre-existing
-                   essential nodes stay at indices 0..K-1. */
-                cstar_debug_export_rcg_nodes_from_index(&debug_state, &rcg,
-                                                        nodes_before);
+                /* Append only newly-added survived nodes to the debug layer.
+                   Filtered by node ID (>= new_node_id_threshold) so pre-existing
+                   nodes are not duplicated regardless of how compaction reorders
+                   the array. */
+                cstar_debug_export_rcg_nodes_from_id(&debug_state, &rcg,
+                                                     new_node_id_threshold);
                 break;
             }
         }

@@ -317,10 +317,53 @@ bool cstar_rcg_expand_graph_unique(cstar_rcg_t *rcg,
     return true;
 }
 
+/**
+ * Removes all within-lap (same lap_id) edges from rcg->edges in-place.
+ *
+ * Called at the start of cstar_rcg_generate_vertical_lap_edges to ensure stale
+ * direct edges between existing nodes (e.g. A↔B) are purged before the
+ * vertical chain is regenerated.  This prevents A* from shortcutting past
+ * newly-inserted obstacle-adjacent nodes that sit between A and B.
+ *
+ * On the initial setup call there are no same-lap edges yet (cstar_rcg_expand_graph
+ * only adds cross-lap edges), so this is a safe no-op in that case.
+ */
+static void cstar_rcg_remove_same_lap_edges(cstar_rcg_t *rcg)
+{
+    if (!rcg || !rcg->edges || rcg->edge_count == 0)
+        return;
+
+    cstar_edge_t *new_edges = NULL;
+    for (int i = 0; i < rcg->edge_count; ++i)
+    {
+        int a_idx = cstar_rcg_index_from_node_id(rcg, rcg->edges[i].node_a);
+        int b_idx = cstar_rcg_index_from_node_id(rcg, rcg->edges[i].node_b);
+
+        /* Keep only cross-lap edges between two surviving nodes.
+           Drop same-lap edges (will be regenerated below) and drop any
+           edge where either endpoint was already pruned (orphan edge). */
+        if (a_idx != CSTAR_NO_NEIGHBOR && b_idx != CSTAR_NO_NEIGHBOR &&
+            rcg->nodes[a_idx].lap_id != rcg->nodes[b_idx].lap_id)
+        {
+            cvector_push_back(new_edges, rcg->edges[i]);
+        }
+    }
+
+    cvector_free(rcg->edges);
+    rcg->edges = new_edges;
+    rcg->edge_count = (int)cvector_size(rcg->edges);
+    rcg->edge_capacity = (int)cvector_capacity(rcg->edges);
+}
+
 void cstar_rcg_generate_vertical_lap_edges(cstar_rcg_t *rcg, const cstar_environment_t *env)
 {
     if (!rcg || !env || !env->laps)
         return;
+
+    /* Purge stale same-lap edges so that any previously-direct A↔B edges are
+       removed before the vertical chain (A↔X, X↔B) is regenerated below.
+       No-op on the initial call because no same-lap edges exist yet. */
+    cstar_rcg_remove_same_lap_edges(rcg);
 
     cstar_lap_t *laps = (cstar_lap_t *)env->laps;
     int lap_count = (int)cvector_size(laps);
