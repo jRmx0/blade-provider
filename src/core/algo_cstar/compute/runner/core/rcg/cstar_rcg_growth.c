@@ -56,112 +56,6 @@ static void cstar_rcg_add_edge(cstar_rcg_t *rcg,
     rcg->edge_capacity = (int)cvector_capacity(rcg->edges);
 }
 
-/**
- * Connectivity check using BFS: verifies all nodes are reachable from the first node.
- */
-static bool cstar_rcg_is_connected(const cstar_rcg_t *rcg)
-{
-    if (rcg == NULL || rcg->node_count <= 0 || rcg->nodes == NULL)
-    {
-        return rcg->node_count == 0;
-    }
-
-    // Allocate visited array
-    bool *visited = (bool *)malloc((size_t)rcg->node_count * sizeof(bool));
-    if (visited == NULL)
-    {
-        return false;
-    }
-
-    memset(visited, 0, (size_t)rcg->node_count * sizeof(bool));
-
-    // BFS queue
-    int *queue = (int *)malloc((size_t)rcg->node_count * sizeof(int));
-    if (queue == NULL)
-    {
-        free(visited);
-        return false;
-    }
-
-    int queue_front = 0;
-    int queue_back = 0;
-
-    // Start from first node index
-    queue[queue_back++] = 0;
-    visited[0] = true;
-    int visited_count = 1;
-
-    while (queue_front < queue_back)
-    {
-        int current_id = queue[queue_front++];
-        if (current_id < 0 || current_id >= rcg->node_count)
-        {
-            continue;
-        }
-
-        const cstar_node_t *current = &rcg->nodes[current_id];
-
-        // Explore all neighbors
-        int same_lap_neighbors[] = {current->neighbor_up, current->neighbor_down};
-        for (int i = 0; i < 2; ++i)
-        {
-            int neighbor_idx = cstar_rcg_index_from_node_id(rcg, same_lap_neighbors[i]);
-            if (neighbor_idx != CSTAR_NO_NEIGHBOR && !visited[neighbor_idx])
-            {
-                visited[neighbor_idx] = true;
-                queue[queue_back++] = neighbor_idx;
-                visited_count++;
-            }
-        }
-        for (int i = 0; i < current->neighbors_left_count; ++i)
-        {
-            int neighbor_idx = cstar_rcg_index_from_node_id(rcg, current->neighbors_left[i]);
-            if (neighbor_idx != CSTAR_NO_NEIGHBOR && !visited[neighbor_idx])
-            {
-                visited[neighbor_idx] = true;
-                queue[queue_back++] = neighbor_idx;
-                visited_count++;
-            }
-        }
-        for (int i = 0; i < current->neighbors_right_count; ++i)
-        {
-            int neighbor_idx = cstar_rcg_index_from_node_id(rcg, current->neighbors_right[i]);
-            if (neighbor_idx != CSTAR_NO_NEIGHBOR && !visited[neighbor_idx])
-            {
-                visited[neighbor_idx] = true;
-                queue[queue_back++] = neighbor_idx;
-                visited_count++;
-            }
-        }
-    }
-
-    free(queue);
-    free(visited);
-
-    return visited_count == rcg->node_count;
-}
-
-/**
- * Planarity check: Euler's formula for planar graphs.
- * For a connected planar graph: edges ≤ 3 * nodes - 6
- */
-static bool cstar_rcg_is_planar(const cstar_rcg_t *rcg)
-{
-    if (rcg == NULL)
-    {
-        return true;
-    }
-
-    if (rcg->node_count < 3)
-    {
-        // Graphs with < 3 nodes are always planar
-        return true;
-    }
-
-    int max_edges = 3 * rcg->node_count - 6;
-    return rcg->edge_count <= max_edges;
-}
-
 // -------------------------------------------------------------------------
 // RCG Expansion Implementation
 // -------------------------------------------------------------------------
@@ -246,16 +140,6 @@ bool cstar_rcg_expand_graph(cstar_rcg_t *rcg,
             }
         }
     }
-
-    // -----------------------------------------------------------------------
-    // Stage 3: Graph Validation (non-fatal)
-    // -----------------------------------------------------------------------
-    // Keep checks for observability/debugging, but do not abort expansion.
-    // With strict same-lap distance gating (d <= w), sparse frontiers can
-    // legitimately yield disconnected intermediate graphs.
-
-    (void)cstar_rcg_is_connected(rcg);
-    (void)cstar_rcg_is_planar(rcg);
 
     return true;
 }
