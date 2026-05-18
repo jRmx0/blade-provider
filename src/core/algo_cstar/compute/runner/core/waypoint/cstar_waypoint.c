@@ -31,6 +31,7 @@
 
 #include "cstar_waypoint.h"
 #include "../rcg/cstar_rcg.h"
+#include "../rcg/cstar_rcg_growth.h"
 #include <math.h>
 #include <stdlib.h>
 
@@ -246,6 +247,10 @@ int cstar_update_node_state(cstar_rcg_t *rcg,
             // obstacle-free, so no collision check is required.
             cstar_rcg_add_edge(rcg, current_node_id, link_id, w);
             cstar_rcg_add_edge(rcg, link_id, nbr_id, dist - w);
+            // Remove the pre-existing direct current <-> nbr edge that the
+            // link node now replaces. Without this, A* sees a stale shortcut
+            // that bypasses the logically-split chain.
+            cstar_rcg_remove_edge(rcg, current_node_id, nbr_id);
 
             link_nodes_created++;
         }

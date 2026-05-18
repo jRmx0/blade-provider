@@ -82,4 +82,23 @@ const cstar_node_t *cstar_rcg_get_node_by_id(const cstar_rcg_t *rcg, int node_id
  */
 cstar_node_t *cstar_rcg_get_node_by_id_mut(cstar_rcg_t *rcg, int node_id);
 
+// -------------------------------------------------------------------------
+// RCG Edge Management
+// -------------------------------------------------------------------------
+
+/**
+ * Removes the first undirected edge matching (node_a, node_b) or
+ * (node_b, node_a) from the RCG edge list using a swap-remove.
+ *
+ * Uses rcg->edge_count as the authoritative logical size; the cvector
+ * backing buffer stays allocated. Only the first matching edge is removed.
+ * No-op if no matching edge is found.
+ *
+ * Parameters:
+ *   rcg    - RCG structure (must not be NULL)
+ *   node_a - ID of one endpoint
+ *   node_b - ID of other endpoint
+ */
+void cstar_rcg_remove_edge(cstar_rcg_t *rcg, int node_a, int node_b);
+
 #endif // CSTAR_RCG_H

@@ -62,4 +62,26 @@ bool cstar_rcg_expand_graph(cstar_rcg_t *rcg,
 void cstar_rcg_generate_vertical_lap_edges(cstar_rcg_t *rcg,
                                            const cstar_environment_t *env);
 
+// -------------------------------------------------------------------------
+// Edge Management
+// -------------------------------------------------------------------------
+
+/**
+ * Adds an undirected edge between two nodes with the given cost.
+ *
+ * Both node IDs must exist in the RCG. Does not deduplicate — use
+ * cstar_rcg_add_unique_edge if deduplication is required. This function
+ * is also used by cstar_waypoint.c when inserting link nodes.
+ *
+ * Parameters:
+ *   rcg    - RCG structure (must not be NULL)
+ *   node_a - ID of first node
+ *   node_b - ID of second node
+ *   cost   - Edge cost (typically Euclidean distance)
+ */
+void cstar_rcg_add_edge(cstar_rcg_t *rcg,
+                        int node_a,
+                        int node_b,
+                        float cost);
+
 #endif // CSTAR_RCG_GROWTH_H

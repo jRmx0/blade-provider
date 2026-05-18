@@ -108,8 +108,7 @@ cstar_coverage_path_result_t *cstar_coverage_path_planning_process(cstar_environ
 
     if (!cstar_debug_export_laps(&debug_state, env) ||
         !cstar_debug_export_rcg_nodes(&debug_state, &rcg) ||
-        !cstar_debug_export_rcg_edges(&debug_state, &rcg) ||
-        !cstar_debug_finalize_layers(&debug_state, &result->debug_layers))
+        !cstar_debug_export_rcg_edges(&debug_state, &rcg))
     {
         cstar_debug_dispose(&debug_state);
         cstar_rcg_free(&rcg);
@@ -118,7 +117,8 @@ cstar_coverage_path_result_t *cstar_coverage_path_planning_process(cstar_environ
         return NULL;
     }
 
-    cstar_debug_dispose(&debug_state);
+    // debug_state stays alive — link nodes are created during the main loop
+    // and captured by cstar_debug_export_link_nodes after the loop exits.
 
     // -------------------------------------------------------------------------
     // Coverage path planning loop  (Section III.B, Algorithms 1–2 + IV)
@@ -137,6 +137,7 @@ cstar_coverage_path_result_t *cstar_coverage_path_planning_process(cstar_environ
 
     if (start_node_id == CSTAR_NO_NEIGHBOR)
     {
+        cstar_debug_dispose(&debug_state);
         cstar_rcg_free(&rcg);
         cstar_environment_laps_cleanup(env);
         cstar_result_cleanup_partial(result);
@@ -154,6 +155,7 @@ cstar_coverage_path_result_t *cstar_coverage_path_planning_process(cstar_environ
         if (!cstar_add_start_transit(result, &segment_id,
                                      env->start_point, start_node->pos))
         {
+            cstar_debug_dispose(&debug_state);
             cstar_rcg_free(&rcg);
             cstar_environment_laps_cleanup(env);
             cstar_result_cleanup_partial(result);
@@ -246,6 +248,13 @@ cstar_coverage_path_result_t *cstar_coverage_path_planning_process(cstar_environ
     }
 
     cvector_free(retreat_nodes);
+
+    // Export link nodes created during traversal, finalize debug layers, then
+    // dispose. Non-fatal: coverage segments in result are the primary output.
+    cstar_debug_export_link_nodes(&debug_state, &rcg);
+    cstar_debug_finalize_layers(&debug_state, &result->debug_layers);
+    cstar_debug_dispose(&debug_state);
+
     cstar_rcg_free(&rcg);
     cstar_environment_laps_cleanup(env);
     return result;

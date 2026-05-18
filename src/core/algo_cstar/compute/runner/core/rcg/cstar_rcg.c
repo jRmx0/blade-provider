@@ -133,3 +133,30 @@ cstar_node_t *cstar_rcg_get_node_by_id_mut(cstar_rcg_t *rcg, int node_id)
 
     return &rcg->nodes[idx];
 }
+
+// -------------------------------------------------------------------------
+// Edge Management
+// -------------------------------------------------------------------------
+
+void cstar_rcg_remove_edge(cstar_rcg_t *rcg, int node_a, int node_b)
+{
+    if (rcg == NULL || rcg->edges == NULL || rcg->edge_count <= 0)
+    {
+        return;
+    }
+
+    for (int i = 0; i < rcg->edge_count; ++i)
+    {
+        cstar_edge_t *e = &rcg->edges[i];
+        if ((e->node_a == node_a && e->node_b == node_b) ||
+            (e->node_a == node_b && e->node_b == node_a))
+        {
+            // Swap-remove: overwrite with the last element and shrink the
+            // logical count. rcg->edge_count is the authoritative size used
+            // by all callers; the cvector backing buffer stays allocated.
+            rcg->edges[i] = rcg->edges[rcg->edge_count - 1];
+            rcg->edge_count--;
+            return;
+        }
+    }
+}

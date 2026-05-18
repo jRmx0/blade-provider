@@ -414,6 +414,31 @@ bool cstar_debug_export_rcg_edges(cstar_debug_t *debug_state,
     return true;
 }
 
+bool cstar_debug_export_link_nodes(cstar_debug_t *debug_state,
+                                   const cstar_rcg_t *rcg)
+{
+    if (debug_state == NULL || rcg == NULL)
+    {
+        return false;
+    }
+
+    for (int i = 0; i < rcg->node_count; ++i)
+    {
+        if (!rcg->nodes[i].is_link_node)
+        {
+            continue;
+        }
+
+        int node_debug_id = rcg->nodes[i].id + 1;
+        if (!cstar_debug_append_point(&debug_state->rcg_link_nodes, node_debug_id, rcg->nodes[i].pos))
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 bool cstar_debug_export_laps(cstar_debug_t *debug_state,
                              const cstar_environment_t *env)
 {

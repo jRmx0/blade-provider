@@ -31,10 +31,10 @@ static float cstar_rcg_node_distance(const cstar_node_t *a, const cstar_node_t *
 /**
  * Adds an edge to the RCG.
  */
-static void cstar_rcg_add_edge(cstar_rcg_t *rcg,
-                               int node_a,
-                               int node_b,
-                               float cost)
+void cstar_rcg_add_edge(cstar_rcg_t *rcg,
+                        int node_a,
+                        int node_b,
+                        float cost)
 {
     if (rcg == NULL)
     {
