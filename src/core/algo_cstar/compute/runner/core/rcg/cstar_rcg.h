@@ -45,7 +45,9 @@ void cstar_rcg_free(cstar_rcg_t *rcg);
  *   rcg     - RCG structure (must not be NULL)
  *   pos     - Node position in 2D space
  *   lap_id  - Index of the lap this node belongs to
- *   is_end  - Whether this node touches an obstacle or boundary
+ *   is_top_end_node    - Whether this node touches an obstacle or boundary in the up (+y) direction
+ *   is_bottom_end_node - Whether this node touches an obstacle or boundary in the down (-y) direction
+ *   is_top_and_bottom_end_node - Whether this node touches a border from top AND bottom
  *
  * Returns:
  *   Stable node ID on success
@@ -54,8 +56,9 @@ void cstar_rcg_free(cstar_rcg_t *rcg);
 int cstar_rcg_add_node(cstar_rcg_t *rcg,
                        point_t pos,
                        int lap_id,
-                       bool is_end,
-                       bool is_surrounded_node,
+                       bool is_top_end_node,
+                       bool is_bottom_end_node,
+                       bool is_top_and_bottom_end_node,
                        bool is_start_point);
 
 /**

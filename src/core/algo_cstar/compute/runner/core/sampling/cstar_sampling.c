@@ -153,7 +153,7 @@ static bool cstar_sampling_point_is_free(point_t point, const cstar_environment_
     return true;
 }
 
-static bool cstar_sampling_is_end_node_vertical(point_t sample, float w, const cstar_environment_t *env)
+static bool cstar_sampling_is_top_end_node_vertical(point_t sample, float w, const cstar_environment_t *env)
 {
     if (env == NULL || w <= CSTAR_EPSILON)
     {
@@ -161,30 +161,32 @@ static bool cstar_sampling_is_end_node_vertical(point_t sample, float w, const c
     }
 
     point_t probe_up = {sample.x, sample.y + w};
-    point_t probe_down = {sample.x, sample.y - w};
 
     bool up_hits_boundary = cstar_sampling_point_on_any_boundary(probe_up, env, CSTAR_EPSILON);
-    bool down_hits_boundary = cstar_sampling_point_on_any_boundary(probe_down, env, CSTAR_EPSILON);
     bool up_blocked = !cstar_sampling_point_is_free(probe_up, env);
-    bool down_blocked = !cstar_sampling_point_is_free(probe_down, env);
 
-    return up_hits_boundary || down_hits_boundary || up_blocked || down_blocked;
+    return up_hits_boundary || up_blocked;
 }
 
-static bool cstar_sampling_is_surrounded_node_vertical(point_t sample, float w, const cstar_environment_t *env)
+static bool cstar_sampling_is_bottom_end_node_vertical(point_t sample, float w, const cstar_environment_t *env)
 {
     if (env == NULL || w <= CSTAR_EPSILON)
     {
         return false;
     }
 
-    point_t probe_up = {sample.x, sample.y + w};
     point_t probe_down = {sample.x, sample.y - w};
 
-    bool up_blocked = !cstar_sampling_point_is_free(probe_up, env) || cstar_sampling_point_on_any_boundary(probe_up, env, CSTAR_EPSILON);
-    bool down_blocked = !cstar_sampling_point_is_free(probe_down, env) || cstar_sampling_point_on_any_boundary(probe_down, env, CSTAR_EPSILON);
+    bool down_hits_boundary = cstar_sampling_point_on_any_boundary(probe_down, env, CSTAR_EPSILON);
+    bool down_blocked = !cstar_sampling_point_is_free(probe_down, env);
 
-    return up_blocked && down_blocked;
+    return down_hits_boundary || down_blocked;
+}
+
+static bool cstar_sampling_is_top_and_bottom_end_node_vertical(point_t sample, float w, const cstar_environment_t *env)
+{
+    return cstar_sampling_is_top_end_node_vertical(sample, w, env) &&
+           cstar_sampling_is_bottom_end_node_vertical(sample, w, env);
 }
 
 static float cstar_sampling_dist_to_operational_boundary(point_t point, const cstar_environment_t *env)
@@ -272,9 +274,10 @@ int cstar_generate_frontier_samples(cstar_rcg_t *rcg,
             point_t start_sample = {env->start_point.x, env->start_point.y};
             if (cstar_sampling_point_is_free(start_sample, env))
             {
-                bool is_end_node = cstar_sampling_is_end_node_vertical(start_sample, w, env);
-                bool is_surrounded_node = cstar_sampling_is_surrounded_node_vertical(start_sample, w, env);
-                int start_node_id = cstar_rcg_add_node(rcg, start_sample, lap->id, is_end_node, is_surrounded_node, true);
+                bool is_top_end_node = cstar_sampling_is_top_end_node_vertical(start_sample, w, env);
+                bool is_bottom_end_node = cstar_sampling_is_bottom_end_node_vertical(start_sample, w, env);
+                bool is_top_and_bottom_end_node = cstar_sampling_is_top_and_bottom_end_node_vertical(start_sample, w, env);
+                int start_node_id = cstar_rcg_add_node(rcg, start_sample, lap->id, is_top_end_node, is_bottom_end_node, is_top_and_bottom_end_node, true);
                 if (start_node_id != CSTAR_NO_NEIGHBOR)
                 {
                     cvector_push_back(lap->node_ids, start_node_id);
@@ -307,9 +310,10 @@ int cstar_generate_frontier_samples(cstar_rcg_t *rcg,
                 continue;
             }
 
-            bool is_end_node = cstar_sampling_is_end_node_vertical(sample, w, env);
-            bool is_surrounded_node = cstar_sampling_is_surrounded_node_vertical(sample, w, env);
-            int node_id = cstar_rcg_add_node(rcg, sample, lap->id, is_end_node, is_surrounded_node, false);
+            bool is_top_end_node = cstar_sampling_is_top_end_node_vertical(sample, w, env);
+            bool is_bottom_end_node = cstar_sampling_is_bottom_end_node_vertical(sample, w, env);
+            bool is_top_and_bottom_end_node = cstar_sampling_is_top_and_bottom_end_node_vertical(sample, w, env);
+            int node_id = cstar_rcg_add_node(rcg, sample, lap->id, is_top_end_node, is_bottom_end_node, is_top_and_bottom_end_node, false);
             if (node_id == CSTAR_NO_NEIGHBOR)
             {
                 continue;

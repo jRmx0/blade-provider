@@ -268,7 +268,7 @@ void cstar_rcg_prune_to_end_nodes(cstar_rcg_t *rcg)
     for (int i = 0; i < rcg->node_count; ++i)
     {
         int keep = 0;
-        if (rcg->nodes[i].is_end_node)
+        if (rcg->nodes[i].is_top_end_node || rcg->nodes[i].is_bottom_end_node)
             keep = 1;
         // Also keep node marked as start point node
         if (rcg->nodes[i].is_start_point)
@@ -288,7 +288,7 @@ void cstar_rcg_prune_to_end_nodes(cstar_rcg_t *rcg)
                 if (m_idx != CSTAR_NO_NEIGHBOR)
                 {
                     const cstar_node_t *m = &rcg->nodes[m_idx];
-                    if (m->is_end_node && m->neighbors_left_count == 1)
+                    if ((m->is_top_end_node || m->is_bottom_end_node) && m->neighbors_left_count == 1)
                         keep = 1;
                 }
             }
@@ -299,7 +299,7 @@ void cstar_rcg_prune_to_end_nodes(cstar_rcg_t *rcg)
                 if (m_idx != CSTAR_NO_NEIGHBOR)
                 {
                     const cstar_node_t *m = &rcg->nodes[m_idx];
-                    if (m->is_end_node && m->neighbors_right_count == 1)
+                    if ((m->is_top_end_node || m->is_bottom_end_node) && m->neighbors_right_count == 1)
                         keep = 1;
                 }
             }
@@ -319,7 +319,7 @@ void cstar_rcg_prune_to_end_nodes(cstar_rcg_t *rcg)
                     if (nx_idx == CSTAR_NO_NEIGHBOR)
                         continue;
                     const cstar_node_t *nx = &rcg->nodes[nx_idx];
-                    if (!nx->is_end_node)
+                    if (!(nx->is_top_end_node || nx->is_bottom_end_node))
                         continue;
 
                     int n_lap = n->lap_id;
@@ -340,7 +340,7 @@ void cstar_rcg_prune_to_end_nodes(cstar_rcg_t *rcg)
                             continue;
                         if (nb->id == n->id)
                             found_n = 1;
-                        if (nb->is_end_node)
+                        if (nb->is_top_end_node || nb->is_bottom_end_node)
                             all_non_end = 0;
                         float min_obst_dist = -1.0f;
                         for (uint32_t o = 0; o < rcg->node_count; ++o)
@@ -348,7 +348,7 @@ void cstar_rcg_prune_to_end_nodes(cstar_rcg_t *rcg)
                             if ((int)o == nx_idx)
                                 continue;
                             const cstar_node_t *ob = &rcg->nodes[o];
-                            if (!ob->is_end_node)
+                            if (!(ob->is_top_end_node || ob->is_bottom_end_node))
                                 continue;
                             float dx = nx->pos.x - ob->pos.x;
                             float dy = nx->pos.y - ob->pos.y;

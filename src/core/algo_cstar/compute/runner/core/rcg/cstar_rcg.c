@@ -57,8 +57,9 @@ void cstar_rcg_free(cstar_rcg_t *rcg)
 int cstar_rcg_add_node(cstar_rcg_t *rcg,
                        point_t pos,
                        int lap_id,
-                       bool is_end,
-                       bool is_surrounded_node,
+                       bool is_top_end_node,
+                       bool is_bottom_end_node,
+                       bool is_top_and_bottom_end_node,
                        bool is_start_point)
 {
     if (rcg == NULL)
@@ -72,8 +73,9 @@ int cstar_rcg_add_node(cstar_rcg_t *rcg,
     new_node.state = CSTAR_NODE_OP;
 
     new_node.lap_id = lap_id;
-    new_node.is_end_node = is_end;
-    new_node.is_surrounded_node = is_surrounded_node;
+    new_node.is_top_end_node = is_top_end_node;
+    new_node.is_bottom_end_node = is_bottom_end_node;
+    new_node.is_top_and_bottom_end_node = is_top_and_bottom_end_node;
     new_node.is_link_node = false;
     new_node.is_start_point = is_start_point;
 

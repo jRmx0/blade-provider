@@ -81,11 +81,12 @@ typedef struct
     point_t pos;
     cstar_node_state_t state;
 
-    int lap_id;          // index of the lap this node belongs to
-    bool is_end_node;    // true if this node touches an obstacle or boundary
-    bool is_surrounded_node; // true if node touches border (zone or obstacle) from top AND bottom
-    bool is_link_node;   // true if created by the state-update step
-    bool is_start_point; // true if this node is the sampling node at env->start_point
+    int lap_id;                      // index of the lap this node belongs to
+    bool is_top_end_node;            // true if this node touches an obstacle or boundary in the up (+y) direction
+    bool is_bottom_end_node;         // true if this node touches an obstacle or boundary in the down (-y) direction
+    bool is_top_and_bottom_end_node; // true if node touches border (zone or obstacle) from top AND bottom
+    bool is_link_node;               // true if created by the state-update step
+    bool is_start_point;             // true if this node is the sampling node at env->start_point
 
     int neighbor_up;   // same lap, increasing-y direction (node ID)
     int neighbor_down; // same lap, decreasing-y direction (node ID)

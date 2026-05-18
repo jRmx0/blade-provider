@@ -363,7 +363,7 @@ bool cstar_debug_export_rcg_nodes(cstar_debug_t *debug_state,
             return false;
         }
 
-        if (rcg->nodes[i].is_end_node)
+        if (rcg->nodes[i].is_top_end_node || rcg->nodes[i].is_bottom_end_node)
         {
             if (!cstar_debug_append_point(&debug_state->rcg_end_nodes, node_debug_id, rcg->nodes[i].pos))
             {
