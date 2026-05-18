@@ -285,7 +285,7 @@ void cstar_debug_dispose(cstar_debug_t *debug_state)
     cstar_debug_segment_list_free(&debug_state->lap_list);
     cstar_debug_point_list_free(&debug_state->frontier_sample_list);
     cstar_debug_point_list_free(&debug_state->retreat_node_list);
-    cstar_debug_polygon_list_free(&debug_state->coverage_hole_list);
+    cstar_debug_point_list_free(&debug_state->coverage_hole_list);
 
     memset(debug_state, 0, sizeof(*debug_state));
 }
@@ -337,8 +337,8 @@ bool cstar_debug_finalize_layers(cstar_debug_t *debug_state,
 
     layers[6].id = 17;
     layers[6].source = "coverageHoleList";
-    layers[6].list_type = CSTAR_DEBUG_LIST_POLYGONS;
-    cstar_debug_move_polygon_list(&layers[6].list.polygons, &debug_state->coverage_hole_list);
+    layers[6].list_type = CSTAR_DEBUG_LIST_POINTS;
+    cstar_debug_move_point_list(&layers[6].list.points, &debug_state->coverage_hole_list);
 
     out_layers->layers = layers;
     out_layers->layer_count = CSTAR_DEBUG_LAYER_COUNT;
@@ -510,6 +510,35 @@ bool cstar_debug_accumulate_retreat_nodes(cstar_debug_t *debug_state,
         }
 
         if (!cstar_debug_append_point(&debug_state->retreat_node_list, debug_id, node->pos))
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool cstar_debug_accumulate_coverage_holes(cstar_debug_t *debug_state,
+                                           const int *node_ids,
+                                           int node_count,
+                                           const cstar_rcg_t *rcg)
+{
+    if (debug_state == NULL || rcg == NULL || node_ids == NULL || node_count <= 0)
+    {
+        return true; /* no-op, not an error */
+    }
+
+    for (int i = 0; i < node_count; ++i)
+    {
+        const cstar_node_t *node = cstar_rcg_get_node_by_id(rcg, node_ids[i]);
+        if (node == NULL)
+        {
+            continue;
+        }
+
+        /* Use node_id + 1 as debug point ID (matches pattern in cstar_debug_export_rcg_nodes) */
+        int debug_id = node->id + 1;
+        if (!cstar_debug_append_point(&debug_state->coverage_hole_list, debug_id, node->pos))
         {
             return false;
         }

@@ -12,7 +12,7 @@ typedef struct
     cstar_debug_segment_list_t lap_list;
     cstar_debug_point_list_t frontier_sample_list;
     cstar_debug_point_list_t retreat_node_list;
-    cstar_debug_polygon_list_t coverage_hole_list;
+    cstar_debug_point_list_t coverage_hole_list;
 } cstar_debug_t;
 
 bool cstar_debug_init(cstar_debug_t *debug_state);
@@ -53,5 +53,17 @@ bool cstar_debug_export_laps(cstar_debug_t *debug_state,
 bool cstar_debug_accumulate_retreat_nodes(cstar_debug_t *debug_state,
                                           cvector_vector_type(int) retreat_nodes,
                                           const cstar_rcg_t *rcg);
+
+/**
+ * Accumulates coverage hole nodes into the coverageHoleList debug layer (id=17).
+ *
+ * Appends each node in node_ids[0..node_count-1] as a point entry so that
+ * detected hole nodes are visible in the debug output regardless of TSP success.
+ * Call once per detected hole before executing the TSP trajectory.
+ */
+bool cstar_debug_accumulate_coverage_holes(cstar_debug_t *debug_state,
+                                           const int *node_ids,
+                                           int node_count,
+                                           const cstar_rcg_t *rcg);
 
 #endif // CSTAR_DEBUG_H

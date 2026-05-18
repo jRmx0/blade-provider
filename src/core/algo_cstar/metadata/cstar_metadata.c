@@ -211,8 +211,8 @@ char *cstar_build_metadata_json(void)
     /* id=16  Retreat nodes (Point) */
     CSTAR_POINT_LAYER(16, "retreatNodeList", "Retreat Nodes", "114", "#fca5a5", "#7f1d1d", "5", "#fca5a5", "false")
 
-    /* id=17  Coverage holes (Polygon) */
-    CSTAR_POLYGON_LAYER(17, "coverageHoleList", "Coverage Holes", "116", "#fbbf24", "#78350f", "false")
+    /* id=17  Coverage hole nodes (Point) */
+    CSTAR_POINT_LAYER(17, "coverageHoleList", "Coverage Hole Nodes", "116", "#fbbf24", "#78350f", "4", "#fbbf24", "false")
 
 #undef CSTAR_LINE_LAYER
 #undef CSTAR_POINT_LAYER
