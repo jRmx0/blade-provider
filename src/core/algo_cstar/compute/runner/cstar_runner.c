@@ -178,46 +178,25 @@ cstar_coverage_path_result_t *cstar_coverage_path_planning_process(cstar_environ
 
         // Keep the retreat node set current at the robot's position.
         cstar_retreat_update(&retreat_nodes, &rcg, cur->pos, w);
-        cstar_debug_accumulate_retreat_nodes(&debug_state, retreat_nodes, &rcg);
 
         // Select next goal: left → up → down → right priority.
         int goal_id = cstar_select_goal_node(&rcg, current_node_id);
 
         if (goal_id == CSTAR_NO_NEIGHBOR)
         {
-            // Dead-end: navigate to nearest retreat node via A*.
-            cvector_vector_type(point_t) escape_path = NULL;
-            int retreat_id = cstar_escape_dead_end(&rcg,
-                                                   current_node_id,
-                                                   retreat_nodes,
-                                                   &escape_path);
-            if (retreat_id == CSTAR_NO_NEIGHBOR)
+            // Close the dead-end node so it is not included in the retreat
+            // set snapshot. No goal was reached, so cstar_update_node_state
+            // was never called — close the node directly here instead.
+            cstar_node_t *dead_end_node = cstar_rcg_get_node_by_id_mut(&rcg, current_node_id);
+            if (dead_end_node != NULL)
             {
-                // Retreat set empty — every reachable node is Closed.
-                // Coverage is complete.
-                if (escape_path != NULL)
-                {
-                    cvector_free(escape_path);
-                }
-                break;
+                dead_end_node->state = CSTAR_NODE_CL;
             }
 
-            // Emit the A* escape path as a retreatTransit segment.
-            if (escape_path != NULL)
-            {
-                int path_len = (int)cvector_size(escape_path);
-                if (path_len > 0)
-                {
-                    cstar_result_add_segment(result, segment_id,
-                                             "retreatTransit",
-                                             escape_path, path_len);
-                    segment_id++;
-                }
-                cvector_free(escape_path);
-            }
-
-            current_node_id = retreat_id;
-            continue;
+            // Refresh the retreat set: removes the now-closed dead-end node
+            // and reflects the final Open neighbours around this position.
+            cstar_retreat_update(&retreat_nodes, &rcg, cur->pos, w);
+            break;
         }
 
         // Capture positions before state update may reallocate rcg->nodes.
@@ -248,6 +227,8 @@ cstar_coverage_path_result_t *cstar_coverage_path_planning_process(cstar_environ
         current_node_id = goal_id;
     }
 
+    // Export the final retreat node set (snapshot at loop exit) then free.
+    cstar_debug_accumulate_retreat_nodes(&debug_state, retreat_nodes, &rcg);
     cvector_free(retreat_nodes);
 
     // Export link nodes created during traversal, finalize debug layers, then
