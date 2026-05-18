@@ -163,6 +163,7 @@ cstar_coverage_path_result_t *cstar_coverage_path_planning_process(cstar_environ
 
     int current_node_id = start_node_id;
     cvector_vector_type(int) retreat_nodes = NULL;
+    bool first_coverage_move_done = false;
 
     for (;;)
     {
@@ -225,14 +226,18 @@ cstar_coverage_path_result_t *cstar_coverage_path_planning_process(cstar_environ
         }
         point_t to_pos = goal_node->pos;
 
-        // Emit coverage segment: current → goal.
+        // Emit segment: current → goal. The very first move from the start
+        // node is a coverageTransit (positioning to first coverage line);
+        // all subsequent moves are true coverage segments.
+        const char *seg_type = first_coverage_move_done ? "coverage" : "coverageTransit";
         point_t seg_path[2] = {from_pos, to_pos};
-        if (!cstar_result_add_segment(result, segment_id, "coverage",
+        if (!cstar_result_add_segment(result, segment_id, seg_type,
                                       seg_path, 2))
         {
             break;
         }
         segment_id++;
+        first_coverage_move_done = true;
 
         // Close current node; insert link nodes on left-lap transitions.
         cstar_update_node_state(&rcg, current_node_id, goal_id, w);
