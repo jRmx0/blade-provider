@@ -309,6 +309,51 @@ cstar_coverage_path_result_t *cstar_coverage_path_planning_process(cstar_environ
                    apply here exactly as in the normal post-move update. */
                 cstar_update_node_state(&rcg, current_node_id, goal_id, w);
 
+                /* Close any Open link node whose position is within w of the
+                   hit obstacle boundary.  Such a node sits in the obstacle's
+                   danger zone: any cross-lap approach to it triggers a
+                   collision, which spawns more link nodes in the same zone,
+                   trapping the algorithm in an infinite cascade.
+                   Link nodes that are farther than w from the obstacle are
+                   left Open so they can still cover the areas above and below
+                   the obstacle. The obstacle-adjacent nodes generated above
+                   handle coverage inside the w-wide corridor around the
+                   obstacle itself. */
+                {
+                    const polygon_t *hit_obs =
+                        &env->operationalObstacles[hit_obstacle_idx];
+                    uint32_t edge_count = hit_obs->vertex_count;
+
+                    for (int k = 0; k < rcg.node_count; ++k)
+                    {
+                        cstar_node_t *ln = &rcg.nodes[k];
+                        if (!ln->is_link_node || ln->state == CSTAR_NODE_CL)
+                            continue;
+
+                        float min_dist;
+                        if (cstar_sampling_point_in_polygon(ln->pos, hit_obs))
+                        {
+                            min_dist = 0.0f;
+                        }
+                        else
+                        {
+                            min_dist = INFINITY;
+                            for (uint32_t ei = 0; ei < edge_count; ++ei)
+                            {
+                                point_t a = hit_obs->vertices[ei];
+                                point_t b = hit_obs->vertices[(ei + 1u) % edge_count];
+                                float d = cstar_sampling_dist_point_segment(
+                                    ln->pos, a, b);
+                                if (d < min_dist)
+                                    min_dist = d;
+                            }
+                        }
+
+                        if (min_dist < w)
+                            ln->state = CSTAR_NODE_CL;
+                    }
+                }
+
                 /* Resume coverage from the nearest Open RCG node to entry_pt.
                    The robot completed a full CCW circumnavigation and is back at
                    entry_pt; we must advance current_node_id so the loop restarts

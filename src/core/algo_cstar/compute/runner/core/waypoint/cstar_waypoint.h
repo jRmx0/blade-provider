@@ -34,7 +34,7 @@ int cstar_select_goal_node(const cstar_rcg_t *rcg, int current_node_id);
  *     closed, creates a link node above and/or below at distance w for any
  *     Open same-lap neighbour that is farther than w.
  *
- * w - sampling resolution (metres)
+ * w   - sampling resolution (metres)
  *
  * Returns the number of link nodes created (0, 1, or 2).
  */
