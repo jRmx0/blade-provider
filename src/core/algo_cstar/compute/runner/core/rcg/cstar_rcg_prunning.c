@@ -1,5 +1,6 @@
 
 #include "cstar_rcg_prunning.h"
+#include "cstar_rcg_growth.h"
 #include <stdlib.h>
 #include <stdbool.h>
 #include "cstar_rcg.h"
@@ -295,4 +296,31 @@ void cstar_rcg_prune_non_essential_nodes(cstar_rcg_t *rcg)
     rcg->next_node_id = (rcg->next_node_id < 0) ? 0 : rcg->next_node_id;
 
     free(keep_node);
+}
+
+void cstar_rcg_full_graph_update(cstar_rcg_t *rcg, const cstar_environment_t *env)
+{
+    if (!rcg || !env)
+        return;
+
+    /* Flush all edges — both cross-lap and same-lap — so that they are
+       re-derived from scratch for the current node set.  This avoids the
+       need for deduplication and ensures newly-inserted or post-prune nodes
+       are fully connected without stale edges from before pruning. */
+    cvector_free(rcg->edges);
+    rcg->edges = NULL;
+    rcg->edge_count = 0;
+    rcg->edge_capacity = 0;
+
+    /* Re-derive all cross-lap edges for the surviving node set. */
+    cstar_rcg_expand_graph(rcg, env);
+
+    /* Re-derive all same-lap vertical chain edges.  The internal
+       cstar_rcg_remove_same_lap_edges call inside this function is a no-op
+       here because no same-lap edges exist after the flush above. */
+    cstar_rcg_generate_vertical_lap_edges(rcg, env);
+
+    /* Sync all in-node neighbor pointers from the authoritative edge list. */
+    cstar_rcg_rebuild_links_from_edges(rcg->nodes, rcg->node_count,
+                                       rcg->edges, rcg->edge_count);
 }

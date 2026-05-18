@@ -20,4 +20,20 @@
  */
 void cstar_rcg_prune_non_essential_nodes(cstar_rcg_t *rcg);
 
+/**
+ * Full graph update: flushes all edges and re-derives cross-lap and same-lap
+ * edges from scratch for the current node set, then syncs all in-node neighbor
+ * pointers.
+ *
+ * Call after cstar_rcg_prune_non_essential_nodes() to rebuild a fully consistent
+ * graph from the surviving node set.  Replaces the asymmetric
+ * cstar_rcg_expand_graph_unique + cstar_rcg_generate_vertical_lap_edges +
+ * cstar_rcg_rebuild_links_from_edges triplet used at both the initial setup
+ * and post-obstacle sites.
+ *
+ * @param rcg Pointer to the pruned RCG graph.
+ * @param env Environment with pre-generated laps.
+ */
+void cstar_rcg_full_graph_update(cstar_rcg_t *rcg, const cstar_environment_t *env);
+
 #endif // CSTAR_RCG_PRUNNING_H

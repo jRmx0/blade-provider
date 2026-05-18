@@ -43,26 +43,6 @@
 bool cstar_rcg_expand_graph(cstar_rcg_t *rcg,
                             const cstar_environment_t *env);
 
-/**
- * Rebuilds cross-lap horizontal edges for an existing RCG using the same
- * sqrt(2)*w adjacency threshold as cstar_rcg_expand_graph, but using
- * cstar_rcg_add_unique_edge so it is safe to call on a graph that already
- * has cross-lap edges (e.g. after mid-loop node insertion and pruning).
- *
- * Does NOT set neighbors_left[]/neighbors_right[] directly — call
- * cstar_rcg_rebuild_links_from_edges after this function to sync those.
- *
- * Parameters:
- *   rcg - RCG to extend (must have nodes already added)
- *   env - Environment with pre-generated laps
- *
- * Returns:
- *   true  - Completed without error
- *   false - NULL input
- */
-bool cstar_rcg_expand_graph_unique(cstar_rcg_t *rcg,
-                                   const cstar_environment_t *env);
-
 // -------------------------------------------------------------------------
 // Post-Pruning Edge Generation
 // -------------------------------------------------------------------------

@@ -269,54 +269,6 @@ static void cstar_rcg_add_unique_edge(cstar_edge_t **edges,
     cvector_push_back(*edges, edge);
 }
 
-bool cstar_rcg_expand_graph_unique(cstar_rcg_t *rcg,
-                                   const cstar_environment_t *env)
-{
-    if (rcg == NULL || env == NULL || env->laps == NULL)
-        return false;
-
-    cstar_lap_t *laps = (cstar_lap_t *)env->laps;
-    int lap_count = (int)cvector_size(laps);
-    if (lap_count <= 0 || rcg->node_count <= 0)
-        return true;
-
-    float cross_lap_threshold = sqrtf(2.0f) * env->path_width;
-
-    for (int lap_idx = 0; lap_idx < lap_count - 1; ++lap_idx)
-    {
-        cstar_lap_t *lap_left = &laps[lap_idx];
-        cstar_lap_t *lap_right = &laps[lap_idx + 1];
-
-        if (lap_left->node_ids == NULL || lap_right->node_ids == NULL)
-            continue;
-
-        for (int i = 0; i < lap_left->node_count; ++i)
-        {
-            int left_id = lap_left->node_ids[i];
-            int left_idx = cstar_rcg_index_from_node_id(rcg, left_id);
-            if (left_idx == CSTAR_NO_NEIGHBOR)
-                continue;
-
-            for (int j = 0; j < lap_right->node_count; ++j)
-            {
-                int right_id = lap_right->node_ids[j];
-                int right_idx = cstar_rcg_index_from_node_id(rcg, right_id);
-                if (right_idx == CSTAR_NO_NEIGHBOR)
-                    continue;
-
-                float dist = cstar_rcg_node_distance(&rcg->nodes[left_idx],
-                                                     &rcg->nodes[right_idx]);
-                if (dist <= cross_lap_threshold + CSTAR_RCG_EPSILON)
-                    cstar_rcg_add_unique_edge(&rcg->edges, left_id, right_id, dist);
-            }
-        }
-    }
-
-    rcg->edge_count = (int)cvector_size(rcg->edges);
-    rcg->edge_capacity = (int)cvector_capacity(rcg->edges);
-    return true;
-}
-
 /**
  * Removes all within-lap (same lap_id) edges from rcg->edges in-place.
  *
@@ -394,7 +346,28 @@ void cstar_rcg_generate_vertical_lap_edges(cstar_rcg_t *rcg, const cstar_environ
             surviving[surviving_count++] = node_id;
         }
 
-        // surviving[] is in ascending y (bottom-to-top) order.
+        // Sort surviving[] by ascending y so that obstacle-adjacent nodes
+        // appended out-of-order by cstar_generate_obstacle_adjacent_samples
+        // are placed correctly in the chain before edge emission.
+        for (int si = 1; si < surviving_count; ++si)
+        {
+            int key = surviving[si];
+            int ki = cstar_rcg_index_from_node_id(rcg, key);
+            float key_y = (ki != CSTAR_NO_NEIGHBOR) ? rcg->nodes[ki].pos.y : 0.0f;
+            int sj = si - 1;
+            while (sj >= 0)
+            {
+                int ci = cstar_rcg_index_from_node_id(rcg, surviving[sj]);
+                float cy = (ci != CSTAR_NO_NEIGHBOR) ? rcg->nodes[ci].pos.y : 0.0f;
+                if (cy <= key_y)
+                    break;
+                surviving[sj + 1] = surviving[sj];
+                --sj;
+            }
+            surviving[sj + 1] = key;
+        }
+
+        // surviving[] is now in ascending y (bottom-to-top) order.
         // Iterate top-to-bottom (reverse) emitting one downward edge per node.
         for (int i = surviving_count - 1; i >= 0; --i)
         {

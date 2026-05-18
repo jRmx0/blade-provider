@@ -98,14 +98,11 @@ cstar_coverage_path_result_t *cstar_coverage_path_planning_process(cstar_environ
         return NULL;
     }
 
-    // RCG pruning: keep only end nodes and their edges
+    // RCG pruning: keep only end nodes and their edges; then do a full graph
+    // update — flush all edges, re-derive cross-lap and same-lap connectivity
+    // for the surviving node set, and sync all in-node neighbor pointers.
     cstar_rcg_prune_non_essential_nodes(&rcg);
-    cstar_rcg_generate_vertical_lap_edges(&rcg, env);
-    // Sync node neighbor fields (neighbor_up/down/left/right) with the new
-    // vertical edges added above. cstar_rcg_generate_vertical_lap_edges adds
-    // edges to rcg->edges but does not update the in-node pointers, so
-    // cstar_select_goal_node would see stale CSTAR_NO_NEIGHBOR links.
-    cstar_rcg_rebuild_links_from_edges(rcg.nodes, rcg.node_count, rcg.edges, rcg.edge_count);
+    cstar_rcg_full_graph_update(&rcg, env);
 
     if (!cstar_debug_export_laps(&debug_state, env) ||
         !cstar_debug_export_rcg_nodes(&debug_state, &rcg))
@@ -290,16 +287,13 @@ cstar_coverage_path_result_t *cstar_coverage_path_planning_process(cstar_environ
                 cstar_generate_obstacle_adjacent_samples(&rcg, hit_obstacle_idx,
                                                          w, delta, env);
 
-                /* Prune new nodes to end-nodes-only, rebuild cross-lap edges
-                   (dedup-safe variant of cstar_rcg_expand_graph), generate
-                   vertical lap edges, then sync neighbor pointers.
-                   Mirrors the sequence applied to the initial RCG before the
-                   loop. Idempotent for pre-existing essential nodes. */
+                /* Prune new nodes to end-nodes-only, then do a full graph
+                   update: flush all edges, re-derive cross-lap and same-lap
+                   connectivity for the current node set (including newly
+                   inserted obstacle-adjacent nodes), and sync all in-node
+                   neighbor pointers.  Mirrors the initial RCG setup sequence. */
                 cstar_rcg_prune_non_essential_nodes(&rcg);
-                cstar_rcg_expand_graph_unique(&rcg, env);
-                cstar_rcg_generate_vertical_lap_edges(&rcg, env);
-                cstar_rcg_rebuild_links_from_edges(rcg.nodes, rcg.node_count,
-                                                   rcg.edges, rcg.edge_count);
+                cstar_rcg_full_graph_update(&rcg, env);
 
                 /* Append only newly-added survived nodes to the debug layer.
                    Filtered by node ID (>= new_node_id_threshold) so pre-existing
