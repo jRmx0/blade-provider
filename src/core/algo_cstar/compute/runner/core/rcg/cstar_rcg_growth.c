@@ -147,6 +147,54 @@ bool cstar_rcg_expand_graph(cstar_rcg_t *rcg,
         }
     }
 
+    // -----------------------------------------------------------------------
+    // Link-node cross-lap connectivity
+    // -----------------------------------------------------------------------
+    // Link nodes are not tracked in lap->node_ids, so the loop above does not
+    // connect them across adjacent laps.  Apply the same √2*w threshold rule
+    // so that a link node on one lap can reach the matching link node on the
+    // next lap directly, without being forced to route through already-closed
+    // boundary end nodes.
+    for (int lap_idx = 0; lap_idx < lap_count - 1; ++lap_idx)
+    {
+        cstar_lap_t *lap_left = &laps[lap_idx];
+        cstar_lap_t *lap_right = &laps[lap_idx + 1];
+
+        for (int i = 0; i < rcg->node_count; ++i)
+        {
+            cstar_node_t *ln = &rcg->nodes[i];
+            if (!ln->is_link_node || ln->lap_id != lap_left->id)
+                continue;
+
+            for (int j = 0; j < rcg->node_count; ++j)
+            {
+                if (i == j)
+                    continue;
+                cstar_node_t *rn = &rcg->nodes[j];
+                if (!rn->is_link_node || rn->lap_id != lap_right->id)
+                    continue;
+
+                float distance = cstar_rcg_node_distance(ln, rn);
+                if (distance > cross_lap_threshold + CSTAR_RCG_EPSILON)
+                    continue;
+
+                /* Re-fetch: cstar_rcg_add_edge may grow rcg->edges but nodes
+                   are stable (no realloc in this path). */
+                ln = &rcg->nodes[i];
+                rn = &rcg->nodes[j];
+
+                if (!rn->is_start_point &&
+                    ln->neighbors_right_count < CSTAR_MAX_CROSS_LAP_NEIGHBORS)
+                    ln->neighbors_right[ln->neighbors_right_count++] = rn->id;
+                if (!ln->is_start_point &&
+                    rn->neighbors_left_count < CSTAR_MAX_CROSS_LAP_NEIGHBORS)
+                    rn->neighbors_left[rn->neighbors_left_count++] = ln->id;
+
+                cstar_rcg_add_edge(rcg, ln->id, rn->id, distance);
+            }
+        }
+    }
+
     return true;
 }
 

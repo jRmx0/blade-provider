@@ -613,6 +613,15 @@ int cstar_generate_obstacle_adjacent_samples(cstar_rcg_t *rcg,
             bool is_bottom = cstar_sampling_is_bottom_end_node_vertical(sample, w, env);
             bool is_both = cstar_sampling_is_top_and_bottom_end_node_vertical(sample, w, env);
 
+            /* The gap between the obstacle and the zone boundary is narrower
+               than w on this lap section.  A top-and-bottom end node here
+               would be isolated in the chain (no edges in either direction)
+               and unreachable by A*, causing an infinite dead-end loop.
+               Skip it — the existing zone-boundary end node already acts as
+               the effective section terminus for this corridor. */
+            if (is_both)
+                continue;
+
             int node_id = cstar_rcg_add_node(rcg, sample, lap->id,
                                              is_top, is_bottom, is_both, false);
             if (node_id == CSTAR_NO_NEIGHBOR)

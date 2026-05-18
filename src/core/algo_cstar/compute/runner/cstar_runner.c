@@ -322,8 +322,9 @@ cstar_coverage_path_result_t *cstar_coverage_path_planning_process(cstar_environ
                         const cstar_node_t *rn = &rcg.nodes[k];
                         if (rn->state == CSTAR_NODE_CL ||
                             rn->is_start_point ||
-                            rn->is_link_node)
-                            continue;
+                            rn->is_link_node ||
+                            rn->id == current_node_id)
+                            continue; /* never resume at the collision source */
                         float ddx = rn->pos.x - entry_pt.x;
                         float ddy = rn->pos.y - entry_pt.y;
                         float d = sqrtf(ddx * ddx + ddy * ddy);

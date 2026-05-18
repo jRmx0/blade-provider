@@ -189,6 +189,38 @@ static bool cstar_sampling_is_top_and_bottom_end_node_vertical(point_t sample, f
            cstar_sampling_is_bottom_end_node_vertical(sample, w, env);
 }
 
+/* Zone-only variants — used during initial frontier sampling when obstacles
+   are not yet known.  Only the operationalBoundary is consulted; obstacle
+   boundaries are intentionally ignored. */
+
+static bool cstar_sampling_is_top_end_node_zone_only(point_t sample, float w, const cstar_environment_t *env)
+{
+    if (env == NULL || w <= CSTAR_EPSILON)
+        return false;
+
+    point_t probe_up = {sample.x, sample.y + w};
+    bool up_hits_zone = cstar_sampling_point_on_boundary(probe_up, &env->operationalBoundary, CSTAR_EPSILON);
+    bool up_outside_zone = !cstar_sampling_point_in_polygon(probe_up, &env->operationalBoundary) && !up_hits_zone;
+    return up_hits_zone || up_outside_zone;
+}
+
+static bool cstar_sampling_is_bottom_end_node_zone_only(point_t sample, float w, const cstar_environment_t *env)
+{
+    if (env == NULL || w <= CSTAR_EPSILON)
+        return false;
+
+    point_t probe_down = {sample.x, sample.y - w};
+    bool down_hits_zone = cstar_sampling_point_on_boundary(probe_down, &env->operationalBoundary, CSTAR_EPSILON);
+    bool down_outside_zone = !cstar_sampling_point_in_polygon(probe_down, &env->operationalBoundary) && !down_hits_zone;
+    return down_hits_zone || down_outside_zone;
+}
+
+static bool cstar_sampling_is_top_and_bottom_end_node_zone_only(point_t sample, float w, const cstar_environment_t *env)
+{
+    return cstar_sampling_is_top_end_node_zone_only(sample, w, env) &&
+           cstar_sampling_is_bottom_end_node_zone_only(sample, w, env);
+}
+
 static float cstar_sampling_dist_to_operational_boundary(point_t point, const cstar_environment_t *env)
 {
     if (env == NULL ||
@@ -274,9 +306,9 @@ int cstar_generate_frontier_samples(cstar_rcg_t *rcg,
             point_t start_sample = {env->start_point.x, env->start_point.y};
             if (cstar_sampling_point_is_free(start_sample, env))
             {
-                bool is_top_end_node = cstar_sampling_is_top_end_node_vertical(start_sample, w, env);
-                bool is_bottom_end_node = cstar_sampling_is_bottom_end_node_vertical(start_sample, w, env);
-                bool is_top_and_bottom_end_node = cstar_sampling_is_top_and_bottom_end_node_vertical(start_sample, w, env);
+                bool is_top_end_node = cstar_sampling_is_top_end_node_zone_only(start_sample, w, env);
+                bool is_bottom_end_node = cstar_sampling_is_bottom_end_node_zone_only(start_sample, w, env);
+                bool is_top_and_bottom_end_node = cstar_sampling_is_top_and_bottom_end_node_zone_only(start_sample, w, env);
                 int start_node_id = cstar_rcg_add_node(rcg, start_sample, lap->id, is_top_end_node, is_bottom_end_node, is_top_and_bottom_end_node, true);
                 if (start_node_id != CSTAR_NO_NEIGHBOR)
                 {
@@ -310,9 +342,9 @@ int cstar_generate_frontier_samples(cstar_rcg_t *rcg,
                 continue;
             }
 
-            bool is_top_end_node = cstar_sampling_is_top_end_node_vertical(sample, w, env);
-            bool is_bottom_end_node = cstar_sampling_is_bottom_end_node_vertical(sample, w, env);
-            bool is_top_and_bottom_end_node = cstar_sampling_is_top_and_bottom_end_node_vertical(sample, w, env);
+            bool is_top_end_node = cstar_sampling_is_top_end_node_zone_only(sample, w, env);
+            bool is_bottom_end_node = cstar_sampling_is_bottom_end_node_zone_only(sample, w, env);
+            bool is_top_and_bottom_end_node = cstar_sampling_is_top_and_bottom_end_node_zone_only(sample, w, env);
             int node_id = cstar_rcg_add_node(rcg, sample, lap->id, is_top_end_node, is_bottom_end_node, is_top_and_bottom_end_node, false);
             if (node_id == CSTAR_NO_NEIGHBOR)
             {
