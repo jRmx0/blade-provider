@@ -11,7 +11,9 @@
 // Prune the RCG, leaving only end nodes and edges between them.
 
 /**
- * Connectivity check using BFS: verifies all nodes are reachable from the first node.
+ * Connectivity check using BFS over rcg->edges (authoritative source).
+ * Neighbour pointer fields (neighbor_up/down/left/right) are not consulted
+ * because they may lag behind edge additions made via cstar_rcg_add_unique_edge.
  */
 static bool cstar_rcg_is_connected(const cstar_rcg_t *rcg)
 {
@@ -20,7 +22,7 @@ static bool cstar_rcg_is_connected(const cstar_rcg_t *rcg)
         return rcg->node_count == 0;
     }
 
-    // Allocate visited array
+    // Allocate visited array indexed by node array position.
     bool *visited = (bool *)malloc((size_t)rcg->node_count * sizeof(bool));
     if (visited == NULL)
     {
@@ -29,7 +31,7 @@ static bool cstar_rcg_is_connected(const cstar_rcg_t *rcg)
 
     memset(visited, 0, (size_t)rcg->node_count * sizeof(bool));
 
-    // BFS queue
+    // BFS queue (stores node array indices).
     int *queue = (int *)malloc((size_t)rcg->node_count * sizeof(int));
     if (queue == NULL)
     {
@@ -40,46 +42,28 @@ static bool cstar_rcg_is_connected(const cstar_rcg_t *rcg)
     int queue_front = 0;
     int queue_back = 0;
 
-    // Start from first node index
     queue[queue_back++] = 0;
     visited[0] = true;
     int visited_count = 1;
 
     while (queue_front < queue_back)
     {
-        int current_id = queue[queue_front++];
-        if (current_id < 0 || current_id >= rcg->node_count)
-        {
-            continue;
-        }
+        int current_idx = queue[queue_front++];
+        int current_node_id = rcg->nodes[current_idx].id;
 
-        const cstar_node_t *current = &rcg->nodes[current_id];
+        // Traverse all edges that involve this node.
+        for (int e = 0; e < rcg->edge_count; ++e)
+        {
+            int neighbor_id = CSTAR_NO_NEIGHBOR;
+            if (rcg->edges[e].node_a == current_node_id)
+                neighbor_id = rcg->edges[e].node_b;
+            else if (rcg->edges[e].node_b == current_node_id)
+                neighbor_id = rcg->edges[e].node_a;
 
-        // Explore all neighbors
-        int same_lap_neighbors[] = {current->neighbor_up, current->neighbor_down};
-        for (int i = 0; i < 2; ++i)
-        {
-            int neighbor_idx = cstar_rcg_index_from_node_id(rcg, same_lap_neighbors[i]);
-            if (neighbor_idx != CSTAR_NO_NEIGHBOR && !visited[neighbor_idx])
-            {
-                visited[neighbor_idx] = true;
-                queue[queue_back++] = neighbor_idx;
-                visited_count++;
-            }
-        }
-        for (int i = 0; i < current->neighbors_left_count; ++i)
-        {
-            int neighbor_idx = cstar_rcg_index_from_node_id(rcg, current->neighbors_left[i]);
-            if (neighbor_idx != CSTAR_NO_NEIGHBOR && !visited[neighbor_idx])
-            {
-                visited[neighbor_idx] = true;
-                queue[queue_back++] = neighbor_idx;
-                visited_count++;
-            }
-        }
-        for (int i = 0; i < current->neighbors_right_count; ++i)
-        {
-            int neighbor_idx = cstar_rcg_index_from_node_id(rcg, current->neighbors_right[i]);
+            if (neighbor_id == CSTAR_NO_NEIGHBOR)
+                continue;
+
+            int neighbor_idx = cstar_rcg_index_from_node_id(rcg, neighbor_id);
             if (neighbor_idx != CSTAR_NO_NEIGHBOR && !visited[neighbor_idx])
             {
                 visited[neighbor_idx] = true;
@@ -418,40 +402,6 @@ void cstar_rcg_prune_to_end_nodes(cstar_rcg_t *rcg)
         }
     }
 
-    // Same-lap chains may lose intermediate nodes during pruning. Reconnect the
-    // surviving neighbors so vertical lap edges continue through the pruned gap.
-    for (int i = 0; i < rcg->node_count; ++i)
-    {
-        if (!keep_node[i])
-        {
-            continue;
-        }
-
-        const cstar_node_t *node = &rcg->nodes[i];
-        int next_id = node->neighbor_up;
-
-        while (next_id != CSTAR_NO_NEIGHBOR)
-        {
-            int next_idx = cstar_rcg_index_from_node_id(rcg, next_id);
-            if (next_idx == CSTAR_NO_NEIGHBOR)
-            {
-                break;
-            }
-
-            if (keep_node[next_idx])
-            {
-                const cstar_node_t *next_node = &rcg->nodes[next_idx];
-                float dx = node->pos.x - next_node->pos.x;
-                float dy = node->pos.y - next_node->pos.y;
-                float cost = sqrtf(dx * dx + dy * dy);
-                cstar_rcg_add_unique_edge(&new_edges, node->id, next_node->id, cost);
-                break;
-            }
-
-            next_id = rcg->nodes[next_idx].neighbor_up;
-        }
-    }
-
     // Step 3: Rebuild the surviving node adjacency directly from the
     // surviving edge set so intact edges remain intact after compaction.
     cstar_rcg_rebuild_links_from_edges(new_nodes, idx, new_edges, (int)cvector_size(new_edges));
@@ -469,17 +419,131 @@ void cstar_rcg_prune_to_end_nodes(cstar_rcg_t *rcg)
     rcg->next_node_id = (rcg->next_node_id < 0) ? 0 : rcg->next_node_id;
 
     free(keep_node);
+}
+
+void cstar_rcg_generate_vertical_lap_edges(cstar_rcg_t *rcg, const cstar_environment_t *env)
+{
+    if (!rcg || !env || !env->laps)
+        return;
+
+    cstar_lap_t *laps = (cstar_lap_t *)env->laps;
+    int lap_count = (int)cvector_size(laps);
+
+    for (int lap_index = 0; lap_index < lap_count; ++lap_index)
+    {
+        const cstar_lap_t *lap = &laps[lap_index];
+        if (!lap->node_ids || lap->node_count <= 0)
+            continue;
+
+        // Build surviving[] from lap->node_ids, excluding start point nodes.
+        // lap->node_ids is ordered bottom-to-top (ascending y); iterate in reverse
+        // to process top-to-bottom and emit only downward edges (no duplicates).
+        int *surviving = (int *)malloc((size_t)lap->node_count * sizeof(int));
+        if (!surviving)
+            continue;
+
+        int surviving_count = 0;
+        for (int i = 0; i < lap->node_count; ++i)
+        {
+            int node_id = lap->node_ids[i];
+            int node_idx = cstar_rcg_index_from_node_id(rcg, node_id);
+            if (node_idx == CSTAR_NO_NEIGHBOR)
+                continue;
+            const cstar_node_t *node = &rcg->nodes[node_idx];
+            if (node->is_start_point)
+                continue;
+            surviving[surviving_count++] = node_id;
+        }
+
+        // surviving[] is in ascending y (bottom-to-top) order.
+        // Iterate top-to-bottom (reverse) emitting one downward edge per node.
+        for (int i = surviving_count - 1; i >= 0; --i)
+        {
+            int a_idx = cstar_rcg_index_from_node_id(rcg, surviving[i]);
+            if (a_idx == CSTAR_NO_NEIGHBOR)
+                continue;
+
+            const cstar_node_t *a = &rcg->nodes[a_idx];
+
+            // Skip nodes with no vertical connectivity.
+            if (a->is_top_and_bottom_end_node)
+                continue;
+
+            // Bottom end nodes have no node below them; skip (they were already
+            // connected as the target of the node above).
+            if (a->is_bottom_end_node)
+                continue;
+
+            // Find the first surviving node below (lower index in ascending-y array)
+            // that is not is_top_and_bottom_end_node.
+            for (int j = i - 1; j >= 0; --j)
+            {
+                int b_idx = cstar_rcg_index_from_node_id(rcg, surviving[j]);
+                if (b_idx == CSTAR_NO_NEIGHBOR)
+                    continue;
+
+                const cstar_node_t *b = &rcg->nodes[b_idx];
+                if (b->is_top_and_bottom_end_node)
+                    continue;
+
+                float dx = a->pos.x - b->pos.x;
+                float dy = a->pos.y - b->pos.y;
+                float cost = sqrtf(dx * dx + dy * dy);
+                cstar_rcg_add_unique_edge(&rcg->edges, a->id, b->id, cost);
+                break;
+            }
+        }
+
+        free(surviving);
+    }
+
+    // Connect the start point node to the closest surviving non-start node.
+    // The start point is excluded from the lap edge loop above, so it may be
+    // isolated; a nearest-neighbour edge ensures it is part of the graph.
+    int start_idx = CSTAR_NO_NEIGHBOR;
+    for (int i = 0; i < rcg->node_count; ++i)
+    {
+        if (rcg->nodes[i].is_start_point)
+        {
+            start_idx = i;
+            break;
+        }
+    }
+
+    if (start_idx != CSTAR_NO_NEIGHBOR)
+    {
+        const cstar_node_t *start_node = &rcg->nodes[start_idx];
+        int closest_id = CSTAR_NO_NEIGHBOR;
+        float closest_dist = INFINITY;
+
+        for (int i = 0; i < rcg->node_count; ++i)
+        {
+            if (i == start_idx)
+                continue;
+            const cstar_node_t *candidate = &rcg->nodes[i];
+            float dx = start_node->pos.x - candidate->pos.x;
+            float dy = start_node->pos.y - candidate->pos.y;
+            float dist = sqrtf(dx * dx + dy * dy);
+            if (dist < closest_dist)
+            {
+                closest_dist = dist;
+                closest_id = candidate->id;
+            }
+        }
+
+        if (closest_id != CSTAR_NO_NEIGHBOR)
+            cstar_rcg_add_unique_edge(&rcg->edges, start_node->id, closest_id, closest_dist);
+    }
+
+    rcg->edge_count = (int)cvector_size(rcg->edges);
+    rcg->edge_capacity = (int)cvector_capacity(rcg->edges);
 
     // -----------------------------------------------------------------------
-    // Graph Validation (after pruning)
+    // Graph Validation (all edges finalized)
     // -----------------------------------------------------------------------
-    // After pruning, check that the graph is properly formed.
-    // These checks help ensure the pruned graph maintains connectivity
-    // and planarity invariants.
-
     if (!cstar_rcg_is_connected(rcg))
     {
-        LOG_WARN("RCG graph is not fully connected after pruning");
+        LOG_WARN("RCG graph is not fully connected after pruning and vertical lap edge generation");
     }
     if (!cstar_rcg_is_planar(rcg))
     {
