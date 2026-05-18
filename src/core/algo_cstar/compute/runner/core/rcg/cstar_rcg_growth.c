@@ -131,9 +131,16 @@ bool cstar_rcg_expand_graph(cstar_rcg_t *rcg,
                     left_node = &rcg->nodes[left_node_idx];
                     right_node = &rcg->nodes[right_node_idx];
 
-                    if (left_node->neighbors_right_count < CSTAR_MAX_CROSS_LAP_NEIGHBORS)
+                    // Don't expose start_point as a cross-lap neighbour of
+                    // other nodes (see cstar_rcg_rebuild_links_from_edges for
+                    // rationale). start_point's OWN arrays are still populated
+                    // so the robot can navigate away on the first iteration.
+                    // The edge is always recorded for A* dead-end escape.
+                    if (!right_node->is_start_point &&
+                        left_node->neighbors_right_count < CSTAR_MAX_CROSS_LAP_NEIGHBORS)
                         left_node->neighbors_right[left_node->neighbors_right_count++] = right_node->id;
-                    if (right_node->neighbors_left_count < CSTAR_MAX_CROSS_LAP_NEIGHBORS)
+                    if (!left_node->is_start_point &&
+                        right_node->neighbors_left_count < CSTAR_MAX_CROSS_LAP_NEIGHBORS)
                         right_node->neighbors_left[right_node->neighbors_left_count++] = left_node->id;
 
                     cstar_rcg_add_edge(rcg, left_node->id, right_node->id, distance);

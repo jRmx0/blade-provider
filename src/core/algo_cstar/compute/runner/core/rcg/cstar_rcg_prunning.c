@@ -70,15 +70,25 @@ static void cstar_rcg_rebuild_links_from_edges(cstar_node_t *nodes,
 
         if (a->lap_id == b->lap_id)
         {
-            if (a->pos.y <= b->pos.y)
+            cstar_node_t *upper = (a->pos.y >= b->pos.y) ? a : b;
+            cstar_node_t *lower = (a->pos.y >= b->pos.y) ? b : a;
+
+            if (upper->is_start_point)
             {
-                a->neighbor_up = b->id;
-                b->neighbor_down = a->id;
+                // Only wire start_point's own pointer downward.
+                // Don't overwrite lower->neighbor_up: the bypass edge
+                // (lower_surviving ↔ upper_surviving) sets it correctly.
+                upper->neighbor_down = lower->id;
+            }
+            else if (lower->is_start_point)
+            {
+                // Only wire start_point's own pointer upward.
+                lower->neighbor_up = upper->id;
             }
             else
             {
-                b->neighbor_up = a->id;
-                a->neighbor_down = b->id;
+                upper->neighbor_down = lower->id;
+                lower->neighbor_up = upper->id;
             }
             continue;
         }
@@ -91,11 +101,16 @@ static void cstar_rcg_rebuild_links_from_edges(cstar_node_t *nodes,
             right = a;
         }
 
-        if (left->neighbors_right_count < CSTAR_MAX_CROSS_LAP_NEIGHBORS)
+        // Don't expose start_point as a cross-lap neighbour of other nodes
+        // (it is never closeable on first visit, so other nodes selecting it
+        // as a goal would pull the robot back to the start position).
+        // start_point's OWN neighbor arrays are still populated so the robot
+        // can navigate away from the start position on the first iteration.
+        if (!right->is_start_point && left->neighbors_right_count < CSTAR_MAX_CROSS_LAP_NEIGHBORS)
         {
             left->neighbors_right[left->neighbors_right_count++] = right->id;
         }
-        if (right->neighbors_left_count < CSTAR_MAX_CROSS_LAP_NEIGHBORS)
+        if (!left->is_start_point && right->neighbors_left_count < CSTAR_MAX_CROSS_LAP_NEIGHBORS)
         {
             right->neighbors_left[right->neighbors_left_count++] = left->id;
         }
