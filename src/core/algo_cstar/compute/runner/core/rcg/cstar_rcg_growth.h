@@ -43,4 +43,23 @@
 bool cstar_rcg_expand_graph(cstar_rcg_t *rcg,
                             const cstar_environment_t *env);
 
+// -------------------------------------------------------------------------
+// Post-Pruning Edge Generation
+// -------------------------------------------------------------------------
+
+/**
+ * Generates vertical edges within each lap for the pruned RCG.
+ *
+ * Called after cstar_rcg_prune_to_end_nodes(). For each lap, connects
+ * surviving end nodes top-to-bottom with one downward edge per node.
+ * Also connects the start point to its nearest neighbour. Validates
+ * connectivity and planarity after all edges are added.
+ *
+ * Parameters:
+ *   rcg - Pruned RCG (must not be NULL)
+ *   env - Environment with pre-generated laps (must not be NULL)
+ */
+void cstar_rcg_generate_vertical_lap_edges(cstar_rcg_t *rcg,
+                                           const cstar_environment_t *env);
+
 #endif // CSTAR_RCG_GROWTH_H

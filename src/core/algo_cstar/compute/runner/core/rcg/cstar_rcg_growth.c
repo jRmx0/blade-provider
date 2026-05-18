@@ -5,6 +5,7 @@
 #include "cstar_rcg_growth.h"
 #include "cstar_rcg.h"
 #include "../../../../../../../dependencies/cvector/cvector.h"
+#include "../../../../../common/clog.h"
 
 #define CSTAR_RCG_EPSILON 1e-6f
 
@@ -142,4 +143,242 @@ bool cstar_rcg_expand_graph(cstar_rcg_t *rcg,
     }
 
     return true;
+}
+
+// -------------------------------------------------------------------------
+// Post-Pruning Edge Generation
+// -------------------------------------------------------------------------
+
+/**
+ * Connectivity check using BFS over rcg->edges (authoritative source).
+ * Neighbour pointer fields (neighbor_up/down/left/right) are not consulted
+ * because they may lag behind edge additions made via cstar_rcg_add_unique_edge.
+ */
+static bool cstar_rcg_is_connected(const cstar_rcg_t *rcg)
+{
+    if (rcg == NULL || rcg->node_count <= 0 || rcg->nodes == NULL)
+    {
+        return rcg->node_count == 0;
+    }
+
+    bool *visited = (bool *)malloc((size_t)rcg->node_count * sizeof(bool));
+    if (visited == NULL)
+    {
+        return false;
+    }
+
+    memset(visited, 0, (size_t)rcg->node_count * sizeof(bool));
+
+    int *queue = (int *)malloc((size_t)rcg->node_count * sizeof(int));
+    if (queue == NULL)
+    {
+        free(visited);
+        return false;
+    }
+
+    int queue_front = 0;
+    int queue_back = 0;
+
+    queue[queue_back++] = 0;
+    visited[0] = true;
+    int visited_count = 1;
+
+    while (queue_front < queue_back)
+    {
+        int current_idx = queue[queue_front++];
+        int current_node_id = rcg->nodes[current_idx].id;
+
+        for (int e = 0; e < rcg->edge_count; ++e)
+        {
+            int neighbor_id = CSTAR_NO_NEIGHBOR;
+            if (rcg->edges[e].node_a == current_node_id)
+                neighbor_id = rcg->edges[e].node_b;
+            else if (rcg->edges[e].node_b == current_node_id)
+                neighbor_id = rcg->edges[e].node_a;
+
+            if (neighbor_id == CSTAR_NO_NEIGHBOR)
+                continue;
+
+            int neighbor_idx = cstar_rcg_index_from_node_id(rcg, neighbor_id);
+            if (neighbor_idx != CSTAR_NO_NEIGHBOR && !visited[neighbor_idx])
+            {
+                visited[neighbor_idx] = true;
+                queue[queue_back++] = neighbor_idx;
+                visited_count++;
+            }
+        }
+    }
+
+    free(queue);
+    free(visited);
+
+    return visited_count == rcg->node_count;
+}
+
+/**
+ * Planarity check: Euler's formula for planar graphs.
+ * For a connected planar graph: edges <= 3 * nodes - 6
+ */
+static bool cstar_rcg_is_planar(const cstar_rcg_t *rcg)
+{
+    if (rcg == NULL)
+        return true;
+    if (rcg->node_count < 3)
+        return true;
+    return rcg->edge_count <= 3 * rcg->node_count - 6;
+}
+
+static bool cstar_rcg_edge_exists(const cstar_edge_t *edges,
+                                  int edge_count,
+                                  int node_a,
+                                  int node_b)
+{
+    if (edges == NULL)
+        return false;
+    for (int i = 0; i < edge_count; ++i)
+    {
+        const cstar_edge_t *edge = &edges[i];
+        if ((edge->node_a == node_a && edge->node_b == node_b) ||
+            (edge->node_a == node_b && edge->node_b == node_a))
+            return true;
+    }
+    return false;
+}
+
+static void cstar_rcg_add_unique_edge(cstar_edge_t **edges,
+                                      int node_a,
+                                      int node_b,
+                                      float cost)
+{
+    if (edges == NULL)
+        return;
+    int edge_count = (int)cvector_size(*edges);
+    if (cstar_rcg_edge_exists(*edges, edge_count, node_a, node_b))
+        return;
+    cstar_edge_t edge = {0};
+    edge.node_a = node_a;
+    edge.node_b = node_b;
+    edge.cost = cost;
+    cvector_push_back(*edges, edge);
+}
+
+void cstar_rcg_generate_vertical_lap_edges(cstar_rcg_t *rcg, const cstar_environment_t *env)
+{
+    if (!rcg || !env || !env->laps)
+        return;
+
+    cstar_lap_t *laps = (cstar_lap_t *)env->laps;
+    int lap_count = (int)cvector_size(laps);
+
+    for (int lap_index = 0; lap_index < lap_count; ++lap_index)
+    {
+        const cstar_lap_t *lap = &laps[lap_index];
+        if (!lap->node_ids || lap->node_count <= 0)
+            continue;
+
+        // Build surviving[] from lap->node_ids, excluding start point nodes.
+        // lap->node_ids is ordered bottom-to-top (ascending y); iterate in reverse
+        // to process top-to-bottom and emit only downward edges (no duplicates).
+        int *surviving = (int *)malloc((size_t)lap->node_count * sizeof(int));
+        if (!surviving)
+            continue;
+
+        int surviving_count = 0;
+        for (int i = 0; i < lap->node_count; ++i)
+        {
+            int node_id = lap->node_ids[i];
+            int node_idx = cstar_rcg_index_from_node_id(rcg, node_id);
+            if (node_idx == CSTAR_NO_NEIGHBOR)
+                continue;
+            const cstar_node_t *node = &rcg->nodes[node_idx];
+            if (node->is_start_point)
+                continue;
+            surviving[surviving_count++] = node_id;
+        }
+
+        // surviving[] is in ascending y (bottom-to-top) order.
+        // Iterate top-to-bottom (reverse) emitting one downward edge per node.
+        for (int i = surviving_count - 1; i >= 0; --i)
+        {
+            int a_idx = cstar_rcg_index_from_node_id(rcg, surviving[i]);
+            if (a_idx == CSTAR_NO_NEIGHBOR)
+                continue;
+
+            const cstar_node_t *a = &rcg->nodes[a_idx];
+
+            if (a->is_top_and_bottom_end_node)
+                continue;
+
+            // Bottom end nodes have no node below them; skip (they were already
+            // connected as the target of the node above).
+            if (a->is_bottom_end_node)
+                continue;
+
+            // Find the first surviving node below that is not is_top_and_bottom_end_node.
+            for (int j = i - 1; j >= 0; --j)
+            {
+                int b_idx = cstar_rcg_index_from_node_id(rcg, surviving[j]);
+                if (b_idx == CSTAR_NO_NEIGHBOR)
+                    continue;
+
+                const cstar_node_t *b = &rcg->nodes[b_idx];
+                if (b->is_top_and_bottom_end_node)
+                    continue;
+
+                float dx = a->pos.x - b->pos.x;
+                float dy = a->pos.y - b->pos.y;
+                float cost = sqrtf(dx * dx + dy * dy);
+                cstar_rcg_add_unique_edge(&rcg->edges, a->id, b->id, cost);
+                break;
+            }
+        }
+
+        free(surviving);
+    }
+
+    // Connect the start point node to the closest surviving non-start node.
+    // The start point is excluded from the lap edge loop above, so it may be
+    // isolated; a nearest-neighbour edge ensures it is part of the graph.
+    int start_idx = CSTAR_NO_NEIGHBOR;
+    for (int i = 0; i < rcg->node_count; ++i)
+    {
+        if (rcg->nodes[i].is_start_point)
+        {
+            start_idx = i;
+            break;
+        }
+    }
+
+    if (start_idx != CSTAR_NO_NEIGHBOR)
+    {
+        const cstar_node_t *start_node = &rcg->nodes[start_idx];
+        int closest_id = CSTAR_NO_NEIGHBOR;
+        float closest_dist = INFINITY;
+
+        for (int i = 0; i < rcg->node_count; ++i)
+        {
+            if (i == start_idx)
+                continue;
+            const cstar_node_t *candidate = &rcg->nodes[i];
+            float dx = start_node->pos.x - candidate->pos.x;
+            float dy = start_node->pos.y - candidate->pos.y;
+            float dist = sqrtf(dx * dx + dy * dy);
+            if (dist < closest_dist)
+            {
+                closest_dist = dist;
+                closest_id = candidate->id;
+            }
+        }
+
+        if (closest_id != CSTAR_NO_NEIGHBOR)
+            cstar_rcg_add_unique_edge(&rcg->edges, start_node->id, closest_id, closest_dist);
+    }
+
+    rcg->edge_count = (int)cvector_size(rcg->edges);
+    rcg->edge_capacity = (int)cvector_capacity(rcg->edges);
+
+    if (!cstar_rcg_is_connected(rcg))
+        LOG_WARN("RCG graph is not fully connected after pruning and vertical lap edge generation");
+    if (!cstar_rcg_is_planar(rcg))
+        LOG_WARN("RCG graph violates planarity constraint (Euler's formula) after pruning");
 }
