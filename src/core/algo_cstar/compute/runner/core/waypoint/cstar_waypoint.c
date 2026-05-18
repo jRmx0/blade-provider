@@ -31,6 +31,7 @@
 
 #include "cstar_waypoint.h"
 #include "../rcg/cstar_rcg.h"
+#include <math.h>
 #include <stdlib.h>
 
 int cstar_select_goal_node(const cstar_rcg_t *rcg, int current_node_id)
@@ -104,32 +105,158 @@ int cstar_update_node_state(cstar_rcg_t *rcg,
                             int goal_node_id,
                             float w)
 {
-    /*
-     * Pseudocode (Algorithm 2):
-     *   link_nodes_created = 0
-     *   node = rcg->nodes[current_node_id]
-     *
-     *   // Determine if we are allowed to close current_node_id.
-     *   U = node.neighbor_up;   U_open = (U != NO && nodes[U].state == OP)
-     *   D = node.neighbor_down; D_open = (D != NO && nodes[D].state == OP)
-     *   can_close = NOT (U_open AND D_open)   // do not split an Open run
-     *
-     *   if can_close:
-     *     // When transitioning left, insert link nodes for distant Open
-     *     // same-lap neighbours to maintain traversability.
-     *     if goal is on left lap:
-     *       if U_open && dist(node.pos, nodes[U].pos) > w:
-     *         link_pos = node.pos + w * unit_vec(node.pos -> nodes[U].pos)
-     *         id = cstar_rcg_add_node(rcg, link_pos, node.lap_id, false)
-     *         nodes[id].is_link_node = true
-     *         // Link edges bypass collision check (gap is already open).
-     *         connect: current_node_id <-> id <-> U
-     *         link_nodes_created++
-     *       // Mirror for D_open (lower same-lap neighbour).
-     *
-     *     cstar_rcg_close_node(rcg, current_node_id)
-     *
-     *   return link_nodes_created
-     */
-    return 0;
+    if (rcg == NULL)
+    {
+        return 0;
+    }
+
+    const cstar_node_t *node = cstar_rcg_get_node_by_id(rcg, current_node_id);
+    if (node == NULL)
+    {
+        return 0;
+    }
+
+    // --- Determine if current node can be closed (Algorithm 2) ---
+    // Do NOT close if both same-lap neighbours are Open: closing would split
+    // an Open run on the lap and force an unnecessary dead-end escape later.
+    int up_id = node->neighbor_up;
+    int down_id = node->neighbor_down;
+
+    const cstar_node_t *up = cstar_rcg_get_node_by_id(rcg, up_id);
+    const cstar_node_t *down = cstar_rcg_get_node_by_id(rcg, down_id);
+
+    bool up_open = (up_id != CSTAR_NO_NEIGHBOR && up != NULL && up->state == CSTAR_NODE_OP);
+    bool down_open = (down_id != CSTAR_NO_NEIGHBOR && down != NULL && down->state == CSTAR_NODE_OP);
+
+    bool can_close = !(up_open && down_open);
+    if (!can_close)
+    {
+        return 0;
+    }
+
+    // --- Determine if the goal is on the left lap ---
+    bool goal_is_left = false;
+    for (int i = 0; i < node->neighbors_left_count; ++i)
+    {
+        if (node->neighbors_left[i] == goal_node_id)
+        {
+            goal_is_left = true;
+            break;
+        }
+    }
+
+    int link_nodes_created = 0;
+
+    // --- Insert link nodes (left-lap transitions only) ---
+    // When closing during a left-lap transition, a distant Open same-lap
+    // neighbour loses its only traversal path through current.  A link node
+    // is placed at distance w so the neighbour stays reachable.
+    if (goal_is_left)
+    {
+        // Process up neighbour, then down neighbour.
+        int dirs[2] = {up_id, down_id};
+        bool opens[2] = {up_open, down_open};
+        bool is_up[2] = {true, false};
+
+        for (int d = 0; d < 2; ++d)
+        {
+            if (!opens[d])
+            {
+                continue;
+            }
+
+            int nbr_id = dirs[d];
+
+            // Re-fetch current and neighbour every iteration: earlier
+            // cstar_rcg_add_node calls may have reallocated rcg->nodes.
+            const cstar_node_t *cur = cstar_rcg_get_node_by_id(rcg, current_node_id);
+            const cstar_node_t *nbr = cstar_rcg_get_node_by_id(rcg, nbr_id);
+            if (cur == NULL || nbr == NULL)
+            {
+                continue;
+            }
+
+            float dx = nbr->pos.x - cur->pos.x;
+            float dy = nbr->pos.y - cur->pos.y;
+            float dist = sqrtf(dx * dx + dy * dy);
+
+            if (dist <= w)
+            {
+                // Neighbour is already within w — no link node needed.
+                continue;
+            }
+
+            // Place link node at distance w from current toward neighbour.
+            float scale = w / dist;
+            point_t link_pos = {cur->pos.x + dx * scale,
+                                cur->pos.y + dy * scale};
+
+            int link_id = cstar_rcg_add_node(rcg, link_pos,
+                                             cur->lap_id,
+                                             false, false, false, false);
+            if (link_id == CSTAR_NO_NEIGHBOR)
+            {
+                continue;
+            }
+
+            // Mark as link node. Re-fetch: add_node may have reallocated.
+            cstar_node_t *link_mut = cstar_rcg_get_node_by_id_mut(rcg, link_id);
+            if (link_mut == NULL)
+            {
+                continue;
+            }
+            link_mut->is_link_node = true;
+
+            // Wire same-lap neighbor pointers through the link.
+            // Re-fetch current and nbr again after add_node reallocation.
+            cstar_node_t *cur_mut = cstar_rcg_get_node_by_id_mut(rcg, current_node_id);
+            cstar_node_t *nbr_mut = cstar_rcg_get_node_by_id_mut(rcg, nbr_id);
+
+            if (is_up[d])
+            {
+                // current --up--> link --up--> nbr
+                if (cur_mut)
+                {
+                    cur_mut->neighbor_up = link_id;
+                }
+                link_mut->neighbor_down = current_node_id;
+                link_mut->neighbor_up = nbr_id;
+                if (nbr_mut)
+                {
+                    nbr_mut->neighbor_down = link_id;
+                }
+            }
+            else
+            {
+                // current --down--> link --down--> nbr
+                if (cur_mut)
+                {
+                    cur_mut->neighbor_down = link_id;
+                }
+                link_mut->neighbor_up = current_node_id;
+                link_mut->neighbor_down = nbr_id;
+                if (nbr_mut)
+                {
+                    nbr_mut->neighbor_up = link_id;
+                }
+            }
+
+            // Add edges: current <-> link, link <-> nbr.
+            // The gap between current and its same-lap neighbour is already
+            // obstacle-free, so no collision check is required.
+            cstar_rcg_add_edge(rcg, current_node_id, link_id, w);
+            cstar_rcg_add_edge(rcg, link_id, nbr_id, dist - w);
+
+            link_nodes_created++;
+        }
+    }
+
+    // --- Close the current node ---
+    cstar_node_t *cur_final = cstar_rcg_get_node_by_id_mut(rcg, current_node_id);
+    if (cur_final != NULL)
+    {
+        cur_final->state = CSTAR_NODE_CL;
+    }
+
+    return link_nodes_created;
 }
