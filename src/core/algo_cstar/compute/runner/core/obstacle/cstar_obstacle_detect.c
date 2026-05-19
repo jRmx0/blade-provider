@@ -277,13 +277,10 @@ int cstar_generate_obstacle_adjacent_samples(cstar_rcg_t *rcg,
     float dedup_eps = w * 0.05f; /* 5% of path width — enough to skip near-duplicates */
 
     /* Y-range and sample step (mirrors initial frontier sampling logic). */
-    float min_x, max_x, min_y, max_y;
-    cstar_lap_boundary_bbox(env, &min_x, &max_x, &min_y, &max_y);
-
-    float step = ((delta > 0 ? (float)delta : 1.0f) * w);
-    float anchor_y = env->start_point.y;
-    int first_sample_index = (int)ceilf(((min_y - anchor_y) / step) - CSTAR_OBSTACLE_EPSILON);
-    int last_sample_index = (int)floorf(((max_y - anchor_y) / step) + CSTAR_OBSTACLE_EPSILON);
+    float step, anchor_y;
+    int first_sample_index, last_sample_index;
+    cstar_lap_compute_sample_range(env, w, delta, &step, &anchor_y,
+                                   &first_sample_index, &last_sample_index);
 
     /* Snapshot of existing node count for the connection phase below. */
     int existing_node_count = rcg->node_count;
@@ -470,9 +467,7 @@ int cstar_generate_obstacle_adjacent_samples(cstar_rcg_t *rcg,
         for (int ei = 0; ei < existing_node_count; ++ei)
         {
             const cstar_node_t *other = &rcg->nodes[ei];
-            float dx = other->pos.x - nn->pos.x;
-            float dy = other->pos.y - nn->pos.y;
-            float dist = sqrtf(dx * dx + dy * dy);
+            float dist = cstar_runner_dist(nn->pos, other->pos);
             if (dist <= margin + CSTAR_OBSTACLE_EPSILON)
                 cstar_rcg_add_unique_edge(&rcg->edges, new_id, other->id, dist);
         }
@@ -484,9 +479,7 @@ int cstar_generate_obstacle_adjacent_samples(cstar_rcg_t *rcg,
             const cstar_node_t *on = cstar_rcg_get_node_by_id(rcg, other_id);
             if (on == NULL)
                 continue;
-            float dx = on->pos.x - nn->pos.x;
-            float dy = on->pos.y - nn->pos.y;
-            float dist = sqrtf(dx * dx + dy * dy);
+            float dist = cstar_runner_dist(nn->pos, on->pos);
             if (dist <= margin + CSTAR_OBSTACLE_EPSILON)
                 cstar_rcg_add_unique_edge(&rcg->edges, new_id, other_id, dist);
         }

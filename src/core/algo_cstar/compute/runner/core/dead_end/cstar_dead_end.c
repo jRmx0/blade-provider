@@ -69,9 +69,7 @@ void cstar_retreat_update(cvector_vector_type(int) * retreat_nodes,
             continue;
         }
 
-        float dx = robot_pos.x - rcg->nodes[v].pos.x;
-        float dy = robot_pos.y - rcg->nodes[v].pos.y;
-        if (sqrtf(dx * dx + dy * dy) > radius)
+        if (cstar_runner_dist(robot_pos, rcg->nodes[v].pos) > radius)
         {
             continue;
         }
@@ -127,9 +125,7 @@ int cstar_escape_dead_end(const cstar_rcg_t *rcg,
         {
             continue;
         }
-        float dx = start_pos.x - rcg->nodes[ridx].pos.x;
-        float dy = start_pos.y - rcg->nodes[ridx].pos.y;
-        float d = sqrtf(dx * dx + dy * dy);
+        float d = cstar_runner_dist(start_pos, rcg->nodes[ridx].pos);
         if (d < min_dist)
         {
             min_dist = d;
@@ -182,9 +178,7 @@ int cstar_escape_dead_end(const cstar_rcg_t *rcg,
             {
                 continue;
             }
-            float dx = rcg->nodes[i].pos.x - goal_pos.x;
-            float dy = rcg->nodes[i].pos.y - goal_pos.y;
-            float f = g_score[i] + sqrtf(dx * dx + dy * dy);
+            float f = g_score[i] + cstar_runner_dist(rcg->nodes[i].pos, goal_pos);
             if (f < curr_f)
             {
                 curr_f = f;
@@ -235,9 +229,7 @@ int cstar_escape_dead_end(const cstar_rcg_t *rcg,
             {
                 continue;
             }
-            float dx = rcg->nodes[curr_idx].pos.x - rcg->nodes[nb_idx].pos.x;
-            float dy = rcg->nodes[curr_idx].pos.y - rcg->nodes[nb_idx].pos.y;
-            float tentative_g = g_score[curr_idx] + sqrtf(dx * dx + dy * dy);
+            float tentative_g = g_score[curr_idx] + cstar_runner_dist(rcg->nodes[curr_idx].pos, rcg->nodes[nb_idx].pos);
             if (tentative_g < g_score[nb_idx])
             {
                 came_from[nb_idx] = curr_idx;

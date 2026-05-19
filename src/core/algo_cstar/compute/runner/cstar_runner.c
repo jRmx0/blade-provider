@@ -11,7 +11,9 @@
 #include "core/waypoint/cstar_waypoint.h"
 #include "core/dead_end/cstar_dead_end.h"
 #include "debug/cstar_debug.h"
+#include "utils/cstar_runner_math.h"
 
+#include "utils/cstar_runner_math.c"
 #include "core/rcg/cstar_rcg.c"
 #include "core/geometry/cstar_geometry.c"
 #include "core/preprocess/cstar_lap.c"
@@ -23,7 +25,6 @@
 #include "core/obstacle/cstar_obstacle_detect.c"
 #include "debug/cstar_debug.c"
 
-#include "utils/cstar_runner_math.c"
 #include "utils/cstar_runner_result.c"
 #include "utils/cstar_runner_segments.c"
 

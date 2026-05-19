@@ -8,26 +8,6 @@
 
 // Prune the RCG, leaving only end nodes and edges between them.
 
-static int cstar_rcg_index_from_node_id_in_array(const cstar_node_t *nodes,
-                                                 int node_count,
-                                                 int node_id)
-{
-    if (nodes == NULL || node_id == CSTAR_NO_NEIGHBOR)
-    {
-        return CSTAR_NO_NEIGHBOR;
-    }
-
-    for (int i = 0; i < node_count; ++i)
-    {
-        if (nodes[i].id == node_id)
-        {
-            return i;
-        }
-    }
-
-    return CSTAR_NO_NEIGHBOR;
-}
-
 static void cstar_rcg_reset_node_links(cstar_node_t *node)
 {
     if (node == NULL)

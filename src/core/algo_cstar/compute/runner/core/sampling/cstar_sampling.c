@@ -153,72 +153,63 @@ static bool cstar_sampling_point_is_free(point_t point, const cstar_environment_
     return true;
 }
 
-static bool cstar_sampling_is_top_end_node_vertical(point_t sample, float w, const cstar_environment_t *env)
+static bool cstar_sampling_is_end_node_vertical(point_t sample, float w, float dir,
+                                                const cstar_environment_t *env)
 {
     if (env == NULL || w <= CSTAR_EPSILON)
-    {
         return false;
-    }
 
-    point_t probe_up = {sample.x, sample.y + w};
+    point_t probe = {sample.x, sample.y + dir * w};
+    return cstar_sampling_point_on_any_boundary(probe, env, CSTAR_EPSILON) ||
+           !cstar_sampling_point_is_free(probe, env);
+}
 
-    bool up_hits_boundary = cstar_sampling_point_on_any_boundary(probe_up, env, CSTAR_EPSILON);
-    bool up_blocked = !cstar_sampling_point_is_free(probe_up, env);
-
-    return up_hits_boundary || up_blocked;
+static bool cstar_sampling_is_top_end_node_vertical(point_t sample, float w, const cstar_environment_t *env)
+{
+    return cstar_sampling_is_end_node_vertical(sample, w, +1.0f, env);
 }
 
 static bool cstar_sampling_is_bottom_end_node_vertical(point_t sample, float w, const cstar_environment_t *env)
 {
-    if (env == NULL || w <= CSTAR_EPSILON)
-    {
-        return false;
-    }
-
-    point_t probe_down = {sample.x, sample.y - w};
-
-    bool down_hits_boundary = cstar_sampling_point_on_any_boundary(probe_down, env, CSTAR_EPSILON);
-    bool down_blocked = !cstar_sampling_point_is_free(probe_down, env);
-
-    return down_hits_boundary || down_blocked;
+    return cstar_sampling_is_end_node_vertical(sample, w, -1.0f, env);
 }
 
 static bool cstar_sampling_is_top_and_bottom_end_node_vertical(point_t sample, float w, const cstar_environment_t *env)
 {
-    return cstar_sampling_is_top_end_node_vertical(sample, w, env) &&
-           cstar_sampling_is_bottom_end_node_vertical(sample, w, env);
+    return cstar_sampling_is_end_node_vertical(sample, w, +1.0f, env) &&
+           cstar_sampling_is_end_node_vertical(sample, w, -1.0f, env);
 }
 
 /* Zone-only variants — used during initial frontier sampling when obstacles
    are not yet known.  Only the operationalBoundary is consulted; obstacle
    boundaries are intentionally ignored. */
 
-static bool cstar_sampling_is_top_end_node_zone_only(point_t sample, float w, const cstar_environment_t *env)
+static bool cstar_sampling_is_end_node_zone_only(point_t sample, float w, float dir,
+                                                 const cstar_environment_t *env)
 {
     if (env == NULL || w <= CSTAR_EPSILON)
         return false;
 
-    point_t probe_up = {sample.x, sample.y + w};
-    bool up_hits_zone = cstar_sampling_point_on_boundary(probe_up, &env->operationalBoundary, CSTAR_EPSILON);
-    bool up_outside_zone = !cstar_sampling_point_in_polygon(probe_up, &env->operationalBoundary) && !up_hits_zone;
-    return up_hits_zone || up_outside_zone;
+    point_t probe = {sample.x, sample.y + dir * w};
+    bool hits_zone = cstar_sampling_point_on_boundary(probe, &env->operationalBoundary, CSTAR_EPSILON);
+    bool outside_zone = !cstar_sampling_point_in_polygon(probe, &env->operationalBoundary) && !hits_zone;
+    return hits_zone || outside_zone;
+}
+
+static bool cstar_sampling_is_top_end_node_zone_only(point_t sample, float w, const cstar_environment_t *env)
+{
+    return cstar_sampling_is_end_node_zone_only(sample, w, +1.0f, env);
 }
 
 static bool cstar_sampling_is_bottom_end_node_zone_only(point_t sample, float w, const cstar_environment_t *env)
 {
-    if (env == NULL || w <= CSTAR_EPSILON)
-        return false;
-
-    point_t probe_down = {sample.x, sample.y - w};
-    bool down_hits_zone = cstar_sampling_point_on_boundary(probe_down, &env->operationalBoundary, CSTAR_EPSILON);
-    bool down_outside_zone = !cstar_sampling_point_in_polygon(probe_down, &env->operationalBoundary) && !down_hits_zone;
-    return down_hits_zone || down_outside_zone;
+    return cstar_sampling_is_end_node_zone_only(sample, w, -1.0f, env);
 }
 
 static bool cstar_sampling_is_top_and_bottom_end_node_zone_only(point_t sample, float w, const cstar_environment_t *env)
 {
-    return cstar_sampling_is_top_end_node_zone_only(sample, w, env) &&
-           cstar_sampling_is_bottom_end_node_zone_only(sample, w, env);
+    return cstar_sampling_is_end_node_zone_only(sample, w, +1.0f, env) &&
+           cstar_sampling_is_end_node_zone_only(sample, w, -1.0f, env);
 }
 
 static float cstar_sampling_dist_to_operational_boundary(point_t point, const cstar_environment_t *env)
@@ -265,13 +256,10 @@ int cstar_generate_frontier_samples(cstar_rcg_t *rcg,
         return 0;
     }
 
-    float min_x = 0.0f, max_x = 0.0f, min_y = 0.0f, max_y = 0.0f;
-    cstar_lap_boundary_bbox(env, &min_x, &max_x, &min_y, &max_y);
-
-    float step = ((delta > 0 ? (float)delta : 1.0f) * ((w > CSTAR_EPSILON) ? w : 1.0f));
-    float anchor_y = env->start_point.y;
-    int first_sample_index = (int)ceilf(((min_y - anchor_y) / step) - CSTAR_EPSILON);
-    int last_sample_index = (int)floorf(((max_y - anchor_y) / step) + CSTAR_EPSILON);
+    float step, anchor_y;
+    int first_sample_index, last_sample_index;
+    cstar_lap_compute_sample_range(env, w, delta, &step, &anchor_y,
+                                   &first_sample_index, &last_sample_index);
 
     int start_lap_index = 0;
     float closest_lap_dx = fabsf(laps[0].x - env->start_point.x);

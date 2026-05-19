@@ -94,22 +94,28 @@ int cstar_rcg_add_node(cstar_rcg_t *rcg,
     return node_id;
 }
 
-int cstar_rcg_index_from_node_id(const cstar_rcg_t *rcg, int node_id)
+int cstar_rcg_index_from_node_id_in_array(const cstar_node_t *nodes,
+                                          int node_count,
+                                          int node_id)
 {
-    if (rcg == NULL || rcg->nodes == NULL || node_id == CSTAR_NO_NEIGHBOR)
-    {
+    if (nodes == NULL || node_id == CSTAR_NO_NEIGHBOR)
         return CSTAR_NO_NEIGHBOR;
-    }
 
-    for (int i = 0; i < rcg->node_count; ++i)
+    for (int i = 0; i < node_count; ++i)
     {
-        if (rcg->nodes[i].id == node_id)
-        {
+        if (nodes[i].id == node_id)
             return i;
-        }
     }
 
     return CSTAR_NO_NEIGHBOR;
+}
+
+int cstar_rcg_index_from_node_id(const cstar_rcg_t *rcg, int node_id)
+{
+    if (rcg == NULL || rcg->nodes == NULL)
+        return CSTAR_NO_NEIGHBOR;
+
+    return cstar_rcg_index_from_node_id_in_array(rcg->nodes, rcg->node_count, node_id);
 }
 
 const cstar_node_t *cstar_rcg_get_node_by_id(const cstar_rcg_t *rcg, int node_id)

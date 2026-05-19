@@ -35,6 +35,20 @@
 #include <math.h>
 #include <stdlib.h>
 
+static int cstar_collect_open_cross_neighbors(const cstar_rcg_t *rcg,
+                                              const int *ids, int count,
+                                              int *out)
+{
+    int n = 0;
+    for (int i = 0; i < count; ++i)
+    {
+        const cstar_node_t *nb = cstar_rcg_get_node_by_id(rcg, ids[i]);
+        if (nb != NULL && nb->state == CSTAR_NODE_OP)
+            out[n++] = ids[i];
+    }
+    return n;
+}
+
 int cstar_select_goal_node(const cstar_rcg_t *rcg, int current_node_id)
 {
     if (rcg == NULL)
@@ -50,16 +64,9 @@ int cstar_select_goal_node(const cstar_rcg_t *rcg, int current_node_id)
 
     // Priority 1: left lap — collect all Open candidates, pick one at random.
     int left_candidates[CSTAR_MAX_CROSS_LAP_NEIGHBORS];
-    int left_count = 0;
-    for (int i = 0; i < node->neighbors_left_count; ++i)
-    {
-        int left_id = node->neighbors_left[i];
-        const cstar_node_t *left = cstar_rcg_get_node_by_id(rcg, left_id);
-        if (left != NULL && left->state == CSTAR_NODE_OP)
-        {
-            left_candidates[left_count++] = left_id;
-        }
-    }
+    int left_count = cstar_collect_open_cross_neighbors(rcg, node->neighbors_left,
+                                                        node->neighbors_left_count,
+                                                        left_candidates);
     if (left_count > 0)
     {
         return left_candidates[rand() % left_count];
@@ -83,16 +90,9 @@ int cstar_select_goal_node(const cstar_rcg_t *rcg, int current_node_id)
 
     // Priority 4: right lap — collect all Open candidates, pick one at random.
     int right_candidates[CSTAR_MAX_CROSS_LAP_NEIGHBORS];
-    int right_count = 0;
-    for (int i = 0; i < node->neighbors_right_count; ++i)
-    {
-        int right_id = node->neighbors_right[i];
-        const cstar_node_t *right = cstar_rcg_get_node_by_id(rcg, right_id);
-        if (right != NULL && right->state == CSTAR_NODE_OP)
-        {
-            right_candidates[right_count++] = right_id;
-        }
-    }
+    int right_count = cstar_collect_open_cross_neighbors(rcg, node->neighbors_right,
+                                                         node->neighbors_right_count,
+                                                         right_candidates);
     if (right_count > 0)
     {
         return right_candidates[rand() % right_count];
@@ -179,7 +179,7 @@ int cstar_update_node_state(cstar_rcg_t *rcg,
 
             float dx = nbr->pos.x - cur->pos.x;
             float dy = nbr->pos.y - cur->pos.y;
-            float dist = sqrtf(dx * dx + dy * dy);
+            float dist = cstar_runner_dist(cur->pos, nbr->pos);
 
             if (dist <= w)
             {

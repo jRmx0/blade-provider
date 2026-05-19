@@ -23,9 +23,7 @@ static float cstar_rcg_node_distance(const cstar_node_t *a, const cstar_node_t *
         return INFINITY;
     }
 
-    float dx = a->pos.x - b->pos.x;
-    float dy = a->pos.y - b->pos.y;
-    return sqrtf(dx * dx + dy * dy);
+    return cstar_runner_dist(a->pos, b->pos);
 }
 
 /**
@@ -462,9 +460,7 @@ void cstar_rcg_generate_vertical_lap_edges(cstar_rcg_t *rcg, const cstar_environ
                 if (b->is_top_and_bottom_end_node)
                     continue;
 
-                float dx = a->pos.x - b->pos.x;
-                float dy = a->pos.y - b->pos.y;
-                float cost = sqrtf(dx * dx + dy * dy);
+                float cost = cstar_runner_dist(a->pos, b->pos);
                 cstar_rcg_add_unique_edge(&rcg->edges, a->id, b->id, cost);
                 break;
             }
@@ -497,9 +493,7 @@ void cstar_rcg_generate_vertical_lap_edges(cstar_rcg_t *rcg, const cstar_environ
             if (i == start_idx)
                 continue;
             const cstar_node_t *candidate = &rcg->nodes[i];
-            float dx = start_node->pos.x - candidate->pos.x;
-            float dy = start_node->pos.y - candidate->pos.y;
-            float dist = sqrtf(dx * dx + dy * dy);
+            float dist = cstar_runner_dist(start_node->pos, candidate->pos);
             if (dist < closest_dist)
             {
                 closest_dist = dist;

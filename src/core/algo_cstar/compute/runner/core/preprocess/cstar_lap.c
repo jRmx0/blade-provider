@@ -84,6 +84,24 @@ bool cstar_preprocess_environment_laps(cstar_environment_t *env, float path_widt
     return true;
 }
 
+void cstar_lap_compute_sample_range(const cstar_environment_t *env,
+                                    float w, int delta,
+                                    float *step_out, float *anchor_y_out,
+                                    int *first_out, int *last_out)
+{
+    float min_x, max_x, min_y, max_y;
+    cstar_lap_boundary_bbox(env, &min_x, &max_x, &min_y, &max_y);
+
+    float safe_w = (w > CSTAR_EPSILON) ? w : 1.0f;
+    float step = (delta > 0 ? (float)delta : 1.0f) * safe_w;
+    float anchor_y = env->start_point.y;
+
+    *step_out = step;
+    *anchor_y_out = anchor_y;
+    *first_out = (int)ceilf(((min_y - anchor_y) / step) - CSTAR_EPSILON);
+    *last_out = (int)floorf(((max_y - anchor_y) / step) + CSTAR_EPSILON);
+}
+
 void cstar_environment_laps_cleanup(cstar_environment_t *env)
 {
     if (env == NULL || env->laps == NULL)

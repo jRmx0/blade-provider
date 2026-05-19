@@ -69,6 +69,16 @@ int cstar_rcg_add_node(cstar_rcg_t *rcg,
 int cstar_rcg_index_from_node_id(const cstar_rcg_t *rcg, int node_id);
 
 /**
+ * Resolves a stable node ID to its current index in a raw node array.
+ *
+ * Allows scanning a temporary array that is not yet owned by an RCG.
+ * Returns CSTAR_NO_NEIGHBOR when the node ID does not exist.
+ */
+int cstar_rcg_index_from_node_id_in_array(const cstar_node_t *nodes,
+                                          int node_count,
+                                          int node_id);
+
+/**
  * Returns an immutable node pointer by stable node ID.
  *
  * Returns NULL when node ID does not exist.

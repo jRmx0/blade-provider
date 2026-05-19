@@ -41,4 +41,29 @@ bool cstar_preprocess_environment_laps(cstar_environment_t *env, float path_widt
  */
 void cstar_environment_laps_cleanup(cstar_environment_t *env);
 
+// -------------------------------------------------------------------------
+// Sampling Helpers
+// -------------------------------------------------------------------------
+
+/**
+ * Computes the Y-axis sample index range and step for frontier sampling.
+ *
+ * Wraps the cstar_lap_boundary_bbox call and the ceilf/floorf index
+ * calculations that are shared between cstar_generate_frontier_samples and
+ * cstar_generate_obstacle_adjacent_samples.
+ *
+ * Parameters:
+ *   env        - Environment (must have valid operationalBoundary and start_point)
+ *   w          - Path width used as the base step size
+ *   delta      - Frontier spacing multiplier (> 0); 1 if zero or negative
+ *   step_out   - Receives the computed step value
+ *   anchor_y_out - Receives env->start_point.y (anchor for index-to-y mapping)
+ *   first_out  - Receives the lowest sample index (inclusive)
+ *   last_out   - Receives the highest sample index (inclusive)
+ */
+void cstar_lap_compute_sample_range(const cstar_environment_t *env,
+                                    float w, int delta,
+                                    float *step_out, float *anchor_y_out,
+                                    int *first_out, int *last_out);
+
 #endif // CSTAR_LAP_H
