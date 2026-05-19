@@ -29,20 +29,6 @@
 #include <stdlib.h>
 #include "cstar_dead_end.h"
 
-bool cstar_is_dead_end(const cstar_rcg_t *rcg, int node_id)
-{
-    /*
-     * Pseudocode (Definition III.12):
-     *   node = rcg->nodes[node_id]
-     *   for dir in {up, down, left, right}:
-     *     nb = node.neighbor_<dir>
-     *     if nb != CSTAR_NO_NEIGHBOR && nodes[nb].state == CSTAR_NODE_OP:
-     *       return false   // at least one Open neighbour exists
-     *   return true
-     */
-    return false;
-}
-
 void cstar_retreat_update(cvector_vector_type(int) * retreat_nodes,
                           const cstar_rcg_t *rcg,
                           point_t robot_pos,

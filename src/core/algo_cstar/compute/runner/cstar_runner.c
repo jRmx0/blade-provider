@@ -10,7 +10,6 @@
 #include "core/rcg/cstar_rcg_prunning.h"
 #include "core/waypoint/cstar_waypoint.h"
 #include "core/dead_end/cstar_dead_end.h"
-#include "core/coverage_hole/cstar_coverage_hole.h"
 #include "debug/cstar_debug.h"
 
 #include "core/rcg/cstar_rcg.c"
@@ -21,7 +20,6 @@
 #include "core/rcg/cstar_rcg_prunning.c"
 #include "core/waypoint/cstar_waypoint.c"
 #include "core/dead_end/cstar_dead_end.c"
-#include "core/coverage_hole/cstar_coverage_hole.c"
 #include "core/obstacle/cstar_obstacle_detect.c"
 #include "debug/cstar_debug.c"
 

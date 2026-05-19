@@ -34,34 +34,6 @@ bool cstar_path_has_collision(point_t from,
                               int *obstacle_idx_out);
 
 // -------------------------------------------------------------------------
-// Boundary Following
-// -------------------------------------------------------------------------
-
-/**
- * Walks the CCW obstacle boundary (forward vertex index order, matching
- * POLYGON_WINDING_CCW) from entry_pt until a clear sight-line to destination
- * is found or the full perimeter is traversed.
- *
- * Collects waypoints at ≤ w spacing along each boundary edge.
- * The first waypoint in the returned vector is entry_pt itself.
- *
- * Parameters:
- *   entry_pt     - Exact point on the obstacle boundary where collision occurred
- *   destination  - The goal the robot was trying to reach
- *   obstacle_idx - Index into env->operationalObstacles
- *   w            - Path width (waypoint spacing and sight-line probe interval)
- *   env          - Environment
- *
- * Returns:
- *   cvector of point_t waypoints (caller must cvector_free); NULL on failure.
- */
-cvector_vector_type(point_t) cstar_obstacle_follow_boundary(point_t entry_pt,
-                                                            point_t destination,
-                                                            int obstacle_idx,
-                                                            float w,
-                                                            const cstar_environment_t *env);
-
-// -------------------------------------------------------------------------
 // Full Circumnavigation
 // -------------------------------------------------------------------------
 
@@ -87,31 +59,6 @@ cvector_vector_type(point_t) cstar_obstacle_circumnavigate(point_t entry_pt,
                                                            int obstacle_idx,
                                                            float w,
                                                            const cstar_environment_t *env);
-
-// -------------------------------------------------------------------------
-// RCG Update
-// -------------------------------------------------------------------------
-
-/**
- * Adds each waypoint as a new RCG node (is_link_node = true, lap_id = -1),
- * chains edges between consecutive nodes, connects the exit node to nearby
- * Open nodes within √2·w, and rebuilds neighbor pointers from the edge list.
- *
- * Parameters:
- *   rcg          - RCG to update
- *   waypoints    - Ordered boundary waypoints from cstar_obstacle_follow_boundary
- *   from_node_id - ID of the node at the current position (start of chain)
- *   w            - Path width
- *   env          - Environment
- *
- * Returns:
- *   Stable node ID of the exit (last injected) node, or CSTAR_NO_NEIGHBOR.
- */
-int cstar_obstacle_inject_boundary_nodes(cstar_rcg_t *rcg,
-                                         const cvector_vector_type(point_t) waypoints,
-                                         int from_node_id,
-                                         float w,
-                                         const cstar_environment_t *env);
 
 // -------------------------------------------------------------------------
 // Obstacle-Adjacent Frontier Sampling

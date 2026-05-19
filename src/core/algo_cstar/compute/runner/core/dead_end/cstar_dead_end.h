@@ -5,16 +5,6 @@
 #include "../../../../../../../dependencies/cvector/cvector.h"
 
 // -------------------------------------------------------------------------
-// Dead-end detection
-// -------------------------------------------------------------------------
-
-/**
- * Returns true if node_id is a dead-end (Definition III.12):
- * all four directional neighbours are Closed or absent.
- */
-bool cstar_is_dead_end(const cstar_rcg_t *rcg, int node_id);
-
-// -------------------------------------------------------------------------
 // Retreat node management
 // -------------------------------------------------------------------------
 
