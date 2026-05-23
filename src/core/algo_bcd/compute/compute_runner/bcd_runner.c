@@ -668,17 +668,14 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 		}
 	}
 
-	va_tracking_mark("Serializavimas");
+	/* Stop tracking before serialization — only core algorithm memory matters. */
+	va_tracking_disable();
 
 	cJSON *root = serialize_result_json(&event_list, &cell_list, &path_list, &motion_plan,
 										has_headland ? &headland : NULL,
 										start_nav);
 
-	va_tracking_mark("Valymas");
-
-	/* Free compute data after serializing — these va_free calls are tracked,
-	 * so the working-set drop from releasing cell/path/motion/event data
-	 * appears in the sample vector before the snapshot is taken. */
+	/* Free compute data after serializing. */
 	vg_graph_free(vg);
 	free_bcd_event_list(&event_list);
 	free_bcd_cell_list(&cell_list);
