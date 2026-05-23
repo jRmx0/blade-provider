@@ -356,41 +356,14 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 	event_list.bcd_events = NULL;
 	event_list.length = 0;
 
-	// --- Headland pass (optional) ---
+	// --- Headland pass disabled ---
+	// When env->headland is true, BCD skips the perimeter headland coverage pass
+	// and performs only interior cell coverage, stopping at the last coverage point.
 	headland_t headland;
 	memset(&headland, 0, sizeof(headland_t));
 	bool has_headland = false;
 
 	input_environment_t *active_env = env;
-
-	if (env->headland)
-	{
-		va_tracking_mark("Galūlaukiai");
-		int hrc = compute_headlandCoverage(env, &headland);
-		if (hrc != 0)
-		{
-			LOG_ERROR("coverage_path_planning: headland generation failed (code %d)", hrc);
-			free_headland(&headland);
-
-			const char *err_code =
-				(hrc == -3) ? "no_headland_transit_path" : "headland_failed";
-			const char *err_msg =
-				(hrc == -3) ? "No collision-free path could be found between headland sections. The field geometry may be too complex or obstacles too close together."
-							: "Headland generation failed.";
-
-			cJSON *err = cJSON_CreateObject();
-			cJSON_AddStringToObject(err, "status", "error");
-			cJSON_AddStringToObject(err, "code", err_code);
-			cJSON_AddStringToObject(err, "message", err_msg);
-			return err;
-		}
-		else
-		{
-			has_headland = true;
-			LOG_DEBUG("coverage_path_planning: headland generated %zu section(s)",
-					  cvector_size(headland.sections));
-		}
-	}
 
 	va_tracking_mark("Paruošimas");
 	int rc = bcd_preprocess_environment(active_env, 0.0f);
@@ -494,17 +467,20 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 	//
 	// Transit segments that need paths:
 	//   (a) coverage section[i] end → coverage section[i+1] start
-	//   (b) coverage section[last] end → env->end_point
-	//   (c) headland section[last] end → coverage section[0] start  (if headland)
-	//   (d) env->start_point → headland section[0] start  OR  coverage section[0] start
+	//   (b) coverage section[last] end → env->end_point  (only when env->headland == false)
+	//   (c) headland section[last] end → coverage section[0] start  (unused: headland pass is disabled)
+	//   (d) env->start_point → coverage section[0] start
 
 	cvector_vector_type(point_t) all_transit_nodes = NULL;
 
-	// Always include global start/end.
+	// Always include global start.
 	cvector_push_back(all_transit_nodes, env->start_point);
-	cvector_push_back(all_transit_nodes, active_env->end_point);
+	// Include end_point only when headland is off — when headland is on, coverage
+	// stops at the last coverage point and end_point transit is skipped.
+	if (!env->headland)
+		cvector_push_back(all_transit_nodes, active_env->end_point);
 
-	// Headland section endpoints.
+	// Headland section endpoints (unused: headland pass is disabled).
 	if (has_headland && headland.sections != NULL)
 	{
 		int hl_n = (int)cvector_size(headland.sections);
@@ -581,11 +557,13 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 					has_target = true;
 				}
 			}
-			else
+			else if (!env->headland)
 			{
+				// headland=OFF: navigate from last coverage point to end_point.
 				to_pt = active_env->end_point;
 				has_target = true;
 			}
+			// else: headland=ON — stop at last coverage point, nav stays NULL.
 
 			if (!has_target)
 			{
