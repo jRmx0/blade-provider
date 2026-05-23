@@ -160,6 +160,21 @@ char *cstar_build_metadata_json(void)
 
     metadata_add_parameter(parameters, 4, "Path Width", METADATA_PARAM_TYPE_DECIMAL, NULL, 0, "10", METADATA_PARAM_SECTION_COVERAGE_PATH, METADATA_APP_HANDLER_NONE, 1, 0.0, 0, 0.0, METADATA_UNIT_TYPE_UOM);
     metadata_add_parameter(parameters, 5, "Frontier Spacing Multiplier", METADATA_PARAM_TYPE_INTEGER, NULL, 0, "1", METADATA_PARAM_SECTION_COVERAGE_PATH, METADATA_APP_HANDLER_NONE, 1, 1.0, 0, 0.0, NULL);
+    metadata_add_parameter(parameters, 6, "Track Memory Usage", METADATA_PARAM_TYPE_BOOLEAN, NULL, 0, "false", METADATA_PARAM_SECTION_PERFORMANCE, METADATA_APP_HANDLER_NONE, 0, 0.0, 0, 0.0, NULL);
+
+    /* ── Metrics ─────────────────────────────────────────────────────────── */
+
+    cJSON *metrics = cJSON_CreateArray();
+    if (metrics == NULL)
+    {
+        cJSON_Delete(algorithm);
+        return NULL;
+    }
+    cJSON_AddItemToObject(algorithm, "metrics", metrics);
+
+    cJSON *mem_ts_metric = metadata_add_metric(metrics, 1, "Operatyviosios atminties sunaudojimas", METADATA_METRIC_TYPE_TIME_SERIES, "Memory");
+    metadata_add_timeseries_style(mem_ts_metric, "Indeksas", "Atmintis (KB)");
+    metadata_add_metric(metrics, 2, "Bazinis atminties naudojimas (KB)", METADATA_METRIC_TYPE_SINGLE_VALUE, "Memory");
 
     /* ── Layers ─────────────────────────────────────────────────────────── */
 

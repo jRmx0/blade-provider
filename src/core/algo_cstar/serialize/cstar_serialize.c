@@ -195,12 +195,36 @@ char *cstar_serialize_result_json(const cstar_coverage_path_result_t *result)
         return cstar_serialize_error_json("allocation_failed", "Coverage path result is NULL.");
     }
 
+    cJSON *root = cstar_build_result_json_tree(result);
+    if (root == NULL)
+    {
+        return cstar_serialize_error_json("serialization_failed", "Failed to build result JSON tree.");
+    }
+
+    char *json = cJSON_PrintUnformatted(root);
+    cJSON_Delete(root);
+
+    if (json == NULL)
+    {
+        return cstar_serialize_error_json("serialization_failed", "Failed to convert result to JSON string.");
+    }
+
+    return json;
+}
+
+cJSON *cstar_build_result_json_tree(const cstar_coverage_path_result_t *result)
+{
+    if (result == NULL)
+    {
+        return NULL;
+    }
+
     // Build segments array only (per API spec: CoveragePathPlan contains only segments + optional performance)
     cJSON *segments = cJSON_CreateArray();
 
     if (segments == NULL)
     {
-        return cstar_serialize_error_json("serialization_failed", "Failed to allocate segments array.");
+        return NULL;
     }
 
     // Build all segments
@@ -217,7 +241,7 @@ char *cstar_serialize_result_json(const cstar_coverage_path_result_t *result)
             free(xs);
             free(ys);
             cJSON_Delete(segments);
-            return cstar_serialize_error_json("serialization_failed", "Failed to allocate coordinate arrays.");
+            return NULL;
         }
 
         // Extract coordinates from path points
@@ -235,7 +259,7 @@ char *cstar_serialize_result_json(const cstar_coverage_path_result_t *result)
         if (json_seg == NULL)
         {
             cJSON_Delete(segments);
-            return cstar_serialize_error_json("serialization_failed", "Failed to build segment JSON.");
+            return NULL;
         }
 
         // Add to main segments array (no categorization)
@@ -247,7 +271,7 @@ char *cstar_serialize_result_json(const cstar_coverage_path_result_t *result)
     if (coverage_path_plan == NULL)
     {
         cJSON_Delete(segments);
-        return cstar_serialize_error_json("serialization_failed", "Failed to allocate coverage plan object.");
+        return NULL;
     }
 
     cJSON_AddItemToObject(coverage_path_plan, "segments", segments);
@@ -259,7 +283,7 @@ char *cstar_serialize_result_json(const cstar_coverage_path_result_t *result)
         cJSON_Delete(debug);
         cJSON_Delete(layers);
         cJSON_Delete(coverage_path_plan);
-        return cstar_serialize_error_json("serialization_failed", "Failed to allocate debug output.");
+        return NULL;
     }
 
     cJSON_AddItemToObject(debug, "layers", layers);
@@ -270,22 +294,13 @@ char *cstar_serialize_result_json(const cstar_coverage_path_result_t *result)
     {
         cJSON_Delete(coverage_path_plan);
         cJSON_Delete(debug);
-        return cstar_serialize_error_json("serialization_failed", "Failed to allocate root response object.");
+        return NULL;
     }
 
     cJSON_AddItemToObject(root, "coveragePathPlan", coverage_path_plan);
     cJSON_AddItemToObject(root, "debug", debug);
 
-    // Convert cJSON object to unformatted JSON string
-    char *json = cJSON_PrintUnformatted(root);
-    cJSON_Delete(root);
-
-    if (json == NULL)
-    {
-        return cstar_serialize_error_json("serialization_failed", "Failed to convert result to JSON string.");
-    }
-
-    return json;
+    return root;
 }
 
 void cstar_result_free(cstar_coverage_path_result_t *result)

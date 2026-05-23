@@ -153,6 +153,7 @@ int va_protect(void *ptr, size_t size, DWORD flags, DWORD *old_protect)
 long get_mem_usage(void)
 {
     PROCESS_MEMORY_COUNTERS pmc;
+    pmc.cb = sizeof(pmc);
     if (GetProcessMemoryInfo(GetCurrentProcess(), &pmc, sizeof(pmc)))
         return (long)(pmc.WorkingSetSize);
     return -1;
@@ -224,8 +225,13 @@ long va_get_last_tracking_value(void)
 
 void va_free_tracking_data(void)
 {
+    /* Temporarily disable tracking so that va_free's own record_op() call
+     * does not try to push into g_tracking_vec while it is being freed. */
+    int was_enabled = g_tracking_enabled;
+    g_tracking_enabled = 0;
     cvector_free(g_tracking_vec);
     g_tracking_vec = NULL;
+    g_tracking_enabled = was_enabled;
 }
 
 /* --------------------------------------------------------------------------

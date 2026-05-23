@@ -397,6 +397,16 @@ bool cstar_parse_request_json(const char *request_json, cstar_environment_t *env
         return false;
     }
 
+    const cJSON *track_memory_value = cJSON_GetObjectItemCaseSensitive(parameters, "Track Memory Usage");
+    if (cJSON_IsBool(track_memory_value))
+    {
+        environment->track_memory_usage = cJSON_IsTrue(track_memory_value);
+    }
+    else if (cJSON_IsString(track_memory_value) && track_memory_value->valuestring != NULL)
+    {
+        environment->track_memory_usage = strcmp(track_memory_value->valuestring, "true") == 0;
+    }
+
     cJSON_Delete(root);
     cstar_parser_set_result(result, true, NULL, NULL);
     return true;

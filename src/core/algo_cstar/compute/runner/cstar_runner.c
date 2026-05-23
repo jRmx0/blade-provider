@@ -2,6 +2,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
+#include "../../../../../dependencies/allocator/allocator.h"
 #include "cstar_runner.h"
 #include "core/rcg/cstar_rcg.h"
 #include "core/preprocess/cstar_lap.h"
@@ -69,6 +70,7 @@ cstar_coverage_path_result_t *cstar_coverage_path_planning_process(cstar_environ
         cstar_environment_laps_cleanup(env);
         return NULL;
     }
+    va_tracking_mark("Laps");
 
     int delta = (env->frontier_spacing_multiplier > 0u)
                     ? (int)env->frontier_spacing_multiplier
@@ -86,6 +88,7 @@ cstar_coverage_path_result_t *cstar_coverage_path_planning_process(cstar_environ
         cstar_environment_laps_cleanup(env);
         return NULL;
     }
+    va_tracking_mark("Samples");
 
     // RCG graph expansion: connect frontier-sampled nodes into a planar graph
     if (!cstar_rcg_expand_graph(&rcg, env))
@@ -97,11 +100,14 @@ cstar_coverage_path_result_t *cstar_coverage_path_planning_process(cstar_environ
         return NULL;
     }
 
+    va_tracking_mark("RCG");
+
     // RCG pruning: keep only end nodes and their edges; then do a full graph
     // update — flush all edges, re-derive cross-lap and same-lap connectivity
     // for the surviving node set, and sync all in-node neighbor pointers.
     cstar_rcg_prune_non_essential_nodes(&rcg);
     cstar_rcg_full_graph_update(&rcg, env);
+    va_tracking_mark("Prune");
 
     if (!cstar_debug_export_laps(&debug_state, env) ||
         !cstar_debug_export_rcg_nodes(&debug_state, &rcg))
@@ -112,6 +118,7 @@ cstar_coverage_path_result_t *cstar_coverage_path_planning_process(cstar_environ
         cstar_environment_laps_cleanup(env);
         return NULL;
     }
+    va_tracking_mark("Debug");
 
     // debug_state stays alive — link nodes are created during the main loop
     // and captured by cstar_debug_export_link_nodes after the loop exits.
@@ -418,6 +425,7 @@ cstar_coverage_path_result_t *cstar_coverage_path_planning_process(cstar_environ
 
         current_node_id = goal_id;
     }
+    va_tracking_mark("Planning");
 
     // Export the final retreat node set (snapshot at loop exit) then free.
     cstar_debug_accumulate_retreat_nodes(&debug_state, retreat_nodes, &rcg);
@@ -433,5 +441,6 @@ cstar_coverage_path_result_t *cstar_coverage_path_planning_process(cstar_environ
 
     cstar_rcg_free(&rcg);
     cstar_environment_laps_cleanup(env);
+    va_tracking_mark("Cleanup");
     return result;
 }
