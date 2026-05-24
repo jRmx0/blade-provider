@@ -19,10 +19,13 @@
 #include "../../../dependencies/cJSON/cJSON.h"
 #include "../core_types.h"
 
+/* Forward declaration — full struct definition is in compute/compute_runner/bcd_runner.c */
+typedef struct bcd_result_t bcd_result_t;
+
 // API calls
 
 char *bcd_build_metadata_json(void);
-char *bcd_run_compute(const char *input_environment_json);
+bcd_result_t *bcd_run_compute(input_environment_t *environment);
 
 // POINT_T Helpers
 
