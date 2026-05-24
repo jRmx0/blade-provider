@@ -61,7 +61,7 @@ cstar_coverage_path_result_t *cstar_coverage_path_planning_process(cstar_environ
 
     float w = env->path_width;
 
-    va_tracking_mark("Laps");
+    va_tracking_mark("Praėjimai");
     // One-time preprocessing: generate and store laps in environment
     if (!cstar_preprocess_environment_laps(env, w))
     {
@@ -76,7 +76,7 @@ cstar_coverage_path_result_t *cstar_coverage_path_planning_process(cstar_environ
                     ? (int)env->frontier_spacing_multiplier
                     : 1;
 
-    va_tracking_mark("Samples");
+    va_tracking_mark("Ribiniai taškai");
     int generated_samples = cstar_generate_frontier_samples(&rcg,
                                                             w,
                                                             delta,
@@ -104,11 +104,10 @@ cstar_coverage_path_result_t *cstar_coverage_path_planning_process(cstar_environ
     // RCG pruning: keep only end nodes and their edges; then do a full graph
     // update — flush all edges, re-derive cross-lap and same-lap connectivity
     // for the surviving node set, and sync all in-node neighbor pointers.
-    va_tracking_mark("Prune");
+    va_tracking_mark("Atšakų šalinimas");
     cstar_rcg_prune_non_essential_nodes(&rcg);
     cstar_rcg_full_graph_update(&rcg, env);
 
-    va_tracking_mark("Debug");
     if (!cstar_debug_export_laps(&debug_state, env) ||
         !cstar_debug_export_rcg_nodes(&debug_state, &rcg))
     {
@@ -126,7 +125,7 @@ cstar_coverage_path_result_t *cstar_coverage_path_planning_process(cstar_environ
     // Coverage path planning loop  (Section III.B, Algorithms 1–2 + IV)
     // -------------------------------------------------------------------------
 
-    va_tracking_mark("Planning");
+    va_tracking_mark("Planavimas");
     // Locate the start node placed at env->start_point during sampling.
     int start_node_id = CSTAR_NO_NEIGHBOR;
     for (int i = 0; i < rcg.node_count; ++i)
@@ -438,7 +437,7 @@ cstar_coverage_path_result_t *cstar_coverage_path_planning_process(cstar_environ
     cstar_debug_finalize_layers(&debug_state, &result->debug_layers);
     cstar_debug_dispose(&debug_state);
 
-    va_tracking_mark("Cleanup");
+    va_tracking_mark("Valymas");
     cstar_rcg_free(&rcg);
     cstar_environment_laps_cleanup(env);
     return result;
