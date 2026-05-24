@@ -724,15 +724,10 @@ bcd_result_t *coverage_path_planning_process(input_environment_t *env, bcd_compu
 		}
 		return NULL;
 	}
-	result->event_list = event_list;
-	result->cell_list = cell_list;
-	result->path_list = path_list;
-	result->motion_plan = motion_plan;
-	result->has_headland = has_headland;
-	if (has_headland)
-		result->headland = headland;
-	result->start_nav = start_nav;
-	result->vg = vg;
+
+	bcd_result_populate(result, event_list, cell_list, path_list, motion_plan,
+						has_headland, headland, start_nav, vg);
+
 	return result;
 }
 

@@ -39,6 +39,27 @@ static bcd_result_t *bcd_result_create(void)
 	return result;
 }
 
+static void bcd_result_populate(bcd_result_t *result,
+								bcd_event_list_t event_list,
+								cvector_vector_type(bcd_cell_t) cell_list,
+								cvector_vector_type(int) path_list,
+								bcd_motion_plan_t motion_plan,
+								bool has_headland,
+								headland_t headland,
+								cvector_vector_type(point_t) start_nav,
+								vg_graph_t *vg)
+{
+	result->event_list = event_list;
+	result->cell_list = cell_list;
+	result->path_list = path_list;
+	result->motion_plan = motion_plan;
+	result->has_headland = has_headland;
+	if (has_headland)
+		result->headland = headland;
+	result->start_nav = start_nav;
+	result->vg = vg;
+}
+
 static void bcd_result_free(bcd_result_t *result)
 {
 	if (result == NULL)
