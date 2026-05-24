@@ -1,8 +1,8 @@
 #include <stdbool.h>
 #include <math.h>
-#include "../../../../../../dependencies/cvector/cvector.h"
+#include "../../../../../../../dependencies/cvector/cvector.h"
 
-#include "bcd_cell_computation.h"
+#include "../cells/bcd_cell_computation.h"
 #include "bcd_ox_motion.h"
 
 // --- COMPUTE_BOUSTROPHEDON_MOTION

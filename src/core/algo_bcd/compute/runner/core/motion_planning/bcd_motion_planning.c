@@ -1,10 +1,10 @@
 #include <stdbool.h>
-#include "../../../../common/clog.h"
-#include "../../../../../../dependencies/cvector/cvector.h"
+#include "../../../../../common/clog.h"
+#include "../../../../../../../dependencies/cvector/cvector.h"
 
-#include "bcd_cell_computation.h"
+#include "../cells/bcd_cell_computation.h"
 #include "bcd_motion_planning.h"
-#include "bcd_ox_motion.h"
+#include "../ox_motion/bcd_ox_motion.h"
 
 // IMPLEMENTATION --- compute_bcd_motion ----------------------------
 

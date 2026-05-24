@@ -3,9 +3,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
-#include "../../../../common/clog.h"
+#include "../../../../../common/clog.h"
 #include "bcd_event_list_building.h"
-#include "../../../../../../dependencies/allocator/allocator.h"
+#include "../../../../../../../dependencies/allocator/allocator.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846

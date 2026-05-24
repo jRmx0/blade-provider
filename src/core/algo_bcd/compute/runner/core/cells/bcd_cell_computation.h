@@ -1,8 +1,8 @@
 #ifndef BCD_CELL_COMPUTATION_H
 #define BCD_CELL_COMPUTATION_H
 
-#include "../../../../../../dependencies/cvector/cvector.h"
-#include "bcd_event_list_building.h"
+#include "../../../../../../../dependencies/cvector/cvector.h"
+#include "../event_list/bcd_event_list_building.h"
 
 typedef struct bcd_cell_t bcd_cell_t;
 typedef struct bcd_neighbor_node_t bcd_neighbor_node_t;

@@ -1,9 +1,9 @@
 #include <stdio.h>
 #include <stdbool.h>
-#include "../../../../common/clog.h"
-#include "../../../../../../dependencies/cvector/cvector.h"
+#include "../../../../../common/clog.h"
+#include "../../../../../../../dependencies/cvector/cvector.h"
 #include "bcd_coverage_planning.h"
-#include "bcd_pathfinding.h"
+#include "../pathfinding/bcd_pathfinding.h"
 
 // COMPUTE_BCD_PATH_LIST
 

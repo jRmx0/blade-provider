@@ -1,8 +1,8 @@
 #ifndef BCD_PATHFINDING_H
 #define BCD_PATHFINDING_H
 
-#include "../../../../../../dependencies/cvector/cvector.h"
-#include "bcd_cell_computation.h"
+#include "../../../../../../../dependencies/cvector/cvector.h"
+#include "../cells/bcd_cell_computation.h"
 
 /**
  * A* search on the BCD cell adjacency graph.

@@ -1,7 +1,7 @@
 #ifndef BCD_GEOMETRY_H
 #define BCD_GEOMETRY_H
 
-#include "bcd_cell_computation.h"
+#include "../cells/bcd_cell_computation.h"
 
 /**
  * Returns the pole of inaccessibility of the BCD cell: the interior point

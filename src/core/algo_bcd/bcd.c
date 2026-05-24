@@ -13,8 +13,7 @@
  */
 
 #include "bcd.h"
-#include "internal.h"
-#include "check/bcd_check.h"
+#include "parser/bcd_parser.h"
 #include "../../../dependencies/cJSON/cJSON.h"
 #include "../../../dependencies/allocator/allocator.h"
 #include <stdlib.h>
@@ -22,7 +21,7 @@
 
 #define BCD_BYTES_PER_KB 1024.0
 
-#include "check/bcd_check.c"
+#include "parser/bcd_parser.c"
 #include "metadata/bcd_metadata.c"
 #include "compute/bcd_compute.c"
 
@@ -55,7 +54,7 @@ char *bcd_compute(const char *input_environment_json)
 	input_environment_t environment;
 	bcd_check_result_t check_result;
 
-	if (!bcd_check_request_json(input_environment_json, &environment, &check_result))
+	if (!bcd_parse_request_json(input_environment_json, &environment, &check_result))
 	{
 		return bcd_create_error_json(check_result.code, check_result.message);
 	}

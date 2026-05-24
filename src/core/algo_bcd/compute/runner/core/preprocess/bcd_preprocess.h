@@ -17,7 +17,7 @@
 #ifndef BCD_PREPROCESS_H
 #define BCD_PREPROCESS_H
 
-#include "../internal.h"
+#include "../../../../bcd.h"
 
 /**
  * bcd_preprocess_environment

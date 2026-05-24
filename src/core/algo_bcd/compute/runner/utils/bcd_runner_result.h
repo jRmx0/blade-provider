@@ -1,7 +1,7 @@
 #ifndef BCD_RUNNER_RESULT_H
 #define BCD_RUNNER_RESULT_H
 
-#include "bcd_runner.h"
+#include "../bcd_runner.h"
 
 /**
  * Create an empty result struct with zero-initialized fields.

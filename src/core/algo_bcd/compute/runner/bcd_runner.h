@@ -3,7 +3,7 @@
 #ifndef COVERAGE_PATH_PLANNING_H
 #define COVERAGE_PATH_PLANNING_H
 
-#include "../../internal.h"
+#include "../../bcd.h"
 #include "../../../../../dependencies/cJSON/cJSON.h"
 
 /* Opaque result type — full struct definition lives in bcd_runner.c after all
@@ -26,7 +26,7 @@ bcd_result_t *coverage_path_planning_process(input_environment_t *env, bcd_compu
 
 /* Builds the cJSON result tree from a successful bcd_result_t.
  * Returns a cJSON object owned by the caller (must be cJSON_Delete'd). */
-cJSON *bcd_build_result_json_tree(const bcd_result_t *result);
+#include "../../serialize/bcd_serialize.h"
 
 /* bcd_result_create / bcd_result_free are declared and defined as static in
  * bcd_runner_result.h / bcd_runner_result.c, included by bcd_runner.c. */

@@ -9,7 +9,7 @@
  * Dependencies: ../internal.h
  */
 
-#include "../internal.h"
+#include "../bcd.h"
 #include "../../metadata/metadata_json.h"
 #include "../../metadata/metadata_types.h"
 

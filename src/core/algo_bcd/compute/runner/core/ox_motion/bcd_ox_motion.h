@@ -1,8 +1,8 @@
 #ifndef BCD_OX_MOTION_H
 #define BCD_OX_MOTION_H
 
-#include "../../../../../../dependencies/cvector/cvector.h"
-#include "bcd_cell_computation.h"
+#include "../../../../../../../dependencies/cvector/cvector.h"
+#include "../cells/bcd_cell_computation.h"
 
 /**
  * Generates a boustrophedon (back-and-forth) sweep path for a single BCD cell.

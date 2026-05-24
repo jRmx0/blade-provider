@@ -1,7 +1,7 @@
 #ifndef BCD_CHECK_H
 #define BCD_CHECK_H
 
-#include "../internal.h"
+#include "../bcd.h"
 
 typedef struct
 {

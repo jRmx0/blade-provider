@@ -1,8 +1,8 @@
 #ifndef BCD_MOTION_H
 #define BCD_MOTION_H
 
-#include "../../../../../../dependencies/cvector/cvector.h"
-#include "bcd_cell_computation.h"
+#include "../../../../../../../dependencies/cvector/cvector.h"
+#include "../cells/bcd_cell_computation.h"
 
 typedef struct
 {

@@ -3,11 +3,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
-#include "../../../../common/clog.h"
-#include "../../../../../../dependencies/cvector/cvector.h"
-#include "../../../../../../dependencies/allocator/allocator.h"
-#include "../../../internal.h"
-#include "bcd_event_list_building.h"
+#include "../../../../../common/clog.h"
+#include "../../../../../../../dependencies/cvector/cvector.h"
+#include "../../../../../../../dependencies/allocator/allocator.h"
+#include "../../../../bcd.h"
+#include "../event_list/bcd_event_list_building.h"
 #include "bcd_cell_computation.h"
 
 // FORWARD DECLARATIONS ---------------------------------------------
