@@ -704,12 +704,15 @@ bcd_result_t *coverage_path_planning_process(input_environment_t *env, bcd_compu
 		}
 	}
 
+	/* vg served its purpose — all nav paths are computed and stored in
+	 * motion_plan / headland / start_nav. Free it before packaging. */
+	vg_graph_free(vg);
+
 	/* Package results for the orchestrator — serialization and cleanup happen
 	 * after tracking is disabled in bcd_run_compute (mirrors the C* pattern). */
 	bcd_result_t *result = bcd_result_create();
 	if (result == NULL)
 	{
-		vg_graph_free(vg);
 		if (has_headland)
 			free_headland(&headland);
 		free_bcd_event_list(&event_list);
@@ -726,7 +729,7 @@ bcd_result_t *coverage_path_planning_process(input_environment_t *env, bcd_compu
 	}
 
 	bcd_result_populate(result, event_list, cell_list, path_list, motion_plan,
-						has_headland, headland, start_nav, vg);
+						has_headland, headland, start_nav);
 
 	return result;
 }

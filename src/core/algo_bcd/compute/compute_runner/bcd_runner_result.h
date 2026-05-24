@@ -19,8 +19,7 @@ static void bcd_result_populate(bcd_result_t *result,
                                 bcd_motion_plan_t motion_plan,
                                 bool has_headland,
                                 headland_t headland,
-                                cvector_vector_type(point_t) start_nav,
-                                vg_graph_t *vg);
+                                cvector_vector_type(point_t) start_nav);
 
 /**
  * Frees all resources owned by result, then frees the struct itself.
