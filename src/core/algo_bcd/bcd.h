@@ -4,7 +4,7 @@
  * Public interface for the Boustrophedon Cellular Decomposition algorithm.
  * The only header exposed outside of this module.
  * Declares the two entry points: metadata and compute, plus shared internal
- * types used across the bcd module (formerly in internal.h).
+ * types used across all bcd sub-modules.
  *
  * Included by: dispatcher.c, and all bcd sub-modules.
  */

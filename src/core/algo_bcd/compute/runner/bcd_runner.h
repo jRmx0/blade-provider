@@ -4,7 +4,6 @@
 #define COVERAGE_PATH_PLANNING_H
 
 #include "../../bcd.h"
-#include "../../../../../dependencies/cJSON/cJSON.h"
 
 /* Opaque result type — full struct definition lives in bcd_runner.c after all
  * algorithm type headers are included. bcd_compute.c gets the complete type via

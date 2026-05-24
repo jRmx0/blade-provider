@@ -6,7 +6,7 @@
  * format, and produced output format.
  * Called by bcd.c in response to metadata requests from dispatcher.
  *
- * Dependencies: ../internal.h
+ * Dependencies: ../bcd.h
  */
 
 #include "../bcd.h"

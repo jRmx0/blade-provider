@@ -4,7 +4,6 @@
 #include <math.h>
 #include "bcd_runner.h"
 #include "../../../common/clog.h"
-#include "../../../../../dependencies/cJSON/cJSON.h"
 #include "../../../../../dependencies/cvector/cvector.h"
 #include "../../../../../dependencies/allocator/allocator.h"
 #include "core/event_list/bcd_event_list_building.h"

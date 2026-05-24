@@ -4,7 +4,7 @@
  * Runs the BCD computation pipeline on a pre-validated, pre-parsed environment.
  * Contains no JSON or validation logic — those responsibilities live in bcd.c.
  *
- * Dependencies: internal.h, runner/bcd_runner.c
+ * Dependencies: bcd.h, runner/bcd_runner.c
  */
 
 #include "../bcd.h"
