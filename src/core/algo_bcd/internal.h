@@ -19,11 +19,6 @@
 #include "../../../dependencies/cJSON/cJSON.h"
 #include "../core_types.h"
 
-// Runs the BCD computation pipeline on a pre-validated, pre-parsed environment.
-// Returns a cJSON object owned by the caller.
-// Mutates env in-place (preprocessing resolves sweep-axis vertex collisions).
-cJSON *coverage_path_planning_process(input_environment_t *env);
-
 // API calls
 
 char *bcd_build_metadata_json(void);

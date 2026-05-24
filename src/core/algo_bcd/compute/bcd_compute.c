@@ -118,20 +118,47 @@ char *bcd_run_compute(const char *input_environment_json)
 		va_tracking_set_baseline();
 	}
 
-	cJSON *root = coverage_path_planning_process(&environment);
+	bcd_compute_error_t compute_err = {NULL, NULL};
+	bcd_result_t *result = coverage_path_planning_process(&environment, &compute_err);
 	free_input_environment(&environment);
+
+	if (result == NULL)
+	{
+		va_tracking_disable();
+		va_free_tracking_data();
+		va_free_stage_markers();
+		const char *code = compute_err.code ? compute_err.code : "BCD_COMPUTE_FAILED";
+		const char *msg = compute_err.message ? compute_err.message : "BCD computation failed";
+		return bcd_create_error_json(code, msg);
+	}
+
+	/* Serialize (CRT — invisible to tracker), free compute struct (va_free —
+	 * visible), then snapshot and disable, so the deallocation drop is
+	 * fully captured in the sample window. */
+	long *samples = NULL;
+	size_t count = 0;
+	long baseline = 0;
+	const va_stage_marker_t *markers = NULL;
+	size_t marker_count = 0;
+
+	/* Serialize first (cJSON uses CRT malloc — invisible to va tracker),
+	 * then free the compute struct while tracking is still live so the
+	 * deallocation drop is captured in the sample window. */
+	cJSON *root = bcd_build_result_json_tree(result);
+	bcd_result_free(result);
 
 	if (track_memory_usage)
 	{
-		/* All compute data and environment polygons have now been freed via
-		 * va_free. Snapshot captures the full arc including the drop. */
-		long *samples = va_get_tracking_data();
-		size_t count = va_get_tracking_count();
-		long baseline = va_get_baseline();
-		const va_stage_marker_t *markers = va_get_stage_markers();
-		size_t marker_count = va_get_stage_marker_count();
-		va_tracking_disable();
+		samples = va_get_tracking_data();
+		count = va_get_tracking_count();
+		baseline = va_get_baseline();
+		markers = va_get_stage_markers();
+		marker_count = va_get_stage_marker_count();
+	}
+	va_tracking_disable();
 
+	if (track_memory_usage)
+	{
 		/* Only attach performance to successful results. */
 		if (root != NULL && cJSON_GetObjectItemCaseSensitive(root, "coveragePathPlan") != NULL)
 		{

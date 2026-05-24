@@ -19,18 +19,36 @@
 #include "../../../common/path_finder.c"
 #include "../../../common/headland.c"
 
+/* Full definition of the opaque bcd_result_t — visible here and to bcd_compute.c
+ * via the C amalgamation include of this file. */
+struct bcd_result_t
+{
+	bcd_event_list_t event_list;
+	cvector_vector_type(bcd_cell_t) cell_list;
+	cvector_vector_type(int) path_list;
+	bcd_motion_plan_t motion_plan;
+	headland_t headland;
+	bool has_headland;
+	cvector_vector_type(point_t) start_nav;
+	vg_graph_t *vg;
+};
+
 static void log_event_list(const bcd_event_list_t *event_list);
 static const char *event_type_to_string(bcd_event_type_t t);
 static const char *polygon_type_to_string(polygon_type_t t);
 static char *serialize_event_list_json(const bcd_event_list_t *event_list);
 
-static cJSON *serialize_result_json(const bcd_event_list_t *event_list,
-									cvector_vector_type(bcd_cell_t) * cell_list,
-									cvector_vector_type(int) * path_list,
-									const bcd_motion_plan_t *motion_plan,
-									const headland_t *headland,
-									cvector_vector_type(point_t) start_nav)
+cJSON *bcd_build_result_json_tree(const bcd_result_t *result)
 {
+	/* Local aliases — the rest of the function body is unchanged from the old
+	 * serialize_result_json so all existing field accesses stay valid. */
+	const bcd_event_list_t *event_list = &result->event_list;
+	cvector_vector_type(bcd_cell_t) const *cell_list = &result->cell_list;
+	cvector_vector_type(int) const *path_list = &result->path_list;
+	const bcd_motion_plan_t *motion_plan = &result->motion_plan;
+	const headland_t *headland = result->has_headland ? &result->headland : NULL;
+	cvector_vector_type(point_t) start_nav = result->start_nav;
+
 	cJSON *root = cJSON_CreateObject();
 
 	// coveragePathPlan
@@ -337,20 +355,13 @@ static cJSON *serialize_result_json(const bcd_event_list_t *event_list,
 		cJSON_AddItemToArray(layers_arr, visit_layer);
 	}
 
-	/* ---- performance is injected by bcd_run_compute after all
-	 * compute data and environment polygons have been freed, so
-	 * the working-set drop from those releases is captured first. ---- */
+	/* ---- performance is attached by bcd_run_compute after tracking
+	 * is disabled and bcd_result_free has released all compute data. ---- */
 
 	return root;
 }
 
-static cJSON *err_cleanup(bcd_event_list_t *event_list,
-						  cvector_vector_type(bcd_cell_t) * cell_list,
-						  cvector_vector_type(int) * path_list,
-						  bcd_motion_plan_t *motion_plan,
-						  int rc);
-
-cJSON *coverage_path_planning_process(input_environment_t *env)
+bcd_result_t *coverage_path_planning_process(input_environment_t *env, bcd_compute_error_t *err_out)
 {
 	bcd_event_list_t event_list;
 	event_list.bcd_events = NULL;
@@ -372,7 +383,12 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 		LOG_ERROR("coverage_path_planning: environment preprocessing failed (code %d)", rc);
 		if (has_headland)
 			free_headland(&headland);
-		return err_cleanup(&event_list, NULL, NULL, NULL, rc);
+		if (err_out)
+		{
+			err_out->code = "BCD_PREPROCESS_FAILED";
+			err_out->message = "BCD environment preprocessing failed";
+		}
+		return NULL;
 	}
 
 	/* DEBUG: dump all vertex X values after preprocessing to verify uniqueness */
@@ -400,7 +416,12 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 		LOG_ERROR("coverage_path_planning: BCD event list generation failed (code %d)", rc);
 		if (has_headland)
 			free_headland(&headland);
-		return err_cleanup(&event_list, NULL, NULL, NULL, rc);
+		if (err_out)
+		{
+			err_out->code = "BCD_EVENT_LIST_FAILED";
+			err_out->message = "BCD event list generation failed";
+		}
+		return NULL;
 	}
 	LOG_DEBUG("coverage_path_planning: successfully generated %d events", event_list.length);
 	for (int ei = 0; ei < event_list.length; ei++)
@@ -420,7 +441,12 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 		LOG_ERROR("coverage_path_planning: BCD cell computation failed (code %d)", rc);
 		if (has_headland)
 			free_headland(&headland);
-		return err_cleanup(&event_list, &cell_list, NULL, NULL, rc);
+		if (err_out)
+		{
+			err_out->code = "BCD_CELL_COMPUTATION_FAILED";
+			err_out->message = "BCD cell computation failed";
+		}
+		return NULL;
 	}
 	LOG_DEBUG("coverage_path_planning: successfully generated %zu cells", cvector_size(cell_list));
 	// log_bcd_cell_list((const cvector_vector_type(bcd_cell_t) *) &cell_list);
@@ -436,7 +462,12 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 		LOG_ERROR("coverage_path_planning: BCD path computation failed (code %d)", rc);
 		if (has_headland)
 			free_headland(&headland);
-		return err_cleanup(&event_list, &cell_list, &path_list, NULL, rc);
+		if (err_out)
+		{
+			err_out->code = "BCD_PATH_LIST_FAILED";
+			err_out->message = "BCD path list computation failed";
+		}
+		return NULL;
 	}
 	LOG_DEBUG("coverage_path_planning: successfully generated path with %zu visits", cvector_size(path_list));
 	// log_bcd_path_list((const cvector_vector_type(int) *)&path_list);
@@ -453,7 +484,12 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 		LOG_ERROR("coverage_path_planning: BCD motion computation failed (code %d)", rc);
 		if (has_headland)
 			free_headland(&headland);
-		return err_cleanup(&event_list, &cell_list, &path_list, &motion_plan, rc);
+		if (err_out)
+		{
+			err_out->code = "BCD_MOTION_FAILED";
+			err_out->message = "BCD motion planning failed";
+		}
+		return NULL;
 	}
 	log_bcd_motion(motion_plan);
 
@@ -527,11 +563,12 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 		free_bcd_cell_list(&cell_list);
 		cvector_free(path_list);
 		free_bcd_motion(&motion_plan);
-		cJSON *err = cJSON_CreateObject();
-		cJSON_AddStringToObject(err, "status", "error");
-		cJSON_AddStringToObject(err, "code", "vg_build_failed");
-		cJSON_AddStringToObject(err, "message", "Visibility graph construction failed (allocation error).");
-		return err;
+		if (err_out)
+		{
+			err_out->code = "vg_build_failed";
+			err_out->message = "Visibility graph construction failed (allocation error).";
+		}
+		return NULL;
 	}
 
 	// --- (a)+(b) Coverage transit segments ---
@@ -582,11 +619,12 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 				free_bcd_cell_list(&cell_list);
 				cvector_free(path_list);
 				free_bcd_motion(&motion_plan);
-				cJSON *err = cJSON_CreateObject();
-				cJSON_AddStringToObject(err, "status", "error");
-				cJSON_AddStringToObject(err, "code", "no_coverage_transit_path");
-				cJSON_AddStringToObject(err, "message", "No collision-free path could be found for a coverage transit segment.");
-				return err;
+				if (err_out)
+				{
+					err_out->code = "no_coverage_transit_path";
+					err_out->message = "No collision-free path could be found for a coverage transit segment.";
+				}
+				return NULL;
 			}
 
 			cvector_free(curr->nav);
@@ -614,7 +652,12 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 				{
 					vg_graph_free(vg);
 					free_headland(&headland);
-					return err_cleanup(&event_list, &cell_list, &path_list, &motion_plan, -3);
+					if (err_out)
+					{
+						err_out->code = "BCD_HEADLAND_NAV_FAILED";
+						err_out->message = "BCD headland navigation path failed";
+					}
+					return NULL;
 				}
 			}
 		}
@@ -638,7 +681,12 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 				{
 					vg_graph_free(vg);
 					free_headland(&headland);
-					return err_cleanup(&event_list, &cell_list, &path_list, &motion_plan, -3);
+					if (err_out)
+					{
+						err_out->code = "BCD_HEADLAND_START_NAV_FAILED";
+						err_out->message = "BCD headland start navigation path failed";
+					}
+					return NULL;
 				}
 			}
 		}
@@ -659,34 +707,46 @@ cJSON *coverage_path_planning_process(input_environment_t *env)
 				free_bcd_cell_list(&cell_list);
 				cvector_free(path_list);
 				free_bcd_motion(&motion_plan);
-				cJSON *err = cJSON_CreateObject();
-				cJSON_AddStringToObject(err, "status", "error");
-				cJSON_AddStringToObject(err, "code", "no_start_transit_path");
-				cJSON_AddStringToObject(err, "message", "No collision-free path could be found from the start point to the first coverage waypoint.");
-				return err;
+				if (err_out)
+				{
+					err_out->code = "no_start_transit_path";
+					err_out->message = "No collision-free path could be found from the start point to the first coverage waypoint.";
+				}
+				return NULL;
 			}
 		}
 	}
 
-	/* Stop tracking before serialization — only core algorithm memory matters. */
-	va_tracking_disable();
-
-	cJSON *root = serialize_result_json(&event_list, &cell_list, &path_list, &motion_plan,
-										has_headland ? &headland : NULL,
-										start_nav);
-
-	/* Free compute data after serializing. */
-	vg_graph_free(vg);
-	free_bcd_event_list(&event_list);
-	free_bcd_cell_list(&cell_list);
-	cvector_free(path_list);
-	free_bcd_motion(&motion_plan);
-	cvector_free(start_nav);
-
+	/* Package results for the orchestrator — serialization and cleanup happen
+	 * after tracking is disabled in bcd_run_compute (mirrors the C* pattern). */
+	bcd_result_t *result = (bcd_result_t *)va_malloc(sizeof(struct bcd_result_t));
+	if (result == NULL)
+	{
+		vg_graph_free(vg);
+		if (has_headland)
+			free_headland(&headland);
+		free_bcd_event_list(&event_list);
+		free_bcd_cell_list(&cell_list);
+		cvector_free(path_list);
+		free_bcd_motion(&motion_plan);
+		cvector_free(start_nav);
+		if (err_out)
+		{
+			err_out->code = "OOM";
+			err_out->message = "Out of memory allocating BCD result";
+		}
+		return NULL;
+	}
+	result->event_list = event_list;
+	result->cell_list = cell_list;
+	result->path_list = path_list;
+	result->motion_plan = motion_plan;
+	result->has_headland = has_headland;
 	if (has_headland)
-		free_headland(&headland);
-
-	return root;
+		result->headland = headland;
+	result->start_nav = start_nav;
+	result->vg = vg;
+	return result;
 }
 
 static const char *event_type_to_string(bcd_event_type_t t)
@@ -788,30 +848,19 @@ static char *serialize_event_list_json(const bcd_event_list_t *event_list)
 	return json; // caller must free
 }
 
-static cJSON *err_cleanup(bcd_event_list_t *event_list,
-						  cvector_vector_type(bcd_cell_t) * cell_list,
-						  cvector_vector_type(int) * path_list,
-						  bcd_motion_plan_t *motion_plan,
-						  int rc)
+void bcd_result_free(bcd_result_t *result)
 {
-	// NOTE:
-	// Some malformed/degenerate inputs can leave partially-built internal
-	// structures (event vectors / cell neighbor links / motion paths) in an
-	// inconsistent state. Any deep free in this error path can crash.
-	//
-	// This compute worker handles a single job and exits immediately after
-	// returning a response, so we intentionally skip deallocation on failure to
-	// guarantee a stable JSON error instead of process abort.
-	(void)event_list;
-	(void)cell_list;
-	(void)path_list;
-	(void)motion_plan;
-
-	cJSON *err = cJSON_CreateObject();
-	cJSON_AddStringToObject(err, "status", "error");
-	cJSON_AddNumberToObject(err, "code", rc);
-	cJSON_AddStringToObject(err, "message", "BCD computation failed");
-	return err;
+	if (result == NULL)
+		return;
+	vg_graph_free(result->vg);
+	free_bcd_event_list(&result->event_list);
+	free_bcd_cell_list(&result->cell_list);
+	cvector_free(result->path_list);
+	free_bcd_motion(&result->motion_plan);
+	cvector_free(result->start_nav);
+	if (result->has_headland)
+		free_headland(&result->headland);
+	va_free(result);
 }
 
 static void log_event_list(const bcd_event_list_t *event_list)
