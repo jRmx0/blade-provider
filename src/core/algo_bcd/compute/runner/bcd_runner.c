@@ -47,7 +47,7 @@ bcd_result_t *coverage_path_planning_process(input_environment_t *env, bcd_compu
 
 	input_environment_t *active_env = env;
 
-	va_tracking_mark("Paruo┼íimas");
+	va_tracking_mark("Paruošimas");
 	int rc = bcd_preprocess_environment(active_env, 0.0f);
 	if (rc != 0)
 	{
@@ -80,7 +80,7 @@ bcd_result_t *coverage_path_planning_process(input_environment_t *env, bcd_compu
 		}
 	}
 
-	va_tracking_mark("─«vykiai");
+	va_tracking_mark("Įvykiai");
 	rc = build_bcd_event_list(active_env, &event_list);
 	if (rc != 0)
 	{
@@ -105,7 +105,7 @@ bcd_result_t *coverage_path_planning_process(input_environment_t *env, bcd_compu
 				  ev->polygon_vertex.y);
 	}
 	cvector_vector_type(bcd_cell_t) cell_list = NULL;
-	va_tracking_mark("L─àstel─ùs");
+	va_tracking_mark("Ląstelės");
 	rc = compute_bcd_cells(&event_list, &cell_list);
 	if (rc != 0)
 	{
@@ -123,7 +123,7 @@ bcd_result_t *coverage_path_planning_process(input_environment_t *env, bcd_compu
 	// log_bcd_cell_list((const cvector_vector_type(bcd_cell_t) *) &cell_list);
 
 	cvector_vector_type(int) path_list = NULL;
-	va_tracking_mark("L─àsteli┼│ seka");
+	va_tracking_mark("Ląstelių seka");
 	int starting_cell_index = bcd_find_starting_cell(
 		(const cvector_vector_type(bcd_cell_t) *)&cell_list,
 		active_env->start_point);
@@ -164,7 +164,7 @@ bcd_result_t *coverage_path_planning_process(input_environment_t *env, bcd_compu
 	}
 	log_bcd_motion(motion_plan);
 
-	va_tracking_mark("Mar┼írutas");
+	va_tracking_mark("Maršrutas");
 	// --- Build one visibility graph for ALL transit segments -----------
 	//
 	// All coverage section start/end points, headland section start/end points,
