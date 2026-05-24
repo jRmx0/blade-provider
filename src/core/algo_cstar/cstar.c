@@ -53,7 +53,6 @@ char *cstar_compute(const char *input_environment_json)
     }
 
     cstar_coverage_path_result_t *result = cstar_run_compute(&environment);
-    cstar_parser_free_environment(&environment);
 
     long *samples = NULL;
     size_t sample_count = 0;
@@ -70,6 +69,8 @@ char *cstar_compute(const char *input_environment_json)
         marker_count = va_get_stage_marker_count();
         va_tracking_disable();
     }
+
+    cstar_parser_free_environment(&environment);
 
     if (result == NULL)
     {
