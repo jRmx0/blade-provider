@@ -63,9 +63,11 @@ char *bcd_build_metadata_json(void)
 	cJSON *mem_ts_metric = metadata_add_metric(metrics, 1, "Operatyviosios atminties sunaudojimas", METADATA_METRIC_TYPE_TIME_SERIES, "Memory");
 	metadata_add_timeseries_style(mem_ts_metric, "Indeksas", "Atmintis (KB)");
 	metadata_add_metric(metrics, 2, "Bazinis atminties naudojimas (KB)", METADATA_METRIC_TYPE_SINGLE_VALUE, "Memory");
-	metadata_add_metric(metrics, 3, "Maksimalus skaičiavimų atminties sunaudojimas (KB)", METADATA_METRIC_TYPE_SINGLE_VALUE, "Memory");
+	cJSON *max_mem_metric = metadata_add_metric(metrics, 3, "Maksimalus skaičiavimų atminties sunaudojimas (KB)", METADATA_METRIC_TYPE_SINGLE_VALUE, "Memory");
+	cJSON_AddBoolToObject(max_mem_metric, "benchmark", cJSON_True);
 
-	metadata_add_metric(metrics, 4, "Viso apdorojimo laikas (ms)", METADATA_METRIC_TYPE_SINGLE_VALUE, "Time");
+	cJSON *total_time_metric = metadata_add_metric(metrics, 4, "Viso apdorojimo laikas (ms)", METADATA_METRIC_TYPE_SINGLE_VALUE, "Time");
+	cJSON_AddBoolToObject(total_time_metric, "benchmark", cJSON_True);
 	cJSON *time_bc_metric = metadata_add_metric(metrics, 5, "Sekcijų trukmė (ms)", METADATA_METRIC_TYPE_BAR_CHART, "Time");
 	metadata_add_barchart_style(time_bc_metric, "Sekcija", "Laikas (ms)");
 
