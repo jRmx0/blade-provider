@@ -1,6 +1,6 @@
+#include <stdlib.h>
 #include <string.h>
 #include "bcd_runner_result.h"
-#include "../../../../../dependencies/allocator/allocator.h"
 
 /* Full definition of the opaque bcd_result_t — visible here and to bcd.c
  * via the C amalgamation include chain. Type headers (bcd_event_list_building.h,
@@ -20,7 +20,7 @@ struct bcd_result_t
 
 static bcd_result_t *bcd_result_create(void)
 {
-	bcd_result_t *result = (bcd_result_t *)va_malloc(sizeof(bcd_result_t));
+	bcd_result_t *result = (bcd_result_t *)malloc(sizeof(bcd_result_t));
 	if (result == NULL)
 	{
 		return NULL;
@@ -51,5 +51,5 @@ static void bcd_result_free(bcd_result_t *result)
 	cvector_free(result->start_nav);
 	if (result->has_headland)
 		free_headland(&result->headland);
-	va_free(result);
+	free(result);
 }
