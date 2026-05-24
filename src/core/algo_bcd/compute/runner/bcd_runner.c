@@ -415,6 +415,16 @@ bcd_result_t *coverage_path_planning_process(input_environment_t *env, bcd_compu
 	bcd_result_populate(result, event_list, cell_list, path_list, motion_plan,
 						has_headland, headland, start_nav);
 
+	va_tracking_mark("Valymas");
+
+	free_bcd_event_list(&event_list);
+	free_bcd_cell_list(&cell_list);
+	cvector_free(path_list);
+	free_bcd_motion(&motion_plan);
+	if (has_headland)
+		free_headland(&headland);
+	cvector_free(start_nav);
+
 	return result;
 }
 
