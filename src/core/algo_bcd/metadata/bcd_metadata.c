@@ -61,6 +61,7 @@ char *bcd_build_metadata_json(void)
 	cJSON *mem_ts_metric = metadata_add_metric(metrics, 1, "Operatyviosios atminties sunaudojimas", METADATA_METRIC_TYPE_TIME_SERIES, "Memory");
 	metadata_add_timeseries_style(mem_ts_metric, "Indeksas", "Atmintis (KB)");
 	metadata_add_metric(metrics, 2, "Bazinis atminties naudojimas (KB)", METADATA_METRIC_TYPE_SINGLE_VALUE, "Memory");
+	metadata_add_metric(metrics, 3, "Maksimalus skaičiavimų atminties sunaudojimas (KB)", METADATA_METRIC_TYPE_SINGLE_VALUE, "Memory");
 
 	cJSON *layers = cJSON_CreateArray();
 	if (layers == NULL)

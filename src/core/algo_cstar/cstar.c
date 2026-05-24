@@ -128,6 +128,16 @@ char *cstar_compute(const char *input_environment_json)
             cJSON_AddNumberToObject(metric2, "value", (double)baseline / CSTAR_BYTES_PER_KB);
             cJSON_AddItemToArray(metrics_arr, metric2);
 
+            /* id=3 — peak working-set delta in KB */
+            long cstar_peak = 0;
+            for (size_t i = 0; i < sample_count; ++i)
+                if (samples[i] > cstar_peak)
+                    cstar_peak = samples[i];
+            cJSON *metric3 = cJSON_CreateObject();
+            cJSON_AddNumberToObject(metric3, "id", 3);
+            cJSON_AddNumberToObject(metric3, "value", (double)cstar_peak / CSTAR_BYTES_PER_KB);
+            cJSON_AddItemToArray(metrics_arr, metric3);
+
             cJSON_AddItemToObject(root, "performance", performance);
         }
     }
