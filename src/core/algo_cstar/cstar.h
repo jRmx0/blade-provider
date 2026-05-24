@@ -31,6 +31,7 @@ typedef struct
     float path_width;
     uint32_t frontier_spacing_multiplier;
     bool track_memory_usage;
+    bool track_processing_time;
     bool headland;
 
     point_t start_point;

@@ -6,6 +6,7 @@
 #include "../../../common/clog.h"
 #include "../../../../../dependencies/cvector/cvector.h"
 #include "../../../../../dependencies/allocator/allocator.h"
+#include "../../../../../dependencies/timer/timer.h"
 #include "core/event_list/bcd_event_list_building.h"
 #include "core/cells/bcd_cell_computation.h"
 #include "core/coverage_planning/bcd_coverage_planning.h"
@@ -48,6 +49,7 @@ bcd_result_t *coverage_path_planning_process(input_environment_t *env, bcd_compu
 	input_environment_t *active_env = env;
 
 	va_tracking_mark("Paruošimas");
+	tm_mark("Paruošimas");
 	int rc = bcd_preprocess_environment(active_env, 0.0f);
 	if (rc != 0)
 	{
@@ -81,6 +83,7 @@ bcd_result_t *coverage_path_planning_process(input_environment_t *env, bcd_compu
 	}
 
 	va_tracking_mark("Įvykiai");
+	tm_mark("Įvykiai");
 	rc = build_bcd_event_list(active_env, &event_list);
 	if (rc != 0)
 	{
@@ -106,6 +109,7 @@ bcd_result_t *coverage_path_planning_process(input_environment_t *env, bcd_compu
 	}
 	cvector_vector_type(bcd_cell_t) cell_list = NULL;
 	va_tracking_mark("Ląstelės");
+	tm_mark("Ląstelės");
 	rc = compute_bcd_cells(&event_list, &cell_list);
 	if (rc != 0)
 	{
@@ -124,6 +128,7 @@ bcd_result_t *coverage_path_planning_process(input_environment_t *env, bcd_compu
 
 	cvector_vector_type(int) path_list = NULL;
 	va_tracking_mark("Ląstelių seka");
+	tm_mark("Ląstelių seka");
 	int starting_cell_index = bcd_find_starting_cell(
 		(const cvector_vector_type(bcd_cell_t) *)&cell_list,
 		active_env->start_point);
@@ -145,6 +150,7 @@ bcd_result_t *coverage_path_planning_process(input_environment_t *env, bcd_compu
 
 	bcd_motion_plan_t motion_plan = {0};
 	va_tracking_mark("Padengimo kelias");
+	tm_mark("Padengimo kelias");
 	rc = compute_bcd_motion(&cell_list,
 							(const cvector_vector_type(int) *)&path_list,
 							&motion_plan,
@@ -165,6 +171,7 @@ bcd_result_t *coverage_path_planning_process(input_environment_t *env, bcd_compu
 	log_bcd_motion(motion_plan);
 
 	va_tracking_mark("Maršrutas");
+	tm_mark("Maršrutas");
 	// --- Build one visibility graph for ALL transit segments -----------
 	//
 	// All coverage section start/end points, headland section start/end points,
@@ -416,6 +423,7 @@ bcd_result_t *coverage_path_planning_process(input_environment_t *env, bcd_compu
 						has_headland, headland, start_nav);
 
 	va_tracking_mark("Valymas");
+	tm_mark("Valymas");
 
 	free_bcd_event_list(&event_list);
 	free_bcd_cell_list(&cell_list);

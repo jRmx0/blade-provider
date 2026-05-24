@@ -109,6 +109,24 @@ static inline void metadata_add_timeseries_style(
 }
 
 /*
+ * Attaches a "style" sub-object to a Bar-chart metric with optional axis labels.
+ * Pass NULL for either label to omit that field.
+ * Call this immediately after metadata_add_metric for Bar-chart metrics.
+ */
+static inline void metadata_add_barchart_style(
+    cJSON *metric,
+    const char *x_axis_label,
+    const char *y_axis_label)
+{
+    cJSON *style = cJSON_CreateObject();
+    if (x_axis_label != NULL)
+        cJSON_AddStringToObject(style, "xAxisLabel", x_axis_label);
+    if (y_axis_label != NULL)
+        cJSON_AddStringToObject(style, "yAxisLabel", y_axis_label);
+    cJSON_AddItemToObject(metric, "style", style);
+}
+
+/*
  * Appends one style attribute entry { "key": key, "styleType": style_type, "defaultValue": value|null }
  * to the given style sub-array.  Pass NULL for value to emit a JSON null.
  */

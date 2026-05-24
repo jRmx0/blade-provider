@@ -48,7 +48,9 @@ char *bcd_build_metadata_json(void)
 	metadata_add_parameter(parameters, 5, "Path Overlap", METADATA_PARAM_TYPE_DECIMAL, NULL, 0, "0", METADATA_PARAM_SECTION_COVERAGE_PATH, METADATA_APP_HANDLER_NONE, 1, 0.0, 0, 0.0, METADATA_UNIT_TYPE_UOM);
 	metadata_add_parameter(parameters, 6, "Headland", METADATA_PARAM_TYPE_BOOLEAN, NULL, 0, "true", METADATA_PARAM_SECTION_COVERAGE_PATH, METADATA_APP_HANDLER_NONE, 0, 0.0, 0, 0.0, NULL);
 	metadata_add_parameter(parameters, 7, "Headland Width", METADATA_PARAM_TYPE_DECIMAL, NULL, 0, "4.9", METADATA_PARAM_SECTION_COVERAGE_PATH, METADATA_APP_HANDLER_NONE, 1, 0.0, 0, 0.0, METADATA_UNIT_TYPE_UOM);
+
 	metadata_add_parameter(parameters, 8, "Track Memory Usage", METADATA_PARAM_TYPE_BOOLEAN, NULL, 0, "false", METADATA_PARAM_SECTION_PERFORMANCE, METADATA_APP_HANDLER_NONE, 0, 0.0, 0, 0.0, NULL);
+	metadata_add_parameter(parameters, 9, "Track Processing Time", METADATA_PARAM_TYPE_BOOLEAN, NULL, 0, "false", METADATA_PARAM_SECTION_PERFORMANCE, METADATA_APP_HANDLER_NONE, 0, 0.0, 0, 0.0, NULL);
 
 	cJSON *metrics = cJSON_CreateArray();
 	if (metrics == NULL)
@@ -62,6 +64,10 @@ char *bcd_build_metadata_json(void)
 	metadata_add_timeseries_style(mem_ts_metric, "Indeksas", "Atmintis (KB)");
 	metadata_add_metric(metrics, 2, "Bazinis atminties naudojimas (KB)", METADATA_METRIC_TYPE_SINGLE_VALUE, "Memory");
 	metadata_add_metric(metrics, 3, "Maksimalus skaičiavimų atminties sunaudojimas (KB)", METADATA_METRIC_TYPE_SINGLE_VALUE, "Memory");
+
+	metadata_add_metric(metrics, 4, "Viso apdorojimo laikas (ms)", METADATA_METRIC_TYPE_SINGLE_VALUE, "Time");
+	cJSON *time_bc_metric = metadata_add_metric(metrics, 5, "Sekcijų trukmė (ms)", METADATA_METRIC_TYPE_BAR_CHART, "Time");
+	metadata_add_barchart_style(time_bc_metric, "Sekcija", "Laikas (ms)");
 
 	cJSON *layers = cJSON_CreateArray();
 	if (layers == NULL)

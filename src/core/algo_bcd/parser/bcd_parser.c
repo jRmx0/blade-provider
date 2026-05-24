@@ -30,6 +30,7 @@ static void bcd_init_environment(input_environment_t *environment)
 	environment->obstacles = NULL;
 	environment->obstacle_count = 0;
 	environment->track_memory_usage = false;
+	environment->track_processing_time = false;
 	environment->headland = false;
 	environment->max_iterations = 0;
 	environment->start_point.x = 0.0f;
@@ -821,6 +822,24 @@ bool bcd_parse_request_json(const char *request_json, input_environment_t *envir
 	}
 
 	environment->track_memory_usage = track_memory_usage;
+
+	bool track_processing_time = false;
+	if (!bcd_expect_bool_parameter(
+			parameters,
+			"Track Processing Time",
+			&track_processing_time,
+			result,
+			"missing_track_processing_time",
+			"BCD requires a Track Processing Time parameter.",
+			"invalid_track_processing_time",
+			"BCD Track Processing Time must be a boolean."))
+	{
+		cJSON_Delete(root);
+		free_input_environment(environment);
+		return false;
+	}
+
+	environment->track_processing_time = track_processing_time;
 
 	bool headland = false;
 	if (!bcd_expect_bool_parameter(

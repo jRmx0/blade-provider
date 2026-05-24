@@ -28,6 +28,7 @@ static void cstar_parser_init_environment(cstar_environment_t *environment)
     environment->path_width = 0.0f;
     environment->frontier_spacing_multiplier = 0u;
     environment->track_memory_usage = false;
+    environment->track_processing_time = false;
     environment->headland = false;
 
     environment->start_point.x = 0.0f;
@@ -405,6 +406,16 @@ bool cstar_parse_request_json(const char *request_json, cstar_environment_t *env
     else if (cJSON_IsString(track_memory_value) && track_memory_value->valuestring != NULL)
     {
         environment->track_memory_usage = strcmp(track_memory_value->valuestring, "true") == 0;
+    }
+
+    const cJSON *track_processing_time_value = cJSON_GetObjectItemCaseSensitive(parameters, "Track Processing Time");
+    if (cJSON_IsBool(track_processing_time_value))
+    {
+        environment->track_processing_time = cJSON_IsTrue(track_processing_time_value);
+    }
+    else if (cJSON_IsString(track_processing_time_value) && track_processing_time_value->valuestring != NULL)
+    {
+        environment->track_processing_time = strcmp(track_processing_time_value->valuestring, "true") == 0;
     }
 
     cJSON_Delete(root);

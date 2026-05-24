@@ -64,6 +64,7 @@ typedef struct
 
     uint32_t max_iterations;
     bool track_memory_usage;
+    bool track_processing_time;
     bool headland;
 
     point_t start_point;

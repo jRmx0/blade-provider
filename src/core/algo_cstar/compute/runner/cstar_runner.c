@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "../../../../../dependencies/allocator/allocator.h"
+#include "../../../../../dependencies/timer/timer.h"
 #include "cstar_runner.h"
 #include "core/rcg/cstar_rcg.h"
 #include "core/preprocess/cstar_lap.h"
@@ -62,6 +63,7 @@ cstar_coverage_path_result_t *cstar_coverage_path_planning_process(cstar_environ
     float w = env->path_width;
 
     va_tracking_mark("Praėjimai");
+    tm_mark("Praėjimai");
     // One-time preprocessing: generate and store laps in environment
     if (!cstar_preprocess_environment_laps(env, w))
     {
@@ -77,6 +79,7 @@ cstar_coverage_path_result_t *cstar_coverage_path_planning_process(cstar_environ
                     : 1;
 
     va_tracking_mark("Ribiniai taškai");
+    tm_mark("Ribiniai taškai");
     int generated_samples = cstar_generate_frontier_samples(&rcg,
                                                             w,
                                                             delta,
@@ -91,6 +94,7 @@ cstar_coverage_path_result_t *cstar_coverage_path_planning_process(cstar_environ
     }
 
     va_tracking_mark("RCG");
+    tm_mark("RCG");
     // RCG graph expansion: connect frontier-sampled nodes into a planar graph
     if (!cstar_rcg_expand_graph(&rcg, env))
     {
@@ -105,6 +109,7 @@ cstar_coverage_path_result_t *cstar_coverage_path_planning_process(cstar_environ
     // update — flush all edges, re-derive cross-lap and same-lap connectivity
     // for the surviving node set, and sync all in-node neighbor pointers.
     va_tracking_mark("Atšakų šalinimas");
+    tm_mark("Atšakų šalinimas");
     cstar_rcg_prune_non_essential_nodes(&rcg);
     cstar_rcg_full_graph_update(&rcg, env);
 
@@ -126,6 +131,7 @@ cstar_coverage_path_result_t *cstar_coverage_path_planning_process(cstar_environ
     // -------------------------------------------------------------------------
 
     va_tracking_mark("Planavimas");
+    tm_mark("Planavimas");
     // Locate the start node placed at env->start_point during sampling.
     int start_node_id = CSTAR_NO_NEIGHBOR;
     for (int i = 0; i < rcg.node_count; ++i)
@@ -438,6 +444,7 @@ cstar_coverage_path_result_t *cstar_coverage_path_planning_process(cstar_environ
     cstar_debug_dispose(&debug_state);
 
     va_tracking_mark("Valymas");
+    tm_mark("Valymas");
     cstar_rcg_free(&rcg);
     cstar_environment_laps_cleanup(env);
     return result;

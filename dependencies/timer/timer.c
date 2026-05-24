@@ -41,18 +41,18 @@ static int g_started = 0;
 static tm_unit_t g_unit = TM_UNIT_MS;
 
 /** Non-zero when sample recording is enabled (default on). */
-static int g_tracking_enabled = 1;
+static int g_tm_tracking_enabled = 1;
 
 /** Dynamic array of recorded elapsed-time samples. */
-static cvector(double) g_tracking_vec = NULL;
+static cvector(double) g_tm_tracking_vec = NULL;
 
 /** Fixed-size array of stage markers. */
-static tm_stage_marker_t g_markers[TM_TRACKING_MAX_MARKERS];
+static tm_stage_marker_t g_tm_markers[TM_TRACKING_MAX_MARKERS];
 
 /** Number of stage markers recorded so far. */
-static size_t g_marker_count = 0;
+static size_t g_tm_marker_count = 0;
 
-/** Non-zero when the last marker in g_markers is still open (no duration yet). */
+/** Non-zero when the last marker in g_tm_markers is still open (no duration yet). */
 static int g_last_marker_open = 0;
 
 /* --------------------------------------------------------------------------
@@ -111,8 +111,8 @@ static LONGLONG elapsed_ticks(void)
 static double push_sample(void)
 {
     double value = ticks_to_unit(elapsed_ticks());
-    if (g_tracking_enabled)
-        cvector_push_back(g_tracking_vec, value);
+    if (g_tm_tracking_enabled)
+        cvector_push_back(g_tm_tracking_vec, value);
     return value;
 }
 
@@ -123,9 +123,9 @@ static double push_sample(void)
  */
 static void close_last_marker(double now)
 {
-    if (g_last_marker_open && g_marker_count > 0)
+    if (g_last_marker_open && g_tm_marker_count > 0)
     {
-        g_markers[g_marker_count - 1].duration = now - g_markers[g_marker_count - 1].start;
+        g_tm_markers[g_tm_marker_count - 1].duration = now - g_tm_markers[g_tm_marker_count - 1].start;
         g_last_marker_open = 0;
     }
 }
@@ -189,28 +189,28 @@ double tm_stop(void)
  * Tracking control
  * -------------------------------------------------------------------------- */
 
-void tm_tracking_enable(void) { g_tracking_enabled = 1; }
-void tm_tracking_disable(void) { g_tracking_enabled = 0; }
-int tm_tracking_is_enabled(void) { return g_tracking_enabled; }
+void tm_tracking_enable(void) { g_tm_tracking_enabled = 1; }
+void tm_tracking_disable(void) { g_tm_tracking_enabled = 0; }
+int tm_tracking_is_enabled(void) { return g_tm_tracking_enabled; }
 
 /* --------------------------------------------------------------------------
  * Tracking data
  * -------------------------------------------------------------------------- */
 
-double *tm_get_tracking_data(void) { return g_tracking_vec; }
+double *tm_get_tracking_data(void) { return g_tm_tracking_vec; }
 
-size_t tm_get_tracking_count(void) { return cvector_size(g_tracking_vec); }
+size_t tm_get_tracking_count(void) { return cvector_size(g_tm_tracking_vec); }
 
 double tm_get_last_tracking_value(void)
 {
-    size_t count = cvector_size(g_tracking_vec);
-    return count > 0 ? g_tracking_vec[count - 1] : 0.0;
+    size_t count = cvector_size(g_tm_tracking_vec);
+    return count > 0 ? g_tm_tracking_vec[count - 1] : 0.0;
 }
 
 void tm_free_tracking_data(void)
 {
-    cvector_free(g_tracking_vec);
-    g_tracking_vec = NULL;
+    cvector_free(g_tm_tracking_vec);
+    g_tm_tracking_vec = NULL;
 }
 
 /* --------------------------------------------------------------------------
@@ -219,31 +219,31 @@ void tm_free_tracking_data(void)
 
 void tm_mark(const char *label)
 {
-    if (!g_tracking_enabled)
+    if (!g_tm_tracking_enabled)
         return;
 
     double now = push_sample();
     close_last_marker(now);
 
-    if (g_marker_count >= TM_TRACKING_MAX_MARKERS)
+    if (g_tm_marker_count >= TM_TRACKING_MAX_MARKERS)
         return;
 
-    g_markers[g_marker_count].label = label;
-    g_markers[g_marker_count].start = now;
-    g_markers[g_marker_count].duration = 0.0;
-    g_marker_count++;
+    g_tm_markers[g_tm_marker_count].label = label;
+    g_tm_markers[g_tm_marker_count].start = now;
+    g_tm_markers[g_tm_marker_count].duration = 0.0;
+    g_tm_marker_count++;
     g_last_marker_open = 1;
 }
 
 const tm_stage_marker_t *tm_get_stage_markers(void)
 {
-    return g_marker_count > 0 ? g_markers : NULL;
+    return g_tm_marker_count > 0 ? g_tm_markers : NULL;
 }
 
-size_t tm_get_stage_marker_count(void) { return g_marker_count; }
+size_t tm_get_stage_marker_count(void) { return g_tm_marker_count; }
 
 void tm_free_stage_markers(void)
 {
-    g_marker_count = 0;
+    g_tm_marker_count = 0;
     g_last_marker_open = 0;
 }
