@@ -84,16 +84,21 @@ const char *tm_unit_label(void);
 /* ---- stage markers ---- */
 
 /**
- * @brief A labelled boundary in the tracking sample stream.
+ * @brief A labelled, duration-tracked phase in the measurement session.
  *
- * @c sample_index is the zero-based index into the tracking array at the
- * moment the marker was recorded.  @c label is a string literal (not owned
- * by the timer).
+ * A marker is opened by tm_mark() and closed automatically when the next
+ * tm_mark() or tm_stop() call fires.  Until a marker is closed its
+ * @c duration field is 0.0.
+ *
+ * @c label is a string literal (not owned by the timer).
+ * @c start and @c duration are expressed in the unit active when the
+ * marker was opened.
  */
 typedef struct
 {
-    size_t sample_index; /**< Index of the associated sample. */
-    const char *label;   /**< Stage name supplied to tm_mark(). */
+    const char *label; /**< Stage name supplied to tm_mark(). */
+    double start;      /**< Elapsed time at the moment tm_mark() was called. */
+    double duration;   /**< Elapsed from this marker to the next mark or tm_stop(). */
 } tm_stage_marker_t;
 
 /* ---- timer control ---- */
@@ -212,7 +217,16 @@ void tm_free_tracking_data(void);
 /* ---- stage markers ---- */
 
 /**
- * @brief Record a tracking sample and attach a stage label to it.
+ * @brief Open a named phase marker at the current elapsed time.
+ *
+ * Records a tracking sample, then:
+ *   - Closes the previously open marker (if any) by computing its duration
+ *     as @c now @c - @c prev.start.
+ *   - Opens a new marker with @c label and @c start @c = @c now.
+ *
+ * The new marker's @c duration remains 0.0 until the next tm_mark() or
+ * tm_stop() call closes it.  Place tm_mark() at the @em start of each
+ * operation whose duration you want to measure.
  *
  * No-op when tracking is disabled.  At most TM_TRACKING_MAX_MARKERS
  * markers are stored; extras are silently dropped.

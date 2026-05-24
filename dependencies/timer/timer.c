@@ -52,6 +52,9 @@ static tm_stage_marker_t g_markers[TM_TRACKING_MAX_MARKERS];
 /** Number of stage markers recorded so far. */
 static size_t g_marker_count = 0;
 
+/** Non-zero when the last marker in g_markers is still open (no duration yet). */
+static int g_last_marker_open = 0;
+
 /* --------------------------------------------------------------------------
  * Internal helpers
  * -------------------------------------------------------------------------- */
@@ -103,15 +106,28 @@ static LONGLONG elapsed_ticks(void)
  * @brief Compute the current elapsed time and, when tracking is enabled,
  *        append it to the tracking vector.
  *
- * @return The elapsed value in the active unit, whether or not it was
- *         appended to the vector.
+ * @return The elapsed value in the active unit.
  */
-static double record_sample(void)
+static double push_sample(void)
 {
     double value = ticks_to_unit(elapsed_ticks());
     if (g_tracking_enabled)
         cvector_push_back(g_tracking_vec, value);
     return value;
+}
+
+/**
+ * @brief Close the last open marker by computing its duration.
+ *
+ * @param now The elapsed time at the closing boundary.
+ */
+static void close_last_marker(double now)
+{
+    if (g_last_marker_open && g_marker_count > 0)
+    {
+        g_markers[g_marker_count - 1].duration = now - g_markers[g_marker_count - 1].start;
+        g_last_marker_open = 0;
+    }
 }
 
 /* --------------------------------------------------------------------------
@@ -164,7 +180,9 @@ double tm_elapsed(void)
 
 double tm_stop(void)
 {
-    return record_sample();
+    double now = push_sample();
+    close_last_marker(now);
+    return now;
 }
 
 /* --------------------------------------------------------------------------
@@ -204,15 +222,17 @@ void tm_mark(const char *label)
     if (!g_tracking_enabled)
         return;
 
-    record_sample();
+    double now = push_sample();
+    close_last_marker(now);
 
     if (g_marker_count >= TM_TRACKING_MAX_MARKERS)
         return;
 
-    size_t count = cvector_size(g_tracking_vec);
-    g_markers[g_marker_count].sample_index = count > 0 ? count - 1 : 0;
     g_markers[g_marker_count].label = label;
+    g_markers[g_marker_count].start = now;
+    g_markers[g_marker_count].duration = 0.0;
     g_marker_count++;
+    g_last_marker_open = 1;
 }
 
 const tm_stage_marker_t *tm_get_stage_markers(void)
@@ -222,4 +242,8 @@ const tm_stage_marker_t *tm_get_stage_markers(void)
 
 size_t tm_get_stage_marker_count(void) { return g_marker_count; }
 
-void tm_free_stage_markers(void) { g_marker_count = 0; }
+void tm_free_stage_markers(void)
+{
+    g_marker_count = 0;
+    g_last_marker_open = 0;
+}
