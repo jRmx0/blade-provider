@@ -18,20 +18,7 @@
 
 #include "../../../common/path_finder.c"
 #include "../../../common/headland.c"
-
-/* Full definition of the opaque bcd_result_t — visible here and to bcd_compute.c
- * via the C amalgamation include of this file. */
-struct bcd_result_t
-{
-	bcd_event_list_t event_list;
-	cvector_vector_type(bcd_cell_t) cell_list;
-	cvector_vector_type(int) path_list;
-	bcd_motion_plan_t motion_plan;
-	headland_t headland;
-	bool has_headland;
-	cvector_vector_type(point_t) start_nav;
-	vg_graph_t *vg;
-};
+#include "bcd_runner_result.c"
 
 static void log_event_list(const bcd_event_list_t *event_list);
 static const char *event_type_to_string(bcd_event_type_t t);
@@ -719,7 +706,7 @@ bcd_result_t *coverage_path_planning_process(input_environment_t *env, bcd_compu
 
 	/* Package results for the orchestrator — serialization and cleanup happen
 	 * after tracking is disabled in bcd_run_compute (mirrors the C* pattern). */
-	bcd_result_t *result = (bcd_result_t *)va_malloc(sizeof(struct bcd_result_t));
+	bcd_result_t *result = bcd_result_create();
 	if (result == NULL)
 	{
 		vg_graph_free(vg);
@@ -846,21 +833,6 @@ static char *serialize_event_list_json(const bcd_event_list_t *event_list)
 	char *json = cJSON_PrintUnformatted(root);
 	cJSON_Delete(root);
 	return json; // caller must free
-}
-
-void bcd_result_free(bcd_result_t *result)
-{
-	if (result == NULL)
-		return;
-	vg_graph_free(result->vg);
-	free_bcd_event_list(&result->event_list);
-	free_bcd_cell_list(&result->cell_list);
-	cvector_free(result->path_list);
-	free_bcd_motion(&result->motion_plan);
-	cvector_free(result->start_nav);
-	if (result->has_headland)
-		free_headland(&result->headland);
-	va_free(result);
 }
 
 static void log_event_list(const bcd_event_list_t *event_list)

@@ -28,7 +28,7 @@ bcd_result_t *coverage_path_planning_process(input_environment_t *env, bcd_compu
  * Returns a cJSON object owned by the caller (must be cJSON_Delete'd). */
 cJSON *bcd_build_result_json_tree(const bcd_result_t *result);
 
-/* Frees all resources owned by result, then frees the struct itself. */
-void bcd_result_free(bcd_result_t *result);
+/* bcd_result_create / bcd_result_free are declared and defined as static in
+ * bcd_runner_result.h / bcd_runner_result.c, included by bcd_runner.c. */
 
 #endif // COVERAGE_PATH_PLANNING_H
