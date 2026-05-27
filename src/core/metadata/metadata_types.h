@@ -78,6 +78,12 @@
 #define METADATA_PARAM_TYPE_STRING "String"
 #define METADATA_PARAM_TYPE_ENUM "Enum"
 
+/* ── Parameter Unit Types ───────────────────────────────────────────────── */
+
+#define METADATA_UNIT_TYPE_UOM "uom"
+#define METADATA_UNIT_TYPE_RATIO "ratio"
+#define METADATA_UNIT_TYPE_UNITLESS "unitless"
+
 /* ── App Handlers ───────────────────────────────────────────────────────── */
 
 #define METADATA_APP_HANDLER_NONE NULL
@@ -100,6 +106,7 @@
 
 #define METADATA_METRIC_TYPE_SINGLE_VALUE "Single-value"
 #define METADATA_METRIC_TYPE_TIME_SERIES "Time-series"
+#define METADATA_METRIC_TYPE_BAR_CHART "Bar-chart"
 
 /* ── Style Types ────────────────────────────────────────────────────────── */
 

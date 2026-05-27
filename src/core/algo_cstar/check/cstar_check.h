@@ -1,9 +1,9 @@
-// Validates and parses C* compute request JSON payload.
+// Validates C* compute request JSON payload.
 
 #ifndef CSTAR_CHECK_H
 #define CSTAR_CHECK_H
 
-#include "../internal.h"
+#include "../cstar.h"
 
 typedef struct
 {
@@ -12,7 +12,6 @@ typedef struct
 	const char *message;
 } cstar_check_result_t;
 
-bool cstar_check_request_json(const char *request_json, input_environment_t *environment, cstar_check_result_t *result);
-void cstar_check_free_environment(input_environment_t *environment);
+bool cstar_validate_request_json(const char *request_json, cstar_check_result_t *result);
 
 #endif // CSTAR_CHECK_H

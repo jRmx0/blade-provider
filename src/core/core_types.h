@@ -53,22 +53,24 @@ typedef struct
 typedef struct
 {
     uint32_t id;
+
     float path_width;
-    float coverage_grid_cell_size;
     float path_overlap;
+    float coverage_grid_cell_size;
     float bounce_offset;
+    float starting_angle;
     float target_coverage;
     float target_distance;
+
     uint32_t max_iterations;
     bool track_memory_usage;
+    bool track_processing_time;
     bool headland;
-    float starting_angle; // Initial travel direction in degrees [0, 360]; -1 = pick randomly.
 
     point_t start_point;
     point_t end_point;
 
     polygon_t boundary;
-
     polygon_t *obstacles;
     uint32_t obstacle_count;
 

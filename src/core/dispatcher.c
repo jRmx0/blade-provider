@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include "../../dependencies/cJSON/cJSON.c"
 #include "../../dependencies/allocator/allocator.c"
+#include "../../dependencies/timer/timer.c"
 #include "common/debug_serialize.c"
 #include "algo_bcd/bcd.c"
 #include "algo_bounce/bounce.c"
